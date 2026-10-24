@@ -62,36 +62,32 @@ function decodificar(pacote) {
 const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(' ');
 const MASK_PORTAS = (m) => ['A', 'B', 'C', 'D'].filter((_, k) => m & (1 << k));
 
-// ---- cenários ----
-const ARENA = { w: 120, h: 80 };               // cm
+// ---- cenários: vêm de cenarios.js (navegador: global `Cenarios`; Node: require) ----
+const _Cen = (typeof Cenarios !== 'undefined') ? Cenarios : require('./cenarios.js');
+const CENARIOS = _Cen.lista;                   // { treino, fll } — cada um com w, h (cm), caixas, inicios
 const STRIDE = 8;                              // frames: [t, x, y, th, encA, encB, encC, encD] (enc em graus)
-function trilhaOval() {
-  const pts = []; const cx = 60, cy = 40, rx = 42, ry = 22;
-  for (let k = 0; k <= 200; k++) { const t = Math.PI / 2 + (k / 200) * 2 * Math.PI;
-    pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
-  return pts;
-}
-const CENARIOS = {
-  linha: { trilha: trilhaOval(), caixas: [], inicio: { x: 60, y: 62, th: Math.PI } },
-  obstaculo: { trilha: [], inicio: { x: 12, y: 40, th: 0 },
-    caixas: [{ x: 55, y: 22, w: 10, h: 34 }, { x: 88, y: 40, w: 10, h: 38 }] },
-};
 
 class SimEV3 {
-  constructor(cenario = 'linha', cfg = {}) {
+  /** cenario: 'treino' | 'fll'. cfg.inicio: chave de CENARIOS[...].inicios (padrão: 'padrao') */
+  constructor(cenario = 'treino', cfg = {}) {
     this.cfg = Object.assign({
       grausPorPct: 10,          // 100% ≈ 1000 °/s (motor grande EV3)
       cmPorGrau: Math.PI * 5.6 / 360,  // roda de 5,6 cm
       bitola: 12, raio: 7, passo: 0.01,
       latEnvio: 0.005, latResposta: 0.02,   // tempo virtual gasto por pacote (Bluetooth)
       sensores: { 1: 'cor', 2: 'toque', 3: 'cor', 4: 'ultrassonico' },
-      larguraLinha: 2, // cm
+      inicio: 'padrao',
+      amostragem: 'area',       // 'area' (média 3×3 num quadrado de ±raioSensorCm) | 'pixel' (1 pixel exato)
+      raioSensorCm: 0.35,
+      modoLuz: 'luminancia',    // 'luminancia' (Rec.709) | 'vermelho' (LED vermelho do sensor real)
     }, cfg);
     this.reset(cenario);
   }
   reset(cenario = this.cenarioNome) {
+    if (!CENARIOS[cenario]) throw new Error('cenário desconhecido: ' + cenario);
     this.cenarioNome = cenario; this.cen = CENARIOS[cenario];
-    const s = this.cen.inicio;
+    this.tapete = _Cen.obterTapete(cenario);      // imagem + pixels (a mesma que o aluno vê)
+    const s = _Cen.inicioDe(this.cen, this.cfg.inicio);
     this.x = s.x; this.y = s.y; this.th = s.th; this.t = 0;
     this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, modo: 'ocioso', rest: 0, enc: 0 };
     this.led = 'DESLIGADO';
@@ -132,7 +128,7 @@ class SimEV3 {
   }
   _colide(x, y) {
     const r = this.cfg.raio;
-    if (x < r || y < r || x > ARENA.w - r || y > ARENA.h - r) return true;
+    if (x < r || y < r || x > this.cen.w - r || y > this.cen.h - r) return true;
     return this.cen.caixas.some((b) => {          // círculo do robô vs retângulo (quina arredondada)
       const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
       return Math.hypot(x - cx, y - cy) < r;
@@ -140,22 +136,14 @@ class SimEV3 {
   }
 
   // ---------- sensores ----------
-  _distLinha(px, py) {
-    const T = this.cen.trilha; let best = Infinity;
-    for (let k = 0; k < T.length - 1; k++) {
-      const [ax, ay] = T[k], [bx, by] = T[k + 1], vx = bx - ax, vy = by - ay;
-      const u = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy || 1)));
-      best = Math.min(best, Math.hypot(px - (ax + u * vx), py - (ay + u * vy)));
-    }
-    return best;
-  }
-  refletida() { return this.refletidaEm(this.x, this.y, this.th); }
-  refletidaEm(x, y, th) {
+  // Sensor de cor: lê PIXELS do tapete (mesma imagem do 2D/3D), 5,5 cm à frente do centro do robô
+  rgbEm(x, y, th) {
     const sx = x + 5.5 * Math.cos(th), sy = y + 5.5 * Math.sin(th);
-    const d = this._distLinha(sx, sy), w = this.cfg.larguraLinha / 2;
-    if (d <= w * 0.6) return 5; if (d >= w * 1.6) return 70;
-    return 5 + 65 * (d - w * 0.6) / (w);        // borda suave
+    return this.cfg.amostragem === 'pixel' ? _Cen.lerPixel(this.tapete, sx, sy) : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
   }
+  refletidaEm(x, y, th) { return _Cen.intensidade(this.rgbEm(x, y, th), this.cfg.modoLuz); }   // 0-100
+  corEm(x, y, th) { const [r, g, b] = this.rgbEm(x, y, th); return _Cen.classificarCor(r, g, b); }  // id EV3 0-7
+  refletida() { return this.refletidaEm(this.x, this.y, this.th); }
   ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
     let best = 255;
@@ -173,8 +161,8 @@ class SimEV3 {
       };
       for (const b of caixas) best = Math.min(best, hit(b.x, b.y, b.x + b.w, b.y + b.h));
       const ts = [];                              // paredes da arena = ponto de saída do raio
-      if (dx > 1e-9) ts.push((ARENA.w - ox) / dx); if (dx < -1e-9) ts.push(-ox / dx);
-      if (dy > 1e-9) ts.push((ARENA.h - oy) / dy); if (dy < -1e-9) ts.push(-oy / dy);
+      if (dx > 1e-9) ts.push((this.cen.w - ox) / dx); if (dx < -1e-9) ts.push(-ox / dx);
+      if (dy > 1e-9) ts.push((this.cen.h - oy) / dy); if (dy < -1e-9) ts.push(-oy / dy);
       best = Math.min(best, ...ts);
     }
     return Math.max(0, Math.min(255, best));
@@ -182,7 +170,7 @@ class SimEV3 {
   lerSensor(porta, modo) {
     const tipo = this.cfg.sensores[porta + 1];
     if (!tipo) return null;                       // porta sem sensor -> EV3 responde erro
-    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : (this.refletida() < 30 ? 1 : 6);
+    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : this.corEm(this.x, this.y, this.th);   // 0 refletida · 1 ambiente · 2 cor
     if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
     return this.ultrassonico();
   }
@@ -253,4 +241,4 @@ class SimEV3 {
     return 'ok';
   }
 }
-if (typeof module !== 'undefined') module.exports = { SimEV3, decodificar, hex, ARENA, CENARIOS, STRIDE };
+if (typeof module !== 'undefined') module.exports = { SimEV3, decodificar, hex, CENARIOS, STRIDE };

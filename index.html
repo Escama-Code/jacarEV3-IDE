@@ -21,7 +21,12 @@
   .painel { background:var(--painel); border:1px solid var(--borda); border-radius:6px; padding:10px; min-width:0; }
   h2 { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--mut); margin:12px 0 6px; font-weight:600; }
   h2:first-child { margin-top:0; }
-  canvas { width:100%; height:auto; display:block; border-radius:4px; background:#f4f3ee; }
+  /* [hidden] precisa vencer qualquer `display:` de autor (flex/block); sem isso o canvas "escondido" continua na tela */
+  [hidden] { display:none !important; }
+  /* JANELA ÚNICA: o palco tem o formato do cenário e empilha 2D e 3D no mesmo lugar; só uma camada fica visível */
+  #palco { position:relative; width:100%; aspect-ratio:120 / 80; border-radius:4px; overflow:hidden; background:#cfd8e2; }
+  #palco > .vista { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  #cv { background:#f4f3ee; }
   .linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 0; }
   button, select, input { background:#3c3c3c; color:var(--txt); border:1px solid #555; border-radius:4px; padding:5px 10px; font:inherit; }
   button { cursor:pointer; } button:hover:not(:disabled) { border-color:var(--acc); } button:disabled { opacity:.45; cursor:default; }
@@ -49,7 +54,6 @@
   #terminal .quadro { color:#ff8a80; font-weight:400; }        /* linhas "File ..." do traceback */
   #terminal .vazio { color:#555; }
 
-  #cv3d { width:100%; aspect-ratio:3/2; border-radius:4px; overflow:hidden; background:#cfd8e2; }
   .seg { display:inline-flex; } .seg button { border-radius:0; } .seg button:first-child { border-radius:4px 0 0 4px; } .seg button:last-child { border-radius:0 4px 4px 0; }
   .seg button.ativo { background:#0e639c; border-color:#1177bb; }
   #tabela { max-height:210px; overflow:auto; border:1px solid var(--borda); border-radius:4px; background:#1b1b1b; }
@@ -68,13 +72,17 @@
     <h2>Arena virtual</h2>
     <div class="linha" style="margin:0 0 8px">
       <div class="seg"><button id="btn2d" class="ativo">2D</button><button id="btn3d" disabled title="carregando Three.js…">3D</button></div>
+      <select id="cenario" title="Cenário"></select>
+      <select id="inicio" title="Posição inicial do robô"></select>
       <span id="opts3d" class="linha" style="margin:0" hidden>
         <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option></select>
         <select id="cam3d"><option value="livre">Câmera: livre (arraste)</option><option value="seguir">Câmera: seguir o robô</option><option value="topo">Câmera: vista de topo</option></select>
       </span>
     </div>
-    <canvas id="cv" width="720" height="480"></canvas>
-    <div id="cv3d" hidden></div>
+    <div id="palco">
+      <canvas id="cv" class="vista" width="1000" height="667"></canvas>
+      <div id="cv3d" class="vista" hidden></div>
+    </div>
     <div class="linha">
       <button id="btnPlay" disabled>▶ Reproduzir</button>
       <input id="slider" type="range" min="0" max="1000" value="0" disabled>
@@ -91,7 +99,6 @@
     <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
     <div class="linha" style="margin-top:0">
       <select id="exemplo"></select>
-      <select id="cenario"><option value="linha">cenário: linha preta</option><option value="obstaculo">cenário: obstáculos</option></select>
       <label>limite <input id="limite" type="number" value="30" min="1" max="300"> s simulados</label>
     </div>
     <div id="editor" style="margin-top:8px"></div>
@@ -293,6 +300,158 @@ def descrever_api() -> str:
 
 <script>
 // ============================================================
+// cenarios.js — DUPLO ARTEFATO.
+// Cada cenário tem UMA arte de tapete (desenhada com Canvas 2D, em cm).
+// Essa mesma imagem é:
+//   (1) o chão que o aluno vê (2D e textura do 3D), e
+//   (2) o que o sensor de cor lê, pixel a pixel (getImageData, uma vez só).
+// Sem DOM obrigatório: no navegador usa OffscreenCanvas/<canvas>; no Node,
+// @napi-rs/canvas (ou uma fábrica injetada com usarFabricaCanvas).
+// ============================================================
+const Cenarios = (() => {
+  const PI = Math.PI;
+  let fabricaInjetada = null;
+  const cache = {};
+
+  /** fábrica de canvas: (largura_px, altura_px) => canvas com getContext('2d') */
+  function criarCanvas(w, h) {
+    if (typeof globalThis.__fabricaCanvas === 'function') return globalThis.__fabricaCanvas(w, h);   // ganchos de teste
+    if (fabricaInjetada) return fabricaInjetada(w, h);
+    if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
+    if (typeof document !== 'undefined') { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+    try { return require('@napi-rs/canvas').createCanvas(w, h); } catch (e) { /* cai no erro abaixo */ }
+    throw new Error('Nenhum Canvas 2D disponível pra gerar o tapete.');
+  }
+
+  // ---------------------------------------------------------
+  // Cor → leitura do EV3
+  // ---------------------------------------------------------
+  /** 0..100 a partir do RGB. 'luminancia' (padrão, Rec.709) ou 'vermelho' (o LED do sensor real é vermelho) */
+  function intensidade(rgb, modoLuz = 'luminancia') {
+    const [r, g, b] = rgb;
+    const v = modoLuz === 'vermelho' ? r : 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return 5 + 65 * (v / 255);                     // preto ≈ 5, branco ≈ 70 (faixa típica do EV3)
+  }
+  /** RGB → id de cor do EV3: 0 nenhuma · 1 preto · 2 azul · 3 verde · 4 amarelo · 5 vermelho · 6 branco · 7 marrom */
+  function classificarCor(r, g, b) {
+    const mx = Math.max(r, g, b) / 255, mn = Math.min(r, g, b) / 255, d = mx - mn;
+    const v = mx, s = mx === 0 ? 0 : d / mx;
+    if (v < 0.2) return 1;                         // bem escuro = preto
+    if (s < 0.25) return v < 0.35 ? 1 : 6;         // pouco colorido: preto, cinza-escuro ou branco
+    let h;
+    const R = r / 255, G = g / 255, B = b / 255;
+    if (mx === R) h = 60 * (((G - B) / d + 6) % 6); else if (mx === G) h = 60 * ((B - R) / d + 2); else h = 60 * ((R - G) / d + 4);
+    if (h >= 10 && h < 40 && v < 0.6) return 7;    // laranja escuro = marrom
+    if (h < 15 || h >= 345) return 5;
+    if (h < 28) return 5;                          // laranja puxando pro vermelho
+    if (h < 70) return 4;
+    if (h < 170) return 3;
+    if (h < 265) return 2;
+    return 5;                                      // magenta/roxo: o EV3 real chuta vermelho
+  }
+  const NOMES_COR = ['nenhuma', 'preto', 'azul', 'verde', 'amarelo', 'vermelho', 'branco', 'marrom'];
+
+  // ---------------------------------------------------------
+  // Tapete = imagem + dados de pixel
+  // ---------------------------------------------------------
+  function gerarTapete(cen) {
+    const k = cen.pxPorCm, W = Math.round(cen.w * k), H = Math.round(cen.h * k);
+    const canvas = criarCanvas(W, H);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.save(); ctx.scale(k, k); cen.desenhar(ctx, cen); ctx.restore();
+    const img = ctx.getImageData(0, 0, W, H);
+    return { id: cen.id, canvas, W, H, k, dados: img.data };       // dados: RGBA, linha 0 = y 0 (topo)
+  }
+  /** pixel exato sob (x,y) em cm */
+  function lerPixel(t, x, y) {
+    const xi = Math.max(0, Math.min(t.W - 1, Math.floor(x * t.k))), yi = Math.max(0, Math.min(t.H - 1, Math.floor(y * t.k)));
+    const o = (yi * t.W + xi) * 4; return [t.dados[o], t.dados[o + 1], t.dados[o + 2]];
+  }
+  /** média de 3×3 amostras num quadrado de ±raio cm (o "ponto" do sensor tem tamanho) */
+  function lerArea(t, x, y, raio = 0.35) {
+    let r = 0, g = 0, b = 0;
+    for (const dy of [-raio, 0, raio]) for (const dx of [-raio, 0, raio]) { const p = lerPixel(t, x + dx, y + dy); r += p[0]; g += p[1]; b += p[2]; }
+    return [r / 9, g / 9, b / 9];
+  }
+
+  // ---------------------------------------------------------
+  // Cenário A — Pista de Treino Clássica (120×80 cm)
+  // ---------------------------------------------------------
+  const treino = {
+    id: 'treino', nome: 'A · Pista de Treino Clássica (120×80 cm)', w: 120, h: 80, pxPorCm: 10,
+    inicios: { padrao: { rotulo: 'sobre a linha (parte de baixo)', x: 60, y: 62, th: PI }, centro: { rotulo: 'centro, olhando pra esquerda', x: 60, y: 40, th: PI } },
+    caixas: [
+      { nome: 'Caixa esquerda', x: 4, y: 26, w: 10, h: 28, altura: 10, cor: '#5f86a6' },
+      { nome: 'Caixa direita', x: 106, y: 26, w: 10, h: 28, altura: 10, cor: '#5f86a6' },
+    ],
+    desenhar(ctx, c) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.w, c.h);                       // fundo branco
+      ctx.strokeStyle = '#111111'; ctx.lineWidth = 2;                                // circuito oval, fita de 2 cm
+      ctx.beginPath(); ctx.ellipse(60, 40, 42, 22, 0, 0, 2 * PI); ctx.stroke();
+    },
+  };
+
+  // ---------------------------------------------------------
+  // Cenário B — Tapete de Competição estilo FLL (236×114 cm)
+  // ---------------------------------------------------------
+  const fll = {
+    id: 'fll', nome: 'B · Tapete estilo FLL (236×114 cm)', w: 236, h: 114, pxPorCm: 8,
+    inicios: { padrao: { rotulo: 'área verde, olhando pra linha', x: 24, y: 92, th: 0 }, azul: { rotulo: 'área azul, olhando pra esquerda', x: 212, y: 92, th: PI } },
+    caixas: [
+      { nome: 'Missão 1', x: 96, y: 8, w: 12, h: 12, altura: 8, cor: '#f28c28' },
+      { nome: 'Missão 2', x: 154, y: 40, w: 12, h: 16, altura: 12, cor: '#8e44ad' },
+      { nome: 'Missão 3', x: 214, y: 18, w: 14, h: 10, altura: 6, cor: '#c0392b' },
+    ],
+    desenhar(ctx, c) {
+      const retArred = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+      // base do tapete
+      ctx.fillStyle = '#f2efe6'; ctx.fillRect(0, 0, c.w, c.h);
+      // lago fundo (azul-marinho: luminância BAIXA — pode enganar o sensor como se fosse linha)
+      ctx.fillStyle = '#1b2a5c'; ctx.beginPath(); ctx.ellipse(38, 24, 30, 15, 0, 0, 2 * PI); ctx.fill();
+      ctx.strokeStyle = '#3a5fc0'; ctx.lineWidth = 0.7;
+      for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(38, 24 + i * 0.01, 24 - i * 5, 11 - i * 2.2, 0, PI * 1.1, PI * 1.9); ctx.stroke(); }
+      // deserto amarelo com dunas laranja
+      ctx.fillStyle = '#f2c230'; ctx.fillRect(176, 6, 54, 34);
+      ctx.fillStyle = '#e8902a'; for (const [x, y, r] of [[190, 34, 9], [208, 12, 7], [222, 33, 8]]) { ctx.beginPath(); ctx.arc(x, y, r, PI, 2 * PI); ctx.fill(); }
+      // vulcão (vermelho + laranja), floresta (marrom), rampa cinza
+      ctx.fillStyle = '#d62828'; ctx.beginPath(); ctx.arc(150, 96, 9, 0, 2 * PI); ctx.fill();
+      ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(150, 96, 4, 0, 2 * PI); ctx.fill();
+      ctx.fillStyle = '#7b4a2a'; ctx.fillRect(104, 82, 22, 10);
+      ctx.fillStyle = '#8c8c8c'; ctx.fillRect(64, 100, 28, 10);
+      // áreas de partida: VERDE e AZUL
+      ctx.fillStyle = '#2e9d4f'; ctx.fillRect(6, 76, 36, 32);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(8, 78, 32, 28);
+      ctx.fillStyle = '#2f6fd6'; ctx.fillRect(194, 76, 36, 32);
+      ctx.strokeStyle = '#ffffff'; ctx.strokeRect(196, 78, 32, 28);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 5px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('VERDE', 24, 102); ctx.fillText('AZUL', 212, 102);
+      // linhas pretas: percurso principal, bifurcação (A em cima / B embaixo), reencontro, ladrão, ramal em T
+      ctx.strokeStyle = '#0d0d0d'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(42, 92); ctx.lineTo(64, 92); ctx.bezierCurveTo(80, 92, 84, 76, 92, 64); ctx.lineTo(116, 48); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(116, 48); ctx.bezierCurveTo(126, 40, 134, 30, 148, 30); ctx.lineTo(168, 30); ctx.bezierCurveTo(180, 30, 184, 40, 186, 48); ctx.stroke();   // ramo A
+      ctx.beginPath(); ctx.moveTo(116, 48); ctx.bezierCurveTo(126, 56, 134, 66, 148, 66); ctx.lineTo(168, 66); ctx.bezierCurveTo(180, 66, 184, 56, 186, 48); ctx.stroke();    // ramo B
+      ctx.beginPath(); ctx.moveTo(186, 48); ctx.lineTo(204, 48); ctx.bezierCurveTo(214, 48, 214, 60, 212, 70); ctx.lineTo(212, 76); ctx.stroke();                          // reencontro → área azul
+      ctx.beginPath(); ctx.moveTo(148, 30); ctx.lineTo(148, 66); ctx.stroke();                                                                                           // ponte entre os ramos
+      ctx.beginPath(); ctx.moveTo(92, 64); ctx.lineTo(92, 28); ctx.moveTo(82, 28); ctx.lineTo(102, 28); ctx.stroke();                                                    // ramal em T
+      ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(48, 106); ctx.lineTo(60, 106); ctx.moveTo(130, 106); ctx.lineTo(188, 106); ctx.stroke();                             // linha fina
+      // moldura escura do tapete
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, c.w - 3, c.h - 3);
+    },
+  };
+
+  const lista = { treino, fll };
+  /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
+  function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
+  const inicioDe = (cen, chave) => cen.inicios[chave] || cen.inicios.padrao;
+
+  return { lista, obterTapete, gerarTapete, lerPixel, lerArea, intensidade, classificarCor, NOMES_COR, inicioDe,
+    usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } };
+})();
+
+
+</script>
+<script>
+// ============================================================
 // SimEV3 — EV3 virtual. Recebe os bytes REAIS (Direct Commands) que a
 // jacarev3 gerou, decodifica o bytecode e move um robô 2D.
 // Não depende de DOM: roda no navegador e no Node (testes).
@@ -356,36 +515,32 @@ function decodificar(pacote) {
 const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(' ');
 const MASK_PORTAS = (m) => ['A', 'B', 'C', 'D'].filter((_, k) => m & (1 << k));
 
-// ---- cenários ----
-const ARENA = { w: 120, h: 80 };               // cm
+// ---- cenários: vêm de cenarios.js (navegador: global `Cenarios`; Node: require) ----
+const _Cen = (typeof Cenarios !== 'undefined') ? Cenarios : require('./cenarios.js');
+const CENARIOS = _Cen.lista;                   // { treino, fll } — cada um com w, h (cm), caixas, inicios
 const STRIDE = 8;                              // frames: [t, x, y, th, encA, encB, encC, encD] (enc em graus)
-function trilhaOval() {
-  const pts = []; const cx = 60, cy = 40, rx = 42, ry = 22;
-  for (let k = 0; k <= 200; k++) { const t = Math.PI / 2 + (k / 200) * 2 * Math.PI;
-    pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
-  return pts;
-}
-const CENARIOS = {
-  linha: { trilha: trilhaOval(), caixas: [], inicio: { x: 60, y: 62, th: Math.PI } },
-  obstaculo: { trilha: [], inicio: { x: 12, y: 40, th: 0 },
-    caixas: [{ x: 55, y: 22, w: 10, h: 34 }, { x: 88, y: 40, w: 10, h: 38 }] },
-};
 
 class SimEV3 {
-  constructor(cenario = 'linha', cfg = {}) {
+  /** cenario: 'treino' | 'fll'. cfg.inicio: chave de CENARIOS[...].inicios (padrão: 'padrao') */
+  constructor(cenario = 'treino', cfg = {}) {
     this.cfg = Object.assign({
       grausPorPct: 10,          // 100% ≈ 1000 °/s (motor grande EV3)
       cmPorGrau: Math.PI * 5.6 / 360,  // roda de 5,6 cm
       bitola: 12, raio: 7, passo: 0.01,
       latEnvio: 0.005, latResposta: 0.02,   // tempo virtual gasto por pacote (Bluetooth)
       sensores: { 1: 'cor', 2: 'toque', 3: 'cor', 4: 'ultrassonico' },
-      larguraLinha: 2, // cm
+      inicio: 'padrao',
+      amostragem: 'area',       // 'area' (média 3×3 num quadrado de ±raioSensorCm) | 'pixel' (1 pixel exato)
+      raioSensorCm: 0.35,
+      modoLuz: 'luminancia',    // 'luminancia' (Rec.709) | 'vermelho' (LED vermelho do sensor real)
     }, cfg);
     this.reset(cenario);
   }
   reset(cenario = this.cenarioNome) {
+    if (!CENARIOS[cenario]) throw new Error('cenário desconhecido: ' + cenario);
     this.cenarioNome = cenario; this.cen = CENARIOS[cenario];
-    const s = this.cen.inicio;
+    this.tapete = _Cen.obterTapete(cenario);      // imagem + pixels (a mesma que o aluno vê)
+    const s = _Cen.inicioDe(this.cen, this.cfg.inicio);
     this.x = s.x; this.y = s.y; this.th = s.th; this.t = 0;
     this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, modo: 'ocioso', rest: 0, enc: 0 };
     this.led = 'DESLIGADO';
@@ -426,7 +581,7 @@ class SimEV3 {
   }
   _colide(x, y) {
     const r = this.cfg.raio;
-    if (x < r || y < r || x > ARENA.w - r || y > ARENA.h - r) return true;
+    if (x < r || y < r || x > this.cen.w - r || y > this.cen.h - r) return true;
     return this.cen.caixas.some((b) => {          // círculo do robô vs retângulo (quina arredondada)
       const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
       return Math.hypot(x - cx, y - cy) < r;
@@ -434,22 +589,14 @@ class SimEV3 {
   }
 
   // ---------- sensores ----------
-  _distLinha(px, py) {
-    const T = this.cen.trilha; let best = Infinity;
-    for (let k = 0; k < T.length - 1; k++) {
-      const [ax, ay] = T[k], [bx, by] = T[k + 1], vx = bx - ax, vy = by - ay;
-      const u = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy || 1)));
-      best = Math.min(best, Math.hypot(px - (ax + u * vx), py - (ay + u * vy)));
-    }
-    return best;
-  }
-  refletida() { return this.refletidaEm(this.x, this.y, this.th); }
-  refletidaEm(x, y, th) {
+  // Sensor de cor: lê PIXELS do tapete (mesma imagem do 2D/3D), 5,5 cm à frente do centro do robô
+  rgbEm(x, y, th) {
     const sx = x + 5.5 * Math.cos(th), sy = y + 5.5 * Math.sin(th);
-    const d = this._distLinha(sx, sy), w = this.cfg.larguraLinha / 2;
-    if (d <= w * 0.6) return 5; if (d >= w * 1.6) return 70;
-    return 5 + 65 * (d - w * 0.6) / (w);        // borda suave
+    return this.cfg.amostragem === 'pixel' ? _Cen.lerPixel(this.tapete, sx, sy) : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
   }
+  refletidaEm(x, y, th) { return _Cen.intensidade(this.rgbEm(x, y, th), this.cfg.modoLuz); }   // 0-100
+  corEm(x, y, th) { const [r, g, b] = this.rgbEm(x, y, th); return _Cen.classificarCor(r, g, b); }  // id EV3 0-7
+  refletida() { return this.refletidaEm(this.x, this.y, this.th); }
   ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
     let best = 255;
@@ -467,8 +614,8 @@ class SimEV3 {
       };
       for (const b of caixas) best = Math.min(best, hit(b.x, b.y, b.x + b.w, b.y + b.h));
       const ts = [];                              // paredes da arena = ponto de saída do raio
-      if (dx > 1e-9) ts.push((ARENA.w - ox) / dx); if (dx < -1e-9) ts.push(-ox / dx);
-      if (dy > 1e-9) ts.push((ARENA.h - oy) / dy); if (dy < -1e-9) ts.push(-oy / dy);
+      if (dx > 1e-9) ts.push((this.cen.w - ox) / dx); if (dx < -1e-9) ts.push(-ox / dx);
+      if (dy > 1e-9) ts.push((this.cen.h - oy) / dy); if (dy < -1e-9) ts.push(-oy / dy);
       best = Math.min(best, ...ts);
     }
     return Math.max(0, Math.min(255, best));
@@ -476,7 +623,7 @@ class SimEV3 {
   lerSensor(porta, modo) {
     const tipo = this.cfg.sensores[porta + 1];
     if (!tipo) return null;                       // porta sem sensor -> EV3 responde erro
-    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : (this.refletida() < 30 ? 1 : 6);
+    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : this.corEm(this.x, this.y, this.th);   // 0 refletida · 1 ambiente · 2 cor
     if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
     return this.ultrassonico();
   }
@@ -547,7 +694,7 @@ class SimEV3 {
     return 'ok';
   }
 }
-if (typeof module !== 'undefined') module.exports = { SimEV3, decodificar, hex, ARENA, CENARIOS, STRIDE };
+if (typeof module !== 'undefined') module.exports = { SimEV3, decodificar, hex, CENARIOS, STRIDE };
 
 </script>
 <script>
@@ -998,68 +1145,58 @@ function aplicarEstado(rig, est) {
 
 const ROBOS = { ev3: construirRoboEV3, jacare: construirRoboJacare };
 
-/** textura do tapete: fundo claro com grade de 10 cm (só no navegador) */
-function texturaTapete(arena) {
-  if (typeof document === 'undefined') return null;
-  const px = 10, cv = document.createElement('canvas'); cv.width = arena.w * px; cv.height = arena.h * px;
-  const c = cv.getContext && cv.getContext('2d'); if (!c) return null;
-  c.fillStyle = '#f4f3ee'; c.fillRect(0, 0, cv.width, cv.height);
-  c.strokeStyle = '#dedbd0'; c.lineWidth = 2;
-  for (let x = 0; x <= arena.w; x += 10) { c.beginPath(); c.moveTo(x * px, 0); c.lineTo(x * px, cv.height); c.stroke(); }
-  for (let y = 0; y <= arena.h; y += 10) { c.beginPath(); c.moveTo(0, y * px); c.lineTo(cv.width, y * px); c.stroke(); }
-  c.strokeStyle = '#b9b5a6'; c.lineWidth = 6; c.strokeRect(3, 3, cv.width - 6, cv.height - 6);
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
-}
-
-/** faixa preta da pista: tira de triângulos ao longo da polilinha (largura em cm) */
-function fitaDaTrilha(pts, largura) {
-  const pos = [], idx = [], n = pts.length;
-  for (let i = 0; i < n; i++) {
-    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
-    let dx = b[0] - a[0], dz = b[1] - a[1]; const L = Math.hypot(dx, dz) || 1; dx /= L; dz /= L;
-    const nx = -dz * largura / 2, nz = dx * largura / 2;
-    pos.push(pts[i][0] + nx, 0.04, pts[i][1] + nz, pts[i][0] - nx, 0.04, pts[i][1] - nz);
-    if (i < n - 1) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+/** textura do chão = a MESMA imagem que o sensor lê (tapete.canvas / tapete.dados) */
+function texturaDoTapete(tapete, renderer) {
+  const ehCanvasReal = (typeof OffscreenCanvas !== 'undefined' && tapete.canvas instanceof OffscreenCanvas)
+    || (typeof HTMLCanvasElement !== 'undefined' && tapete.canvas instanceof HTMLCanvasElement);
+  let tex;
+  if (ehCanvasReal) tex = new THREE.CanvasTexture(tapete.canvas);                         // navegador: usa o canvas direto
+  else {                                                                                   // sem canvas (testes/Node): DataTexture com linhas invertidas (v=0 é o sul)
+    const { W, H, dados } = tapete, buf = new Uint8Array(W * H * 4);
+    for (let y = 0; y < H; y++) buf.set(dados.subarray((H - 1 - y) * W * 4, (H - y) * W * 4), y * W * 4);
+    tex = new THREE.DataTexture(buf, W, H, THREE.RGBAFormat);
   }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
-  return g;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const web2 = !!(renderer && renderer.capabilities && renderer.capabilities.isWebGL2);
+  tex.generateMipmaps = web2; tex.minFilter = web2 ? THREE.LinearMipmapLinearFilter : THREE.LinearFilter; tex.magFilter = THREE.LinearFilter;
+  tex.anisotropy = web2 ? Math.min(8, renderer.capabilities.getMaxAnisotropy()) : 1;
+  tex.needsUpdate = true;
+  return tex;
 }
 
-/** arena: mesa, tapete, paredes, fita preta e caixas — espelha CENARIOS[...] do sim.js */
-function construirArena(arena, cen, larguraLinha = 2) {
+/** arena do cenário: mesa, chão (com o tapete), paredes e caixas — tudo no tamanho cen.w × cen.h */
+function construirArena(cen, tapete, renderer = null) {
   const g = new THREE.Group(); g.name = 'arena';
-  const cx = arena.w / 2, cz = arena.h / 2;
-  const mesa = new THREE.Mesh(new THREE.BoxGeometry(arena.w + 60, 3, arena.h + 50), new THREE.MeshStandardMaterial({ color: 0x6d5a48, roughness: 0.9 }));
+  const cx = cen.w / 2, cz = cen.h / 2;
+  const mesa = new THREE.Mesh(new THREE.BoxGeometry(cen.w + 60, 3, cen.h + 50), new THREE.MeshStandardMaterial({ color: 0x6d5a48, roughness: 0.9 }));
   mesa.position.set(cx, -1.6, cz); mesa.receiveShadow = true; g.add(mesa);
-  const tex = texturaTapete(arena);
-  const chao = new THREE.Mesh(new THREE.PlaneGeometry(arena.w, arena.h).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial(tex ? { map: tex, roughness: 0.9 } : { color: 0xf4f3ee, roughness: 0.9 }));
+  const chao = new THREE.Mesh(new THREE.PlaneGeometry(cen.w, cen.h).rotateX(-Math.PI / 2),
+    new THREE.MeshStandardMaterial({ map: texturaDoTapete(tapete, renderer), roughness: 0.9 }));
   chao.position.set(cx, 0, cz); chao.receiveShadow = true; chao.name = 'chao'; g.add(chao);
   const parede = new THREE.MeshStandardMaterial({ color: 0x8c96a0, roughness: 0.7 });
-  for (const [w, d, x, z] of [[arena.w + 3, 1.5, cx, -0.75], [arena.w + 3, 1.5, cx, arena.h + 0.75], [1.5, arena.h, -0.75, cz], [1.5, arena.h, arena.w + 0.75, cz]]) {
+  for (const [w, d, x, z] of [[cen.w + 3, 1.5, cx, -0.75], [cen.w + 3, 1.5, cx, cen.h + 0.75], [1.5, cen.h, -0.75, cz], [1.5, cen.h, cen.w + 0.75, cz]]) {
     const p = new THREE.Mesh(new THREE.BoxGeometry(w, 5, d), parede); p.position.set(x, 2.5, z); p.castShadow = p.receiveShadow = true; g.add(p);
   }
-  if (cen.trilha.length > 1) {
-    const fita = new THREE.Mesh(fitaDaTrilha(cen.trilha, larguraLinha), new THREE.MeshStandardMaterial({ color: 0x0d0d0d, roughness: 0.95, side: THREE.DoubleSide }));
-    fita.receiveShadow = true; fita.name = 'fita'; g.add(fita);
-  }
-  for (const b of cen.caixas) {                                    // obstáculos: mesmas caixas que o sim.js usa na colisão
-    const m = new THREE.Mesh(new THREE.BoxGeometry(b.w, 10, b.h), new THREE.MeshStandardMaterial({ color: 0x5f86a6, roughness: 0.6 }));
-    m.position.set(b.x + b.w / 2, 5, b.y + b.h / 2); m.castShadow = m.receiveShadow = true; g.add(m);
-    const topo = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.3, 0.8, b.h + 0.3), new THREE.MeshStandardMaterial({ color: 0xf2b134, roughness: 0.6 }));
-    topo.position.set(b.x + b.w / 2, 10.2, b.y + b.h / 2); topo.castShadow = true; g.add(topo);
+  for (const b of cen.caixas) {                                    // MESMAS caixas que o sim.js usa na colisão/ultrassônico
+    const alt = b.altura || 10, cor = new THREE.Color(b.cor || '#5f86a6');
+    const m = new THREE.Mesh(new THREE.BoxGeometry(b.w, alt, b.h), new THREE.MeshStandardMaterial({ color: cor, roughness: 0.6 }));
+    m.position.set(b.x + b.w / 2, alt / 2, b.y + b.h / 2); m.castShadow = m.receiveShadow = true; m.name = b.nome || 'caixa'; g.add(m);
+    const topo = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.3, 0.8, b.h + 0.3), new THREE.MeshStandardMaterial({ color: cor.clone().offsetHSL(0, 0, 0.14), roughness: 0.6 }));
+    topo.position.set(b.x + b.w / 2, alt + 0.4, b.y + b.h / 2); topo.castShadow = true; g.add(topo);
   }
   return g;
 }
 
 const MODOS_CAMERA = ['livre', 'seguir', 'topo'];
 
+const TAN_FOV2 = Math.tan(21 * Math.PI / 180);                       // fov vertical de 42°
+
 /**
- * criarVista(container, { arena, cenario, renderer? })
+ * criarVista(container, { cenario, tapete, renderer? })
+ * `cenario` = CENARIOS[id] do sim.js (w, h, caixas…) · `tapete` = Cenarios.obterTapete(id)
  * `renderer` injetável só pra testes (GL headless); no navegador é criado aqui.
  */
-function criarVista(container, { arena, cenario, renderer: rInjetado = null, larguraLinha = 2 }) {
+function criarVista(container, { cenario, tapete, renderer: rInjetado = null }) {
   const renderer = rInjetado || new THREE.WebGLRenderer({ antialias: true });
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1067,28 +1204,50 @@ function criarVista(container, { arena, cenario, renderer: rInjetado = null, lar
   if (renderer.domElement.style) renderer.domElement.style.display = 'block';
 
   const scene = new THREE.Scene(); scene.background = new THREE.Color(0xcfd8e2);
-  const camera = new THREE.PerspectiveCamera(42, 1.5, 1, 800);
-  const centro = new THREE.Vector3(arena.w / 2, 0, arena.h / 2);
+  const camera = new THREE.PerspectiveCamera(42, 1.5, 1, 1200);
+  const centro = new THREE.Vector3();
 
-  // luzes: hemisférica (céu/chão) + sol com sombra cobrindo a arena inteira
+  // luzes: hemisférica + sol com sombra; o frustum da sombra é ajustado ao tamanho da arena em setCenario
   scene.add(new THREE.HemisphereLight(0xffffff, 0x8b97a8, 0.85));
-  const sol = new THREE.DirectionalLight(0xfff4e0, 1.5); sol.position.set(centro.x - 30, 110, centro.z + 70); sol.target.position.copy(centro);
+  const sol = new THREE.DirectionalLight(0xfff4e0, 1.5);
   sol.castShadow = true; sol.shadow.mapSize.set(2048, 2048); sol.shadow.bias = -0.0004; sol.shadow.normalBias = 0.05;
-  Object.assign(sol.shadow.camera, { left: -85, right: 85, top: 65, bottom: -65, near: 10, far: 320 }); sol.shadow.camera.updateProjectionMatrix();
   scene.add(sol, sol.target);
 
   const controls = new OrbitControls(camera, renderer.domElement);
-  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04;
-  controls.minDistance = 15; controls.maxDistance = 260;
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, ativo: false, raf: 0, alvoCam: new THREE.Vector3() };
+  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100 };
 
-  function enquadrarLivre() {
-    camera.up.set(0, 1, 0); camera.position.set(centro.x, 82, centro.z + 78); controls.target.copy(centro); controls.update();
+  /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
+  const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
+  /** posiciona a câmera olhando o centro da arena numa direção (dirY, dirZ) e AFASTA até os 4 cantos caberem no quadro */
+  function enquadrarCantos(dirY, dirZ, up) {
+    const cantos = [[0, 0], [S.cen.w, 0], [0, S.cen.h], [S.cen.w, S.cen.h]].map(([x, z]) => new THREE.Vector3(x, 0, z));
+    let dist = distanciaAjustada();
+    for (let i = 0; i < 6; i++) {
+      camera.up.copy(up); camera.position.set(centro.x, dirY * dist, centro.z + dirZ * dist); camera.lookAt(centro);
+      camera.updateMatrixWorld(true); camera.updateProjectionMatrix();
+      let m = 0; for (const c of cantos) { const p = c.clone().project(camera); m = Math.max(m, Math.abs(p.x), Math.abs(p.y)); }
+      if (Math.abs(m - 0.92) < 0.015) break;
+      dist *= Math.max(0.5, Math.min(2, m / 0.92));
+    }
+    return dist;
   }
-  function setCenario(cen) {
-    if (S.arena) { scene.remove(S.arena); S.arena.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
-    S.arena = construirArena(arena, cen, larguraLinha); scene.add(S.arena);
+  function enquadrarLivre() {
+    S.dist = enquadrarCantos(0.78, 0.72, new THREE.Vector3(0, 1, 0)); controls.maxDistance = S.dist * 2.6;
+    controls.target.copy(centro); controls.update();
+  }
+  function ajustarLuz() {
+    const L = Math.max(S.cen.w, S.cen.h), r = Math.hypot(S.cen.w, S.cen.h) / 2 + 22;
+    sol.position.set(centro.x - L * 0.25, L * 0.9, centro.z + L * 0.6); sol.target.position.copy(centro);
+    Object.assign(sol.shadow.camera, { left: -r, right: r, top: r, bottom: -r, near: 10, far: L * 3 }); sol.shadow.camera.updateProjectionMatrix();
+  }
+  /** troca o cenário: reconstrói arena/textura e re-enquadra tudo no novo tamanho */
+  function setCenario(cen, novoTapete) {
+    if (S.arena) { scene.remove(S.arena); S.arena.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); }); }
+    S.cen = cen; centro.set(cen.w / 2, 0, cen.h / 2);
+    S.arena = construirArena(cen, novoTapete, renderer); scene.add(S.arena);
+    ajustarLuz(); setModoCamera(S.modo);
   }
   function setRobo(tipo) {
     if (!ROBOS[tipo]) throw new Error('robô desconhecido: ' + tipo);
@@ -1100,7 +1259,7 @@ function criarVista(container, { arena, cenario, renderer: rInjetado = null, lar
     if (!MODOS_CAMERA.includes(modo)) return;
     S.modo = modo; controls.enabled = modo === 'livre';
     if (modo === 'livre') enquadrarLivre();
-    if (modo === 'topo') { camera.up.set(0, 0, -1); camera.position.set(centro.x, 135, centro.z + 0.01); camera.lookAt(centro); }
+    if (modo === 'topo') enquadrarCantos(1, 0.0001, new THREE.Vector3(0, 0, -1));
   }
   function atualizarCamera() {
     if (S.modo === 'seguir' && S.ultimo) {                          // câmera de perseguição atrás do robô
@@ -1112,10 +1271,12 @@ function criarVista(container, { arena, cenario, renderer: rInjetado = null, lar
   }
   function aplicar(est) { S.ultimo = est; if (S.rig) aplicarEstado(S.rig, est); }
   function desenhar() { atualizarCamera(); renderer.render(scene, camera); }
+  /** acompanha o tamanho do contêiner (janela única): só reenquadra se o formato mudou */
   function redimensionar() {
     const w = Math.max(10, container.clientWidth || 720), h = Math.max(10, container.clientHeight || 480);
     renderer.setPixelRatio(Math.min((typeof devicePixelRatio !== 'undefined' && devicePixelRatio) || 1, 2));
-    renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+    renderer.setSize(w, h); const antes = camera.aspect; camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (S.cen && Math.abs(antes - camera.aspect) > 0.01) setModoCamera(S.modo);
   }
   function loop() { if (!S.ativo) return; S.raf = requestAnimationFrame(loop); desenhar(); }
   function mostrar(v) {
@@ -1124,7 +1285,7 @@ function criarVista(container, { arena, cenario, renderer: rInjetado = null, lar
   }
   if (typeof ResizeObserver !== 'undefined' && container.nodeType === 1) new ResizeObserver(() => { if (S.ativo) redimensionar(); }).observe(container);
 
-  setCenario(cenario); setRobo('ev3'); enquadrarLivre(); redimensionar();
+  setCenario(cenario, tapete); setRobo('ev3'); redimensionar();
   return { renderer, scene, camera, controls, setRobo, setCenario, setModoCamera, aplicar, desenhar, mostrar, redimensionar,
     get rig() { return S.rig; }, get tipo() { return S.tipo; }, get modo() { return S.modo; } };
 }
@@ -1233,13 +1394,13 @@ const Ide = (() => {
 // Exemplos (só API real da jacarev3)
 // =====================================================================
 const EXEMPLOS = {
-  linha: { nome: 'Seguidor de linha (ler_sensor + mover_continuo)', cenario: 'linha', codigo:
+  linha: { nome: 'Seguidor de linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
 `from jacarev3 import RoboEV3, protocolo as p
 
 with RoboEV3('00:16:53:64:F8:B8') as robo:
     robo.led('VERDE')
     while True:
-        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)   # 0-100
+        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)   # 0-100, lida do PIXEL do tapete
         if luz < 30:                      # sobre a linha preta
             robo.mover_continuo('B', 10)  # esquerda devagar
             robo.mover_continuo('C', 35)  # direita rápido -> vira pra esquerda
@@ -1247,7 +1408,46 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
             robo.mover_continuo('B', 35)
             robo.mover_continuo('C', 10)  # vira pra direita
 ` },
-  topico: { nome: 'Pronto da lib: circuito.seguir_linha', cenario: 'linha', codigo:
+  fll_linha: { nome: 'Seguidor de linha — tapete FLL (acha a linha e segue a borda)', cenario: 'fll', inicio: 'padrao', codigo:
+`from jacarev3 import RoboEV3, protocolo as p
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('VERDE')
+    # 1) sai da área verde em linha reta até o sensor achar o preto
+    robo.mover_continuo('B', 25)
+    robo.mover_continuo('C', 25)
+    while robo.ler_sensor(3, p.MODO_COR_REFLETIDA) > 30:
+        pass
+    # 2) segue a BORDA DIREITA da linha. Nas bifurcações ele escolhe pelo lado da borda.
+    while True:
+        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
+        if luz < 30:                      # preto: vira pra direita
+            robo.mover_continuo('B', 32)
+            robo.mover_continuo('C', 8)
+        else:                             # claro: vira pra esquerda
+            robo.mover_continuo('B', 8)
+            robo.mover_continuo('C', 32)
+` },
+  cores: { nome: 'Ler cores (modo COR) — tapete FLL', cenario: 'fll', inicio: 'padrao', codigo:
+`import time
+from jacarev3 import RoboEV3, protocolo as p
+
+NOMES = {0: 'sem cor', 1: 'preto', 2: 'azul', 3: 'verde', 4: 'amarelo', 5: 'vermelho', 6: 'branco', 7: 'marrom'}
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    anterior = None
+    robo.mover_continuo('B', 20)
+    robo.mover_continuo('C', 20)
+    for _ in range(120):
+        cor = int(robo.ler_sensor(3, p.MODO_COR_COR))   # id da cor do PIXEL sob o sensor
+        if cor != anterior:
+            print('cor:', NOMES.get(cor, cor))
+            anterior = cor
+        time.sleep(0.05)
+    robo.parar_motor('B')
+    robo.parar_motor('C')
+` },
+  topico: { nome: 'Pronto da lib: circuito.seguir_linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
 `from jacarev3 import RoboEV3
 from jacarev3.topicos import circuito
 
@@ -1255,7 +1455,7 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
     # limiar fixo: calibrar() pede pra mover o sensor com a mão
     circuito.seguir_linha(robo, porta_sensor=3, limiar=35, velocidade=30, duracao_s=20)
 ` },
-  desvio: { nome: 'Desviar de obstáculo (ler_sensor + mover_base)', cenario: 'obstaculo', codigo:
+  desvio: { nome: 'Desviar de obstáculo — treino (começa no centro)', cenario: 'treino', inicio: 'centro', codigo:
 `import time
 from jacarev3 import RoboEV3, protocolo as p
 
@@ -1273,7 +1473,7 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
             robo.mover_base(velocidade=40, direcao=0, duracao_ms=300)
             time.sleep(0.1)
 ` },
-  basico: { nome: 'Teste dos comandos (bytes de cada método)', cenario: 'linha', codigo:
+  basico: { nome: 'Teste dos comandos (bytes de cada método)', cenario: 'treino', inicio: 'padrao', codigo:
 `import time
 from jacarev3 import RoboEV3
 
@@ -1287,7 +1487,7 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
     print('encoder C =', robo.ler_graus_motor('C'), 'graus')
     print('luz refletida porta 3 =', robo.ler_sensor(3, 0))
 ` },
-  erro: { nome: 'Erro de propósito (veja o Traceback em vermelho)', cenario: 'linha', codigo:
+  erro: { nome: 'Erro de propósito (veja o Traceback em vermelho)', cenario: 'treino', inicio: 'padrao', codigo:
 `from jacarev3 import RoboEV3
 
 with RoboEV3('00:16:53:64:F8:B8') as robo:
@@ -1299,9 +1499,26 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
 // Playback — desenha o robô a partir dos frames gravados pelo simulador
 // =====================================================================
 const Playback = (() => {
-  const ESC = 6, COR_LED = { VERDE: '#2ecc40', VERMELHO: '#ff4136', AMBAR: '#ff9f1a', DESLIGADO: '#555' };
+  const COR_LED = { VERDE: '#2ecc40', VERMELHO: '#ff4136', AMBAR: '#ff9f1a', DESLIGADO: '#555' };
   let sim = null, tocando = false, t = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, audio = null;
-  let modo = '2d', vista = null, tipoRobo = 'ev3', modoCam = 'livre', sonda = null, sondaNome = '';
+  let modo = '2d', vista = null, tipoRobo = 'ev3', modoCam = 'livre', sonda = null, sondaChave = '';
+  let cenId = '', cen = null, tapete = null, ESC = 8;       // cenário exibido (2D/3D/sensor compartilham o MESMO tapete)
+
+  // ---------- cenário: tamanho do palco, canvas 2D, seletor de início, vista 3D ----------
+  function aplicarCenario() {
+    cenId = $('cenario').value; cen = CENARIOS[cenId]; tapete = Cenarios.obterTapete(cenId);
+    const sel = $('inicio'), anterior = sel.value; sel.innerHTML = '';
+    for (const [k, v] of Object.entries(cen.inicios)) sel.add(new Option('início: ' + v.rotulo, k));
+    if (cen.inicios[anterior]) sel.value = anterior;
+    $('palco').style.aspectRatio = cen.w + ' / ' + cen.h;                        // janela única com o formato do cenário
+    ESC = Math.min(10, 1000 / Math.max(cen.w, cen.h));
+    const cv = $('cv'); cv.width = Math.round(cen.w * ESC); cv.height = Math.round(cen.h * ESC);
+    if (vista) vista.setCenario(cen, tapete);
+  }
+  function descartarSimulacao() {                                // trocar cenário/início invalida o que foi gravado
+    tocar(false); sim = null; $('slider').disabled = $('btnPlay').disabled = true; $('slider').value = 0;
+    $('corpo').innerHTML = ''; $('contaPacotes').textContent = ''; logIdx = 0; ultimoT = 0;
+  }
 
   // ---------- estado de UM instante (usado pelas duas vistas) ----------
   function acharFrame(tt) {                                   // frames: [t,x,y,th,encA,encB,encC,encD] (STRIDE)
@@ -1315,36 +1532,34 @@ const Playback = (() => {
     return [cor, a];
   }
   const bipEm = (tt) => !!sim && sim.eventos.some((e) => e.tipo === 'bip' && e.t <= tt && tt < e.t + e.ms / 1000);
-  function sensorDe(cenNome) {                                // simulador "sonda" só pra perguntar a luz refletida numa pose
+  function simSensor() {                                      // simulador "sonda": só pergunta a luz do tapete numa pose
     if (sim) return sim;
-    if (!sonda || sondaNome !== cenNome) { sonda = new SimEV3(cenNome); sondaNome = cenNome; }
+    const chave = cenId + '/' + $('inicio').value;
+    if (!sonda || sondaChave !== chave) { sonda = new SimEV3(cenId, { inicio: $('inicio').value }); sondaChave = chave; }
     return sonda;
   }
   function estadoEm(tt) {
-    const cenNome = $('cenario').value;
     if (sim && sim.frames.length >= STRIDE) {
       const i = acharFrame(tt), F = sim.frames, o = STRIDE * i, [led, ledAlpha] = ledEm(tt);
       return { t: F[o], x: F[o + 1], y: F[o + 2], th: F[o + 3], encA: F[o + 4], encB: F[o + 5], encC: F[o + 6], encD: F[o + 7],
         led, ledAlpha, bip: bipEm(tt), refletida: sim.refletidaEm(F[o + 1], F[o + 2], F[o + 3]), i };
     }
-    const s = CENARIOS[cenNome].inicio;
+    const s = Cenarios.inicioDe(cen, $('inicio').value);
     return { t: 0, x: s.x, y: s.y, th: s.th, encA: 0, encB: 0, encC: 0, encD: 0, led: 'DESLIGADO', ledAlpha: 1, bip: false,
-      refletida: sensorDe(cenNome).refletidaEm(s.x, s.y, s.th), i: 0 };
+      refletida: simSensor().refletidaEm(s.x, s.y, s.th), i: 0 };
   }
 
-  // ---------- vista 2D ----------
+  // ---------- vista 2D: desenha o MESMO tapete que o sensor lê ----------
   function desenhar2D(est) {
-    const g = $('cv').getContext('2d'), cen = sim ? sim.cen : CENARIOS[$('cenario').value];
-    g.setTransform(ESC, 0, 0, ESC, 0, 0); g.clearRect(0, 0, 120, 80);
-    g.fillStyle = '#f4f3ee'; g.fillRect(0, 0, ARENA.w, ARENA.h);
-    g.strokeStyle = '#999'; g.lineWidth = 0.5; g.strokeRect(0.25, 0.25, ARENA.w - 0.5, ARENA.h - 0.5);
-    if (cen.trilha.length) { g.beginPath(); cen.trilha.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-      g.strokeStyle = '#111'; g.lineWidth = 2; g.lineJoin = 'round'; g.stroke(); }
-    g.fillStyle = '#7a8793'; cen.caixas.forEach((b) => g.fillRect(b.x, b.y, b.w, b.h));
+    const g = $('cv').getContext('2d');
+    g.setTransform(ESC, 0, 0, ESC, 0, 0); g.clearRect(0, 0, cen.w, cen.h);
+    if (tapete.canvas) g.drawImage(tapete.canvas, 0, 0, cen.w, cen.h); else { g.fillStyle = '#f4f3ee'; g.fillRect(0, 0, cen.w, cen.h); }
+    for (const b of cen.caixas) { g.fillStyle = b.cor || '#7a8793'; g.fillRect(b.x, b.y, b.w, b.h);
+      g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 0.4; g.strokeRect(b.x, b.y, b.w, b.h); }
     if (sim && est.i > 0) {                                   // rastro
       const F = sim.frames; g.beginPath(); const passo = Math.max(1, Math.floor(est.i / 700));
       for (let k = 0; k <= est.i; k += passo) (k ? g.lineTo : g.moveTo).call(g, F[STRIDE * k + 1], F[STRIDE * k + 2]);
-      g.strokeStyle = 'rgba(74,163,255,.55)'; g.lineWidth = 0.6; g.stroke();
+      g.strokeStyle = 'rgba(255,40,120,.75)'; g.lineWidth = 0.5; g.stroke();
     }
     const base = est.led.split('_')[0];
     g.save(); g.translate(est.x, est.y); g.rotate(est.th);
@@ -1353,20 +1568,21 @@ const Playback = (() => {
     g.globalAlpha = est.ledAlpha; g.fillStyle = COR_LED[base] || '#555'; g.beginPath(); g.arc(-2, 0, 1.6, 0, 7); g.fill(); g.globalAlpha = 1;
     g.fillStyle = '#0b84ff'; g.beginPath(); g.arc(5.5, 0, 0.9, 0, 7); g.fill();
     g.fillStyle = '#444'; g.fillRect(6.5, -3, 1, 6); g.restore();
-    if (sim) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(0,0,0,.65)'; g.font = '13px ui-monospace, monospace'; g.fillText(`t = ${est.t.toFixed(2)} s`, 10, 20); }
+    if (sim) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(16, 14, 112, 22);
+      g.fillStyle = '#111'; g.font = '14px ui-monospace, monospace'; g.fillText(`t = ${est.t.toFixed(2)} s`, 22, 30); }
   }
-  // ---------- troca de vista ----------
+  // ---------- troca 2D <-> 3D NA MESMA janela ----------
   function setModo(m) {
-    if (m === '3d' && !(window.Vista3D)) return;
+    if (m === '3d' && !window.Vista3D) return;
     modo = m;
     $('cv').hidden = m === '3d'; $('cv3d').hidden = m !== '3d'; $('opts3d').hidden = m !== '3d';
     $('btn2d').classList.toggle('ativo', m === '2d'); $('btn3d').classList.toggle('ativo', m === '3d');
     if (m === '3d') {
       if (!vista) {
-        vista = window.Vista3D.criarVista($('cv3d'), { arena: ARENA, cenario: CENARIOS[$('cenario').value] });
+        vista = window.Vista3D.criarVista($('cv3d'), { cenario: cen, tapete });
         vista.setRobo(tipoRobo); vista.setModoCamera(modoCam);
       }
-      vista.mostrar(true);
+      vista.mostrar(true);                                    // mede o contêiner já visível e reenquadra
     } else if (vista) vista.mostrar(false);
     desenhar(t);
   }
@@ -1391,7 +1607,7 @@ const Playback = (() => {
   }
   function atualizar() { $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0; desenhar(t); sincronizarLog(t); sons(t); }
   function loop(agora) {
-    if (!tocando) return;
+    if (!tocando || !sim) return;
     t += (agora - ultimoRaf) / 1000 * (+$('vel').value); ultimoRaf = agora;
     if (t >= sim.t) { t = sim.t; tocar(false); }
     atualizar(); if (tocando) requestAnimationFrame(loop);
@@ -1401,18 +1617,25 @@ const Playback = (() => {
     if (v) { ultimoRaf = performance.now(); if (!audio && $('som').checked && (window.AudioContext || window.webkitAudioContext)) audio = new (window.AudioContext || window.webkitAudioContext)(); requestAnimationFrame(loop); }
   }
   function irPara(tt) { t = Math.max(0, Math.min(tt, sim.t)); evIdx = sim.eventos.findIndex((e) => e.t >= t); if (evIdx < 0) evIdx = sim.eventos.length; atualizar(); }
-  $('btnPlay').onclick = () => { if (t >= sim.t - 1e-6) irPara(0); tocar(!tocando); };
-  $('slider').oninput = () => { tocar(false); irPara($('slider').value / 1000 * sim.t); };
+  $('btnPlay').onclick = () => { if (!sim) return; if (t >= sim.t - 1e-6) irPara(0); tocar(!tocando); };
+  $('slider').oninput = () => { if (!sim) return; tocar(false); irPara($('slider').value / 1000 * sim.t); };
   $('btn2d').onclick = () => setModo('2d');
   $('btn3d').onclick = () => setModo('3d');
   $('robo3d').onchange = () => { tipoRobo = $('robo3d').value; if (vista) vista.setRobo(tipoRobo); };
   $('cam3d').onchange = () => { modoCam = $('cam3d').value; if (vista) vista.setModoCamera(modoCam); };
+  $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); };
+  $('inicio').onchange = () => { descartarSimulacao(); desenhar(0); };
   return {
     desenhar, setModo, estadoEm,
+    iniciar() {                                               // popula o seletor de cenários e mostra o primeiro
+      for (const [id, c] of Object.entries(CENARIOS)) $('cenario').add(new Option(c.nome, id));
+      aplicarCenario(); desenhar(0);
+    },
+    escolher(id, inicio) {                                    // usado pelos exemplos
+      descartarSimulacao(); $('cenario').value = id; aplicarCenario(); if (inicio && CENARIOS[id].inicios[inicio]) $('inicio').value = inicio; desenhar(0);
+    },
     habilitar3D() { const b = $('btn3d'); b.disabled = false; b.title = 'Vista 3D (Three.js)'; },
-    trocarCenario() { if (vista) vista.setCenario(CENARIOS[$('cenario').value]); sim = null; desenhar(0); },
     carregar(s) { sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0; $('corpo').innerHTML = '';
-      if (vista) vista.setCenario(s.cen);
       $('slider').disabled = $('btnPlay').disabled = false; tocar(true); },
   };
 })();
@@ -1453,7 +1676,7 @@ async function rodar() {
   App.executando = true; btn.disabled = true; btn.textContent = '⏳ Executando…';
   Terminal.sys('▶ executando script…');
   await new Promise((r) => setTimeout(r, 40));                    // deixa o navegador pintar antes do Python bloquear
-  App.sim = new SimEV3($('cenario').value);
+  App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
   const t0 = performance.now(); let res = 'erro';
   try { res = App.executarPy(App.editor.getValue(), +$('limite').value || 30); }
   catch (e) { Terminal.err('Erro interno: ' + e.message); }
@@ -1464,15 +1687,14 @@ async function rodar() {
   Playback.carregar(s);
 }
 
-function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); $('cenario').value = EXEMPLOS[k].cenario; Playback.trocarCenario(); }
+function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); Playback.escolher(EXEMPLOS[k].cenario, EXEMPLOS[k].inicio); }
 
 async function iniciar() {
   for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
   $('btnLimpar').onclick = () => Terminal.limpar();
   $('btnRodar').onclick = rodar;
-  $('cenario').onchange = () => Playback.trocarCenario();
   Terminal.limpar();
-  Playback.desenhar(0);
+  Playback.iniciar();
   window.addEventListener('vista3d-pronta', () => Playback.habilitar3D());
   if (window.Vista3D) Playback.habilitar3D();
   setTimeout(() => { if (!window.Vista3D) { $('btn3d').title = 'Three.js não carregou (CDN bloqueado?)'; $('btn3d').textContent = '3D ✕'; } }, 20000);
