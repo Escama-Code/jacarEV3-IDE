@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jacarEV3 no navegador — simulador com a biblioteca real</title>
+<style>
+  :root { --bg:#14181c; --painel:#1d232a; --borda:#2d3640; --txt:#e6edf3; --mut:#8b98a5; --ok:#3fb950; --acc:#4aa3ff; --warn:#e3b341; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.45 system-ui, sans-serif; }
+  header { padding:10px 16px; border-bottom:1px solid var(--borda); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:16px; margin:0; font-weight:600; }
+  #status { color:var(--mut); font-size:13px; }
+  #status.ok { color:var(--ok); } #status.erro { color:#ff7b72; }
+  main { display:grid; grid-template-columns: minmax(0,740px) minmax(320px,1fr); gap:12px; padding:12px; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+  .painel { background:var(--painel); border:1px solid var(--borda); border-radius:8px; padding:10px; }
+  canvas { width:100%; height:auto; display:block; border-radius:6px; background:#f4f3ee; }
+  .linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+  button, select, input { background:#2a323b; color:var(--txt); border:1px solid var(--borda); border-radius:6px; padding:6px 10px; font:inherit; }
+  button { cursor:pointer; } button:hover:not(:disabled) { border-color:var(--acc); } button:disabled { opacity:.45; cursor:default; }
+  button.principal { background:#238636; border-color:#2ea043; font-weight:600; }
+  input[type=number] { width:70px; } input[type=text] { width:90px; }
+  input[type=range] { flex:1; min-width:140px; padding:0; }
+  textarea { width:100%; height:300px; background:#0f1317; color:#d6e0ea; border:1px solid var(--borda); border-radius:6px;
+             padding:8px; font:12.5px/1.45 ui-monospace, Menlo, Consolas, monospace; resize:vertical; tab-size:4; }
+  pre#console { margin:0; height:110px; overflow:auto; background:#0f1317; border:1px solid var(--borda); border-radius:6px;
+                padding:8px; font:12px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space:pre-wrap; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--mut); margin:12px 0 6px; font-weight:600; }
+  h2:first-child { margin-top:0; }
+  #tabela { max-height:230px; overflow:auto; border:1px solid var(--borda); border-radius:6px; background:#0f1317; }
+  table { width:100%; border-collapse:collapse; font:11.5px/1.35 ui-monospace, Menlo, Consolas, monospace; }
+  td { padding:2px 6px; border-bottom:1px solid #1b2229; vertical-align:top; }
+  td.t { color:var(--mut); white-space:nowrap; } td.hex { color:#9ecbff; word-break:break-all; } td.d { color:var(--txt); white-space:nowrap; }
+  .info { color:var(--mut); font-size:12px; margin-top:6px; }
+  label { color:var(--mut); font-size:12px; display:flex; align-items:center; gap:5px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🐊 jacarEV3 real no navegador</h1>
+  <span id="status">iniciando…</span>
+</header>
+<main>
+  <section class="painel">
+    <h2>Arena virtual</h2>
+    <canvas id="cv" width="720" height="480"></canvas>
+    <div class="linha">
+      <button id="btnPlay" disabled>▶ Reproduzir</button>
+      <input id="slider" type="range" min="0" max="1000" value="0" disabled>
+      <select id="vel"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+      <label><input id="som" type="checkbox" checked> som</label>
+    </div>
+    <div class="info" id="resumo">Rode um script pra ver o robô.</div>
+    <h2>Bytes que a jacarev3 gerou</h2>
+    <div id="tabela"><table><tbody id="corpo"></tbody></table></div>
+    <div class="info" id="contaPacotes"></div>
+  </section>
+
+  <section class="painel">
+    <h2>Seu script (Python de verdade)</h2>
+    <div class="linha" style="margin-top:0">
+      <select id="exemplo"></select>
+      <select id="cenario"><option value="linha">cenário: linha preta</option><option value="obstaculo">cenário: obstáculos</option></select>
+      <label>limite <input id="limite" type="number" value="30" min="1" max="300"> s simulados</label>
+    </div>
+    <textarea id="codigo" spellcheck="false"></textarea>
+    <div class="linha">
+      <button id="btnRodar" class="principal" disabled>▶ Rodar script</button>
+      <label>jacarev3 <input id="versao" type="text" placeholder="última"></label>
+      <span class="info" id="versaoInst"></span>
+    </div>
+    <h2>Saída (print / erros)</h2>
+    <pre id="console"></pre>
+    <div class="info">Portas simuladas: sensores <b>1</b> cor · <b>2</b> toque · <b>3</b> cor · <b>4</b> ultrassônico. Motores <b>B</b> = roda esquerda, <b>C</b> = direita.
+    O script roda sem esperar de verdade: <code>time.sleep()</code> avança o relógio do simulador.</div>
+  </section>
+</main>
+
+<script type="text/x-python" id="ponte-py">
+"""
+ponte.py — liga a jacarev3 REAL (sem alterar um byte dela) ao simulador JS.
+
+Ideia: RoboEV3 só precisa de um "transporte" com 4 métodos
+(proximo_contador, enviar, receber, fechar — jacarev3.transporte.Transporte).
+Aqui entregamos um transporte que, em vez de abrir socket Bluetooth,
+manda cada pacote Direct Command pra js.ev3Ponte.enviar(bytes).
+
+Dois patches em tempo de execução (nada em disco, nada na lib):
+  1. jacarev3.robo.ConexaoBluetooth  -> ConexaoNavegador
+     (scripts com RoboEV3('00:16:...') rodam iguais ao robô de verdade)
+  2. time.sleep / time.time / time.monotonic -> relógio virtual
+     (sleep não trava a aba: só avança o tempo do simulador)
+"""
+import itertools
+import struct
+import sys
+import time
+import traceback
+import types
+
+# Pyodide não tem `termios` (jacarev3.teclado importa no topo, só pra ler tecla
+# no terminal). Um módulo vazio basta pra o import passar; Teclado não é usado aqui.
+try:
+    import termios  # noqa: F401
+except ModuleNotFoundError:
+    _termios = types.ModuleType('termios')
+    # constantes que tty.py usa como valor-padrão de argumento ao ser importado
+    _termios.TCSANOW, _termios.TCSADRAIN, _termios.TCSAFLUSH = 0, 1, 2
+    sys.modules['termios'] = _termios
+
+import js
+import jacarev3.robo as _robo
+from jacarev3 import protocolo as p
+from pyodide.ffi import to_js
+
+
+class TempoVirtualEsgotado(Exception):
+    """O script passou do limite de tempo simulado (evita loop infinito)."""
+
+
+class ConexaoNavegador:
+    """Implementa jacarev3.transporte.Transporte falando com o simulador JS."""
+
+    def __init__(self, mac=None, canal=None, timeout=10, **_ignorado):
+        self.mac = mac
+        self._contador = itertools.count(1)
+        self._resposta = b''
+
+    def proximo_contador(self) -> int:
+        return next(self._contador) & 0xFFFF
+
+    def enviar(self, pacote: bytes) -> None:
+        # os bytes saem EXATAMENTE como a lib montou
+        saida = js.ev3Ponte.enviar(to_js(bytes(pacote)))
+        contador = struct.unpack_from('<H', pacote, 2)[0]
+        if saida is None:                       # comando sem resposta
+            self._resposta = b''
+        elif saida is False:                    # EV3 respondeu "erro"
+            corpo = bytes([p.DIRECT_REPLY_ERROR])
+            self._resposta = struct.pack('<HH', 2 + len(corpo), contador) + corpo
+        else:                                   # payload (float, int8, int32...)
+            corpo = bytes([p.DIRECT_REPLY_OK]) + bytes(saida.to_py())
+            self._resposta = struct.pack('<HH', 2 + len(corpo), contador) + corpo
+
+    def receber(self, tamanho_max: int = 1024) -> bytes:
+        return self._resposta
+
+    def fechar(self) -> None:
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.fechar()
+
+
+class _RelogioVirtual:
+    def __init__(self, limite_s: float):
+        self.limite = limite_s
+        self.base = time.time()
+
+    def sleep(self, segundos: float) -> None:
+        js.ev3Ponte.avancar(float(segundos))
+        self._checar()
+
+    def time(self) -> float:
+        return self.base + js.ev3Ponte.agora()
+
+    monotonic = time
+
+    def _checar(self) -> None:
+        if js.ev3Ponte.agora() >= self.limite:
+            raise TempoVirtualEsgotado(f"limite de {self.limite:g}s simulados atingido")
+
+
+def executar(codigo: str, limite_s: float = 30.0) -> None:
+    """Roda o script do usuário com os patches ativos e restaura tudo no fim."""
+    relogio = _RelogioVirtual(limite_s)
+    # a lib chama time.sleep()/time.time() pelo módulo -> basta trocar os atributos
+    originais = (time.sleep, time.time, time.monotonic, _robo.ConexaoBluetooth)
+    time.sleep, time.time, time.monotonic = relogio.sleep, relogio.time, relogio.time
+    _robo.ConexaoBluetooth = ConexaoNavegador
+    # todo comando também avança o relógio; checa o limite a cada pacote
+    envio_original = ConexaoNavegador.enviar
+
+    def enviar_com_limite(self, pacote):
+        envio_original(self, pacote)
+        relogio._checar()
+
+    ConexaoNavegador.enviar = enviar_com_limite
+    try:
+        exec(compile(codigo, '<seu_script.py>', 'exec'), {'__name__': '__main__'})
+    except TempoVirtualEsgotado as e:
+        print(f"[simulador] {e}")
+    except Exception:
+        traceback.print_exc()
+    finally:
+        time.sleep, time.time, time.monotonic, _robo.ConexaoBluetooth = originais
+        ConexaoNavegador.enviar = envio_original
+
+</script>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+<script>
+// ============================================================
+// SimEV3 — EV3 virtual. Recebe os bytes REAIS (Direct Commands) que a
+// jacarev3 gerou, decodifica o bytecode e move um robô 2D.
+// Não depende de DOM: roda no navegador e no Node (testes).
+// ============================================================
+const OP = {
+  SOUND: 0x94, UI_WRITE: 0x82, INPUT_DEVICE: 0x99,
+  OUT_RESET: 0xA2, OUT_STOP: 0xA3, OUT_SPEED: 0xA5, OUT_START: 0xA6,
+  OUT_TEST: 0xA9, OUT_READY: 0xAA,
+  OUT_STEP_SPEED: 0xAE, OUT_TIME_SPEED: 0xAF,
+  OUT_STEP_SYNC: 0xB0, OUT_TIME_SYNC: 0xB1,
+  OUT_CLR_COUNT: 0xB2, OUT_GET_COUNT: 0xB3,
+};
+// opcode -> [nome, quantidade de parâmetros codificados]
+const OPCODES = {
+  [OP.SOUND]: ['som', 4], [OP.UI_WRITE]: ['LED', 2], [OP.INPUT_DEVICE]: ['sensor ler', 7],
+  [OP.OUT_RESET]: ['motor reset', 2], [OP.OUT_STOP]: ['motor parar', 3],
+  [OP.OUT_SPEED]: ['motor velocidade', 3], [OP.OUT_START]: ['motor ligar', 2],
+  [OP.OUT_TEST]: ['motor ocupado?', 3], [OP.OUT_READY]: ['motor pronto', 2],
+  [OP.OUT_STEP_SPEED]: ['motor graus', 7], [OP.OUT_TIME_SPEED]: ['motor tempo', 7],
+  [OP.OUT_STEP_SYNC]: ['base graus', 6], [OP.OUT_TIME_SYNC]: ['base tempo', 6],
+  [OP.OUT_CLR_COUNT]: ['encoder zerar', 2], [OP.OUT_GET_COUNT]: ['encoder ler', 3],
+};
+const CORES_LED = ['DESLIGADO', 'VERDE', 'VERMELHO', 'AMBAR', 'VERDE_PISCA',
+  'VERMELHO_PISCA', 'AMBAR_PISCA', 'VERDE_PULSA', 'VERMELHO_PULSA', 'AMBAR_PULSA'];
+
+// ---- decodificação de parâmetros (formato LC0/LC1/LC2/LC4/LCS/GV0) ----
+function lerParam(b, i) {
+  const x = b[i];
+  if ((x & 0x80) === 0) {
+    if ((x & 0xC0) === 0x40) return { tipo: 'var', valor: x & 0x1F, prox: i + 1 };
+    let v = x & 0x3F; if (v & 0x20) v -= 0x40;
+    return { tipo: 'const', valor: v, prox: i + 1 };
+  }
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  switch (x) {
+    case 0x81: return { tipo: 'const', valor: dv.getInt8(i + 1), prox: i + 2 };
+    case 0x82: return { tipo: 'const', valor: dv.getInt16(i + 1, true), prox: i + 3 };
+    case 0x83: return { tipo: 'const', valor: dv.getInt32(i + 1, true), prox: i + 5 };
+    case 0x84: { let j = i + 1, s = ''; while (b[j] !== 0) s += String.fromCharCode(b[j++]);
+      return { tipo: 'str', valor: s, prox: j + 1 }; }
+    default: throw new Error('parâmetro desconhecido 0x' + x.toString(16));
+  }
+}
+function decodificar(pacote) {
+  const b = pacote instanceof Uint8Array ? pacote : new Uint8Array(pacote);
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const r = {
+    contador: dv.getUint16(2, true), resposta: b[4] === 0x00,
+    bytesGlobais: b[5] | ((b[6] & 0x03) << 8), ops: [],
+  };
+  let i = 7;
+  while (i < b.length) {
+    const op = b[i++]; const def = OPCODES[op];
+    if (!def) { r.ops.push({ op, nome: 'opcode 0x' + op.toString(16), params: [] }); break; }
+    const params = [];
+    for (let k = 0; k < def[1]; k++) { const q = lerParam(b, i); params.push(q.valor); i = q.prox; }
+    r.ops.push({ op, nome: def[0], params });
+  }
+  return r;
+}
+const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(' ');
+const MASK_PORTAS = (m) => ['A', 'B', 'C', 'D'].filter((_, k) => m & (1 << k));
+
+// ---- cenários ----
+const ARENA = { w: 120, h: 80 };               // cm
+function trilhaOval() {
+  const pts = []; const cx = 60, cy = 40, rx = 42, ry = 22;
+  for (let k = 0; k <= 200; k++) { const t = Math.PI / 2 + (k / 200) * 2 * Math.PI;
+    pts.push([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); }
+  return pts;
+}
+const CENARIOS = {
+  linha: { trilha: trilhaOval(), caixas: [], inicio: { x: 60, y: 62, th: Math.PI } },
+  obstaculo: { trilha: [], inicio: { x: 12, y: 40, th: 0 },
+    caixas: [{ x: 55, y: 22, w: 10, h: 34 }, { x: 88, y: 40, w: 10, h: 38 }] },
+};
+
+class SimEV3 {
+  constructor(cenario = 'linha', cfg = {}) {
+    this.cfg = Object.assign({
+      grausPorPct: 10,          // 100% ≈ 1000 °/s (motor grande EV3)
+      cmPorGrau: Math.PI * 5.6 / 360,  // roda de 5,6 cm
+      bitola: 12, raio: 7, passo: 0.01,
+      latEnvio: 0.005, latResposta: 0.02,   // tempo virtual gasto por pacote (Bluetooth)
+      sensores: { 1: 'cor', 2: 'toque', 3: 'cor', 4: 'ultrassonico' },
+      larguraLinha: 2, // cm
+    }, cfg);
+    this.reset(cenario);
+  }
+  reset(cenario = this.cenarioNome) {
+    this.cenarioNome = cenario; this.cen = CENARIOS[cenario];
+    const s = this.cen.inicio;
+    this.x = s.x; this.y = s.y; this.th = s.th; this.t = 0;
+    this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, modo: 'ocioso', rest: 0, enc: 0 };
+    this.led = 'DESLIGADO';
+    this.frames = [0, this.x, this.y, this.th];  // t,x,y,th repetidos
+    this.eventos = []; this.pacotes = []; this.dist = 0;
+  }
+  agora() { return this.t; }
+
+  // ---------- física ----------
+  avancar(dt) {
+    let falta = dt; const h = this.cfg.passo;
+    while (falta > 1e-9) { const d = Math.min(h, falta); this._passo(d); falta -= d; }
+  }
+  _passo(h) {
+    const c = this.cfg, dm = {};
+    for (const p of 'ABCD') {
+      const m = this.motores[p]; let d = 0;
+      if (m.modo !== 'ocioso') {
+        d = m.modo === 'tempo' ? Math.min(h, Math.max(m.rest, 0)) : h;
+        const graus = m.v * c.grausPorPct * d; m.enc += graus; dm[p] = graus * c.cmPorGrau;
+        if (m.modo === 'tempo') { m.rest -= h; if (m.rest <= 1e-9) { m.v = 0; m.modo = 'ocioso'; } }
+      } else dm[p] = 0;
+    }
+    const dl = dm.B, dr = dm.C, ds = (dl + dr) / 2, dth = -(dr - dl) / c.bitola;
+    const nx = this.x + ds * Math.cos(this.th + dth / 2);
+    const ny = this.y + ds * Math.sin(this.th + dth / 2);
+    // colisão com deslizamento: se bater, tenta andar só em x ou só em y (resvala na quina/parede)
+    let px = nx, py = ny;
+    if (this._colide(px, py)) { if (!this._colide(nx, this.y)) py = this.y; else if (!this._colide(this.x, ny)) px = this.x; else { px = this.x; py = this.y; } }
+    this.dist += Math.hypot(px - this.x, py - this.y); this.x = px; this.y = py;
+    this.th += dth; this.t += h;
+    this.frames.push(this.t, this.x, this.y, this.th);
+  }
+  _colide(x, y) {
+    const r = this.cfg.raio;
+    if (x < r || y < r || x > ARENA.w - r || y > ARENA.h - r) return true;
+    return this.cen.caixas.some((b) => {          // círculo do robô vs retângulo (quina arredondada)
+      const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
+      return Math.hypot(x - cx, y - cy) < r;
+    });
+  }
+
+  // ---------- sensores ----------
+  _distLinha(px, py) {
+    const T = this.cen.trilha; let best = Infinity;
+    for (let k = 0; k < T.length - 1; k++) {
+      const [ax, ay] = T[k], [bx, by] = T[k + 1], vx = bx - ax, vy = by - ay;
+      const u = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy || 1)));
+      best = Math.min(best, Math.hypot(px - (ax + u * vx), py - (ay + u * vy)));
+    }
+    return best;
+  }
+  refletida() {
+    const sx = this.x + 5.5 * Math.cos(this.th), sy = this.y + 5.5 * Math.sin(this.th);
+    const d = this._distLinha(sx, sy), w = this.cfg.larguraLinha / 2;
+    if (d <= w * 0.6) return 5; if (d >= w * 1.6) return 70;
+    return 5 + 65 * (d - w * 0.6) / (w);        // borda suave
+  }
+  ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
+    const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
+    let best = 255;
+    const caixas = this.cen.caixas;
+    for (let k = -3; k <= 3; k++) {
+      const a = this.th + k * (15 * Math.PI / 180) / 3, dx = Math.cos(a), dy = Math.sin(a);
+      const hit = (x0, y0, x1, y1) => {           // raio vs retângulo (slab)
+        let tmin = 0, tmax = Infinity;
+        for (const [o, dd, lo, hi] of [[ox, dx, x0, x1], [oy, dy, y0, y1]]) {
+          if (Math.abs(dd) < 1e-9) { if (o < lo || o > hi) return Infinity; }
+          else { let t1 = (lo - o) / dd, t2 = (hi - o) / dd; if (t1 > t2) [t1, t2] = [t2, t1];
+            tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); if (tmin > tmax) return Infinity; }
+        }
+        return tmin;
+      };
+      for (const b of caixas) best = Math.min(best, hit(b.x, b.y, b.x + b.w, b.y + b.h));
+      const ts = [];                              // paredes da arena = ponto de saída do raio
+      if (dx > 1e-9) ts.push((ARENA.w - ox) / dx); if (dx < -1e-9) ts.push(-ox / dx);
+      if (dy > 1e-9) ts.push((ARENA.h - oy) / dy); if (dy < -1e-9) ts.push(-oy / dy);
+      best = Math.min(best, ...ts);
+    }
+    return Math.max(0, Math.min(255, best));
+  }
+  lerSensor(porta, modo) {
+    const tipo = this.cfg.sensores[porta + 1];
+    if (!tipo) return null;                       // porta sem sensor -> EV3 responde erro
+    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : (this.refletida() < 30 ? 1 : 6);
+    if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
+    return this.ultrassonico();
+  }
+
+  // ---------- recebe um pacote Direct Command real ----------
+  processar(pacote) {
+    const b = pacote instanceof Uint8Array ? pacote : new Uint8Array(pacote);
+    const dec = decodificar(b);
+    this.pacotes.push({ t: this.t, hex: hex(b), desc: dec.ops.map((o) => this._descrever(o)).join(' + '),
+      resposta: dec.resposta });
+    let saida = dec.resposta ? new Uint8Array(dec.bytesGlobais) : null;
+    let erro = false;
+    for (const o of dec.ops) { const r = this._executar(o, saida); if (r === 'erro') erro = true; }
+    this.avancar(this.cfg.latEnvio + (dec.resposta ? this.cfg.latResposta : 0));
+    return erro ? false : saida;                  // false -> resposta de erro; null -> sem resposta
+  }
+  _descrever(o) {
+    const q = o.params, P = (m) => MASK_PORTAS(m).join('');
+    switch (o.op) {
+      case OP.OUT_SPEED: return `velocidade ${q[2]}% porta ${P(q[1])}`;
+      case OP.OUT_START: return `ligar porta ${P(q[1])}`;
+      case OP.OUT_STOP: return `parar porta ${P(q[1])}`;
+      case OP.OUT_TIME_SPEED: return `motor ${P(q[1])} ${q[2]}% por ${q[4]} ms`;
+      case OP.OUT_STEP_SPEED: return `motor ${P(q[1])} ${q[2]}% por ${q[4]}°`;
+      case OP.OUT_TIME_SYNC: return `base ${P(q[1])} ${q[2]}% curva ${q[3]} por ${q[4]} ms`;
+      case OP.OUT_STEP_SYNC: return `base ${P(q[1])} ${q[2]}% curva ${q[3]} por ${q[4]}°`;
+      case OP.SOUND: return `bip ${q[2]} Hz ${q[3]} ms`;
+      case OP.UI_WRITE: return `LED ${CORES_LED[q[1]] || q[1]}`;
+      case OP.INPUT_DEVICE: return `ler sensor porta ${q[2] + 1} modo ${q[4]}`;
+      case OP.OUT_TEST: return `motor ${P(q[1])} ocupado?`;
+      case OP.OUT_GET_COUNT: return `ler encoder ${'ABCD'[q[1]]}`;
+      default: return o.nome;
+    }
+  }
+  _executar(o, saida) {
+    const q = o.params, M = this.motores, c = this.cfg;
+    const dv = saida ? new DataView(saida.buffer) : null;
+    const portas = (m) => MASK_PORTAS(m);
+    switch (o.op) {
+      case OP.OUT_SPEED: portas(q[1]).forEach((p) => { M[p].setv = q[2]; }); break;
+      case OP.OUT_START: portas(q[1]).forEach((p) => { M[p].v = M[p].setv; M[p].modo = 'continuo'; }); break;
+      case OP.OUT_STOP: portas(q[1]).forEach((p) => { M[p].v = 0; M[p].modo = 'ocioso'; }); break;
+      case OP.OUT_RESET: case OP.OUT_CLR_COUNT: portas(q[1]).forEach((p) => { M[p].enc = 0; }); break;
+      case OP.OUT_TIME_SPEED: case OP.OUT_STEP_SPEED: {
+        const v = q[2], rest = o.op === OP.OUT_TIME_SPEED ? q[4] / 1000
+          : (v === 0 ? 0 : q[4] / (Math.abs(v) * c.grausPorPct));
+        portas(q[1]).forEach((p) => { Object.assign(M[p], { v, modo: 'tempo', rest }); }); break;
+      }
+      case OP.OUT_TIME_SYNC: case OP.OUT_STEP_SYNC: {
+        const ps = portas(q[1]); if (ps.length !== 2) break;
+        const v = q[2], t = q[3];                 // o menor porta é a esquerda (firmware)
+        const vl = t < 0 ? v * (1 + t / 100) : v, vr = t > 0 ? v * (1 - t / 100) : v;
+        const vmax = Math.max(Math.abs(vl), Math.abs(vr));
+        const rest = o.op === OP.OUT_TIME_SYNC ? q[4] / 1000 : (vmax === 0 ? 0 : q[4] / (vmax * c.grausPorPct));
+        Object.assign(M[ps[0]], { v: vl, modo: 'tempo', rest });
+        Object.assign(M[ps[1]], { v: vr, modo: 'tempo', rest }); break;
+      }
+      case OP.OUT_TEST: if (dv) dv.setInt8(0, portas(q[1]).some((p) => M[p].modo === 'tempo') ? 1 : 0); break;
+      case OP.OUT_GET_COUNT: if (dv) dv.setInt32(0, Math.round(M['ABCD'[q[1]]].enc), true); break;
+      case OP.SOUND: this.eventos.push({ t: this.t, tipo: 'bip', freq: q[2], ms: q[3] }); break;
+      case OP.UI_WRITE: this.led = CORES_LED[q[1]] || 'DESLIGADO';
+        this.eventos.push({ t: this.t, tipo: 'led', cor: this.led }); break;
+      case OP.INPUT_DEVICE: {
+        const v = this.lerSensor(q[2], q[4]); if (v === null) return 'erro';
+        if (dv) for (let k = 0; k + 4 <= saida.length; k += 4) dv.setFloat32(k, v, true); break;
+      }
+    }
+    return 'ok';
+  }
+}
+
+
+</script>
+<script>
+const $ = (id) => document.getElementById(id);
+const ESC = 6;                                   // px por cm
+const COR_LED = { VERDE:'#2ecc40', VERMELHO:'#ff4136', AMBAR:'#ff9f1a', DESLIGADO:'#555' };
+
+const EXEMPLOS = {
+  linha: { nome:'Seguidor de linha (ler_sensor + mover_continuo)', cenario:'linha', codigo:
+`from jacarev3 import RoboEV3, protocolo as p
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('VERDE')
+    while True:
+        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)   # 0-100
+        if luz < 30:                      # sobre a linha preta
+            robo.mover_continuo('B', 10)  # esquerda devagar
+            robo.mover_continuo('C', 35)  # direita rápido -> vira pra esquerda
+        else:                             # fundo branco
+            robo.mover_continuo('B', 35)
+            robo.mover_continuo('C', 10)  # vira pra direita
+` },
+  topico: { nome:'Pronto da lib: topicos.circuito.seguir_linha', cenario:'linha', codigo:
+`from jacarev3 import RoboEV3
+from jacarev3.topicos import circuito
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    # limiar fixo: calibrar() pede pra mover o sensor com a mão
+    circuito.seguir_linha(robo, porta_sensor=3, limiar=35, velocidade=30, duracao_s=20)
+` },
+  desvio: { nome:'Desviar de obstáculo (ler_sensor + mover_base)', cenario:'obstaculo', codigo:
+`import time
+from jacarev3 import RoboEV3, protocolo as p
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('VERDE')
+    while True:
+        d = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)
+        if d < 20:
+            robo.apitar(frequencia=880, duracao_ms=150)
+            # gira no eixo até abrir espaço (nunca vira "só um pouco" e bate de novo)
+            while robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM) < 30:
+                robo.mover_base(velocidade=25, direcao=200, duracao_ms=200)
+                time.sleep(0.25)
+        else:
+            robo.mover_base(velocidade=40, direcao=0, duracao_ms=300)
+            time.sleep(0.1)
+` },
+  basico: { nome:'Teste dos comandos (bytes de cada método)', cenario:'linha', codigo:
+`import time
+from jacarev3 import RoboEV3
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.apitar()
+    robo.led('VERDE')
+    robo.girar_motor('B', velocidade=40, duracao_ms=1000)
+    robo.mover_base(velocidade=30, direcao=0, duracao_ms=500)
+    time.sleep(1)
+    robo.girar_motor_graus('C', 360, 50)
+    print('encoder C =', robo.ler_graus_motor('C'), 'graus')
+    print('luz refletida porta 3 =', robo.ler_sensor(3, 0))
+` },
+};
+
+let py, executarPy, sim = null;
+let tocando = false, tAtual = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, ctxAudio = null;
+
+const log = (s) => { const c = $('console'); c.textContent += s + '\n'; c.scrollTop = c.scrollHeight; };
+const status = (s, cls = '') => { const e = $('status'); e.textContent = s; e.className = cls; };
+
+// ponte JS que o Python chama (js.ev3Ponte) — delega ao simulador da vez
+globalThis.ev3Ponte = {
+  enviar: (b) => sim.processar(b),
+  avancar: (dt) => sim.avancar(dt),
+  agora: () => sim.agora(),
+};
+
+async function iniciar() {
+  for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
+  $('exemplo').onchange = () => carregarExemplo($('exemplo').value);
+  carregarExemplo('linha');
+  desenhar(0);
+  try {
+    status('carregando Pyodide (Python em WebAssembly)…');
+    py = await loadPyodide();
+    py.setStdout({ batched: log }); py.setStderr({ batched: log });
+    status('instalando jacarev3 do PyPI via micropip…');
+    await instalar();
+    status('pronto — jacarev3 real carregada', 'ok');
+    $('btnRodar').disabled = false;
+  } catch (e) { status('falhou: ' + e.message, 'erro'); log(String(e)); }
+}
+async function instalar() {
+  await py.loadPackage('micropip');
+  const v = $('versao').value.trim();
+  await py.pyimport('micropip').install(v ? 'jacarev3==' + v : 'jacarev3');
+  py.runPython($('ponte-py').textContent);       // importa jacarev3 + aplica a ponte
+  executarPy = py.globals.get('executar');
+  $('versaoInst').textContent = 'instalada: v' +
+    py.runPython("import importlib.metadata as m; m.version('jacarev3')");
+}
+function carregarExemplo(k) { $('codigo').value = EXEMPLOS[k].codigo; $('cenario').value = EXEMPLOS[k].cenario; desenhar(0); }
+
+$('btnRodar').onclick = () => {
+  $('console').textContent = '';
+  sim = new SimEV3($('cenario').value);
+  const t0 = performance.now();
+  try { executarPy($('codigo').value, +$('limite').value || 30); }
+  catch (e) { log('ERRO: ' + e.message); }
+  const ms = (performance.now() - t0).toFixed(0);
+  $('resumo').textContent = `${sim.t.toFixed(1)} s simulados em ${ms} ms reais · ${sim.pacotes.length} pacotes · ${sim.dist.toFixed(0)} cm andados`;
+  tAtual = 0; logIdx = 0; evIdx = 0; ultimoT = 0; $('corpo').innerHTML = '';
+  $('slider').disabled = $('btnPlay').disabled = false;
+  tocar(true);
+};
+$('btnPlay').onclick = () => { if (tAtual >= sim.t - 1e-6) irPara(0); tocar(!tocando); };
+$('slider').oninput = () => { tocar(false); irPara($('slider').value / 1000 * sim.t); };
+function tocar(v) {
+  tocando = v; $('btnPlay').textContent = v ? '⏸ Pausar' : '▶ Reproduzir';
+  if (v) { ultimoRaf = performance.now(); if (!ctxAudio && $('som').checked) ctxAudio = new (window.AudioContext || window.webkitAudioContext)(); requestAnimationFrame(loop); }
+}
+function irPara(t) { tAtual = Math.max(0, Math.min(t, sim.t)); evIdx = sim.eventos.findIndex((e) => e.t >= tAtual); if (evIdx < 0) evIdx = sim.eventos.length; atualizar(); }
+function loop(agora) {
+  if (!tocando) return;
+  tAtual += (agora - ultimoRaf) / 1000 * (+$('vel').value); ultimoRaf = agora;
+  if (tAtual >= sim.t) { tAtual = sim.t; tocar(false); }
+  atualizar(); if (tocando) requestAnimationFrame(loop);
+}
+function atualizar() {
+  $('slider').value = sim.t ? Math.round(tAtual / sim.t * 1000) : 0;
+  desenhar(tAtual); sincronizarLog(tAtual); tocarSons(tAtual);
+}
+function sincronizarLog(t) {
+  const corpo = $('corpo');
+  if (t < ultimoT) { corpo.innerHTML = ''; logIdx = 0; }
+  ultimoT = t;
+  const P = sim.pacotes;
+  while (logIdx < P.length && P[logIdx].t <= t) {
+    const q = P[logIdx++];
+    const tr = corpo.insertRow(); tr.innerHTML =
+      `<td class="t">${q.t.toFixed(3)}s</td><td class="hex">${q.hex}</td><td class="d">${q.desc}${q.resposta ? ' ↩' : ''}</td>`;
+    if (corpo.rows.length > 150) corpo.deleteRow(0);
+  }
+  $('tabela').scrollTop = 1e9;
+  $('contaPacotes').textContent = `${logIdx} de ${P.length} pacotes (↩ = EV3 devolve resposta)`;
+}
+function tocarSons(t) {
+  if (!tocando || !$('som').checked || !ctxAudio) return;
+  const E = sim.eventos;
+  while (evIdx < E.length && E[evIdx].t <= t) {
+    const e = E[evIdx++];
+    if (e.tipo === 'bip') { const o = ctxAudio.createOscillator(), g = ctxAudio.createGain();
+      o.frequency.value = e.freq; g.gain.value = 0.05; o.connect(g); g.connect(ctxAudio.destination);
+      o.start(); o.stop(ctxAudio.currentTime + e.ms / 1000); }
+  }
+}
+
+// ---------- desenho ----------
+function acharFrame(t) {                          // busca binária em frames [t,x,y,th]*
+  const F = sim.frames; let lo = 0, hi = F.length / 4 - 1;
+  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (F[4 * m] <= t) lo = m; else hi = m - 1; }
+  return lo;
+}
+function ledEm(t) {
+  let cor = 'DESLIGADO'; for (const e of sim.eventos) { if (e.t > t) break; if (e.tipo === 'led') cor = e.cor; }
+  const base = cor.split('_')[0], pisca = cor.endsWith('PISCA'), pulsa = cor.endsWith('PULSA');
+  let a = 1; if (pisca) a = (Math.floor(t * 2) % 2) ? 0.15 : 1; if (pulsa) a = 0.4 + 0.6 * Math.abs(Math.sin(t * 3));
+  return [COR_LED[base] || '#555', a];
+}
+function desenhar(t) {
+  const cv = $('cv'), g = cv.getContext('2d'), cen = sim ? sim.cen : CENARIOS[$('cenario').value];
+  g.setTransform(ESC, 0, 0, ESC, 0, 0); g.clearRect(0, 0, 120, 80);
+  g.fillStyle = '#f4f3ee'; g.fillRect(0, 0, ARENA.w, ARENA.h);
+  g.strokeStyle = '#999'; g.lineWidth = 0.5; g.strokeRect(0.25, 0.25, ARENA.w - 0.5, ARENA.h - 0.5);
+  if (cen.trilha.length) { g.beginPath(); cen.trilha.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+    g.strokeStyle = '#111'; g.lineWidth = 2; g.lineJoin = 'round'; g.stroke(); }
+  g.fillStyle = '#7a8793'; cen.caixas.forEach((b) => g.fillRect(b.x, b.y, b.w, b.h));
+  let x, y, th, ledTxt = ['#555', 1];
+  if (sim && sim.frames.length > 4) {
+    const i = acharFrame(t), F = sim.frames; x = F[4 * i + 1]; y = F[4 * i + 2]; th = F[4 * i + 3];
+    g.beginPath(); const passo = Math.max(1, Math.floor(i / 700));            // rastro
+    for (let k = 0; k <= i; k += passo) (k ? g.lineTo : g.moveTo).call(g, F[4 * k + 1], F[4 * k + 2]);
+    g.strokeStyle = 'rgba(74,163,255,.55)'; g.lineWidth = 0.6; g.stroke();
+    ledTxt = ledEm(t);
+  } else { const s = cen.inicio; x = s.x; y = s.y; th = s.th; }
+  g.save(); g.translate(x, y); g.rotate(th);
+  g.fillStyle = '#222'; g.fillRect(-3, -7, 6, 2); g.fillRect(-3, 5, 6, 2);                 // rodas
+  g.fillStyle = '#e8b800'; g.fillRect(-7, -5, 14, 10);                                       // corpo
+  g.fillStyle = '#c99a00'; g.fillRect(4, -5, 3, 10);                                         // frente
+  g.globalAlpha = ledTxt[1]; g.fillStyle = ledTxt[0]; g.beginPath(); g.arc(-2, 0, 1.6, 0, 7); g.fill(); g.globalAlpha = 1;
+  g.fillStyle = '#0b84ff'; g.beginPath(); g.arc(5.5, 0, 0.9, 0, 7); g.fill();                // sensor de cor
+  g.fillStyle = '#444'; g.fillRect(6.5, -3, 1, 6);                                           // ultrassônico
+  g.restore();
+  if (sim) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(0,0,0,.65)'; g.font = '13px ui-monospace, monospace';
+    g.fillText(`t = ${t.toFixed(2)} s`, 10, 20); }
+}
+iniciar();
+</script>
+</body>
+</html>
