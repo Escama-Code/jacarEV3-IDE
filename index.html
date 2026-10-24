@@ -3,42 +3,56 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>jacarEV3 no navegador — simulador com a biblioteca real</title>
+<title>jacarEV3 IDE — Python real no navegador</title>
 <style>
-  :root { --bg:#14181c; --painel:#1d232a; --borda:#2d3640; --txt:#e6edf3; --mut:#8b98a5; --ok:#3fb950; --acc:#4aa3ff; --warn:#e3b341; }
-  * { box-sizing: border-box; }
+  :root { --bg:#1e1e1e; --painel:#252526; --borda:#3c3c3c; --txt:#d4d4d4; --mut:#858585; --ok:#3fb950; --acc:#4aa3ff; }
+  * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.45 system-ui, sans-serif; }
-  header { padding:10px 16px; border-bottom:1px solid var(--borda); display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:16px; margin:0; font-weight:600; }
-  #status { color:var(--mut); font-size:13px; }
-  #status.ok { color:var(--ok); } #status.erro { color:#ff7b72; }
-  main { display:grid; grid-template-columns: minmax(0,740px) minmax(320px,1fr); gap:12px; padding:12px; }
-  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
-  .painel { background:var(--painel); border:1px solid var(--borda); border-radius:8px; padding:10px; }
-  canvas { width:100%; height:auto; display:block; border-radius:6px; background:#f4f3ee; }
-  .linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
-  button, select, input { background:#2a323b; color:var(--txt); border:1px solid var(--borda); border-radius:6px; padding:6px 10px; font:inherit; }
-  button { cursor:pointer; } button:hover:not(:disabled) { border-color:var(--acc); } button:disabled { opacity:.45; cursor:default; }
-  button.principal { background:#238636; border-color:#2ea043; font-weight:600; }
-  input[type=number] { width:70px; } input[type=text] { width:90px; }
-  input[type=range] { flex:1; min-width:140px; padding:0; }
-  textarea { width:100%; height:300px; background:#0f1317; color:#d6e0ea; border:1px solid var(--borda); border-radius:6px;
-             padding:8px; font:12.5px/1.45 ui-monospace, Menlo, Consolas, monospace; resize:vertical; tab-size:4; }
-  pre#console { margin:0; height:110px; overflow:auto; background:#0f1317; border:1px solid var(--borda); border-radius:6px;
-                padding:8px; font:12px/1.4 ui-monospace, Menlo, Consolas, monospace; white-space:pre-wrap; }
-  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--mut); margin:12px 0 6px; font-weight:600; }
+  header { padding:8px 16px; background:#333333; border-bottom:1px solid #000; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:15px; margin:0; font-weight:600; }
+  #status { color:var(--mut); font-size:13px; } #status.ok { color:var(--ok); } #status.erro { color:#ff6b6b; }
+  main { display:grid; grid-template-columns:minmax(0,700px) minmax(360px,1fr); gap:10px; padding:10px; }
+  @media (max-width:1100px) { main { grid-template-columns:1fr; } }
+  .painel { background:var(--painel); border:1px solid var(--borda); border-radius:6px; padding:10px; min-width:0; }
+  h2 { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--mut); margin:12px 0 6px; font-weight:600; }
   h2:first-child { margin-top:0; }
-  #tabela { max-height:230px; overflow:auto; border:1px solid var(--borda); border-radius:6px; background:#0f1317; }
-  table { width:100%; border-collapse:collapse; font:11.5px/1.35 ui-monospace, Menlo, Consolas, monospace; }
-  td { padding:2px 6px; border-bottom:1px solid #1b2229; vertical-align:top; }
-  td.t { color:var(--mut); white-space:nowrap; } td.hex { color:#9ecbff; word-break:break-all; } td.d { color:var(--txt); white-space:nowrap; }
-  .info { color:var(--mut); font-size:12px; margin-top:6px; }
+  canvas { width:100%; height:auto; display:block; border-radius:4px; background:#f4f3ee; }
+  .linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 0; }
+  button, select, input { background:#3c3c3c; color:var(--txt); border:1px solid #555; border-radius:4px; padding:5px 10px; font:inherit; }
+  button { cursor:pointer; } button:hover:not(:disabled) { border-color:var(--acc); } button:disabled { opacity:.45; cursor:default; }
+  button.principal { background:#0e639c; border-color:#1177bb; font-weight:600; }
+  input[type=number] { width:64px; } input[type=text] { width:84px; } input[type=range] { flex:1; min-width:140px; padding:0; }
   label { color:var(--mut); font-size:12px; display:flex; align-items:center; gap:5px; }
+  .info { color:var(--mut); font-size:12px; margin-top:6px; }
+  kbd { background:#3c3c3c; border:1px solid #555; border-radius:3px; padding:0 4px; font-size:11px; }
+
+  /* editor */
+  #editor { height:360px; border:1px solid var(--borda); border-radius:4px; overflow:hidden; }
+  #editor textarea { width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; border:0; padding:8px; resize:none; outline:0;
+                     font:13px/1.5 ui-monospace, Menlo, Consolas, monospace; tab-size:4; }
+
+  /* terminal */
+  .termbar { display:flex; align-items:center; justify-content:space-between; margin:12px 0 6px; }
+  .termbar h2 { margin:0; }
+  .termbar button { padding:2px 10px; font-size:12px; }
+  #terminal { height:170px; overflow:auto; background:#000; border:1px solid var(--borda); border-radius:4px; padding:8px 10px;
+              font:12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; }
+  #terminal div { white-space:pre-wrap; word-break:break-word; }
+  #terminal .out { color:#b9f6ca; }
+  #terminal .sys { color:#7a9fb5; }
+  #terminal .err { color:#ff3b30; font-weight:700; }          /* Traceback + exceção final */
+  #terminal .quadro { color:#ff8a80; font-weight:400; }        /* linhas "File ..." do traceback */
+  #terminal .vazio { color:#555; }
+
+  #tabela { max-height:210px; overflow:auto; border:1px solid var(--borda); border-radius:4px; background:#1b1b1b; }
+  table { width:100%; border-collapse:collapse; font:11.5px/1.35 ui-monospace, Menlo, Consolas, monospace; }
+  td { padding:2px 6px; border-bottom:1px solid #2a2a2a; vertical-align:top; }
+  td.t { color:var(--mut); white-space:nowrap; } td.hex { color:#9cdcfe; word-break:break-all; } td.d { white-space:nowrap; }
 </style>
 </head>
 <body>
 <header>
-  <h1>🐊 jacarEV3 real no navegador</h1>
+  <h1>🐊 jacarEV3 IDE</h1>
   <span id="status">iniciando…</span>
 </header>
 <main>
@@ -58,22 +72,23 @@
   </section>
 
   <section class="painel">
-    <h2>Seu script (Python de verdade)</h2>
+    <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
     <div class="linha" style="margin-top:0">
       <select id="exemplo"></select>
       <select id="cenario"><option value="linha">cenário: linha preta</option><option value="obstaculo">cenário: obstáculos</option></select>
       <label>limite <input id="limite" type="number" value="30" min="1" max="300"> s simulados</label>
     </div>
-    <textarea id="codigo" spellcheck="false"></textarea>
+    <div id="editor" style="margin-top:8px"></div>
     <div class="linha">
       <button id="btnRodar" class="principal" disabled>▶ Rodar script</button>
-      <label>jacarev3 <input id="versao" type="text" placeholder="última"></label>
-      <span class="info" id="versaoInst"></span>
+      <span class="info" style="margin:0"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+      <label style="margin-left:auto">jacarev3 <input id="versao" type="text" placeholder="última"></label>
+      <span class="info" style="margin:0" id="versaoInst"></span>
     </div>
-    <h2>Saída (print / erros)</h2>
-    <pre id="console"></pre>
-    <div class="info">Portas simuladas: sensores <b>1</b> cor · <b>2</b> toque · <b>3</b> cor · <b>4</b> ultrassônico. Motores <b>B</b> = roda esquerda, <b>C</b> = direita.
-    O script roda sem esperar de verdade: <code>time.sleep()</code> avança o relógio do simulador.</div>
+    <div class="termbar"><h2>Terminal</h2><button id="btnLimpar">Limpar Terminal</button></div>
+    <div id="terminal"></div>
+    <div class="info">Sensores: <b>1</b> cor · <b>2</b> toque · <b>3</b> cor · <b>4</b> ultrassônico. Motores: <b>B</b> esquerda, <b>C</b> direita.
+    <code>time.sleep()</code> avança o relógio do simulador (não trava a aba).</div>
   </section>
 </main>
 
@@ -175,8 +190,10 @@ class _RelogioVirtual:
             raise TempoVirtualEsgotado(f"limite de {self.limite:g}s simulados atingido")
 
 
-def executar(codigo: str, limite_s: float = 30.0) -> None:
-    """Roda o script do usuário com os patches ativos e restaura tudo no fim."""
+def executar(codigo: str, limite_s: float = 30.0) -> str:
+    """Roda o script do usuário com os patches ativos e restaura tudo no fim.
+    Devolve 'ok', 'limite' (tempo simulado esgotado) ou 'erro' (traceback no stderr)."""
+    resultado = 'ok'
     relogio = _RelogioVirtual(limite_s)
     # a lib chama time.sleep()/time.time() pelo módulo -> basta trocar os atributos
     originais = (time.sleep, time.time, time.monotonic, _robo.ConexaoBluetooth)
@@ -194,15 +211,70 @@ def executar(codigo: str, limite_s: float = 30.0) -> None:
         exec(compile(codigo, '<seu_script.py>', 'exec'), {'__name__': '__main__'})
     except TempoVirtualEsgotado as e:
         print(f"[simulador] {e}")
-    except Exception:
-        traceback.print_exc()
+        resultado = 'limite'
+    except BaseException as e:
+        # esconde o quadro interno de executar(): o aluno só vê o próprio script e a lib
+        traceback.print_exception(type(e), e, e.__traceback__.tb_next)
+        resultado = 'erro'
     finally:
         time.sleep, time.time, time.monotonic, _robo.ConexaoBluetooth = originais
         ConexaoNavegador.enviar = envio_original
+    return resultado
 
 </script>
+<script type="text/x-python" id="api-py">
+"""api.py — descreve a API REAL da jacarev3 instalada (nada escrito à mão).
+Roda no Pyodide depois do micropip; o JS usa o JSON pro autocomplete e hover."""
+import importlib.metadata as _md
+import inspect
+import json
+import re
 
+from jacarev3 import RoboEV3, protocolo as _p
+from jacarev3.robo import CODIGOS_LED
+from jacarev3.topicos import circuito, controle, desvio
+
+
+def _params(f, pular=('self',)):
+    saida = []
+    for nome, q in inspect.signature(f).parameters.items():
+        if nome in pular:
+            continue
+        pad = None if q.default is inspect.Parameter.empty else repr(q.default)
+        if q.kind is q.VAR_POSITIONAL:
+            nome = '*' + nome
+        elif q.kind is q.VAR_KEYWORD:
+            nome = '**' + nome
+        saida.append({'n': nome, 'd': pad})
+    return saida
+
+
+def _item(nome, f, pular=('self',)):
+    doc = (inspect.getdoc(f) or '').strip()
+    return {'n': nome, 'p': _params(f, pular), 'doc': doc[:1200]}
+
+
+def descrever_api() -> str:
+    robo = [_item(n, f) for n, f in inspect.getmembers(RoboEV3, callable)
+            if not n.startswith('_')]
+    topicos = {}
+    for mod in (circuito, controle, desvio):
+        nome = mod.__name__.rsplit('.', 1)[-1]
+        topicos[nome] = [_item(n, f, pular=()) for n, f in inspect.getmembers(mod, inspect.isfunction)
+                         if not n.startswith('_') and f.__module__ == mod.__name__]
+    consts = [{'n': n, 'v': v} for n, v in vars(_p).items()
+              if re.match(r'^(MODO|LED|PORTA|INDICE|PARAR|TURN)_', n) and isinstance(v, int)]
+    return json.dumps({'versao': _md.version('jacarev3'), 'robo': robo, 'topicos': topicos,
+                       'constantes': consts, 'leds': list(CODIGOS_LED)}, ensure_ascii=False)
+
+</script>
+<script type="application/json" id="api-embutida">{"versao": "0.6.0", "robo": [{"n": "apitar", "p": [{"n": "frequencia", "d": "440"}, {"n": "duracao_ms", "d": "500"}, {"n": "volume", "d": "1"}], "doc": ""}, {"n": "definir_base", "p": [{"n": "esquerda", "d": "'B'"}, {"n": "direita", "d": "'C'"}], "doc": "Define quais motores formam a base motriz (usada por mover_base).\n\nO firmware sempre trata o motor de porta mais baixa como o da\nesquerda. Se você montou ao contrário (esquerda em C, direita em\nB), a gente inverte o sinal da direção aqui pra que \"direção\npositiva vira pra direita\" continue valendo."}, {"n": "espera_mudar", "p": [{"n": "ler_valor", "d": null}, {"n": "tempo_limite", "d": "15"}, {"n": "intervalo", "d": "0.2"}, {"n": "formatar", "d": "<class 'str'>"}, {"n": "rotulo", "d": "''"}], "doc": ""}, {"n": "esperar_motor", "p": [{"n": "porta", "d": null}, {"n": "tempo_limite", "d": "30"}, {"n": "intervalo", "d": "0.05"}], "doc": "Bloqueia até o motor terminar o movimento atual.\n\nPergunta pro EV3 de tempos em tempos em vez de usar opOUTPUT_READY,\nque travaria a VM do brick (e o socket) durante o movimento inteiro.\nRetorna False se estourar o tempo limite."}, {"n": "executar_com_acessibilidade", "p": [{"n": "descricao", "d": null}, {"n": "funcao_lambda", "d": null}], "doc": "Método nativo do robô para executar qualquer bloco de comando \nanunciando de forma acessível no terminal e disparando feedback sonoro."}, {"n": "fechar", "p": [], "doc": ""}, {"n": "girar_motor", "p": [{"n": "porta", "d": null}, {"n": "velocidade", "d": "30"}, {"n": "duracao_ms", "d": "1000"}, {"n": "frear", "d": "True"}], "doc": "Gira o motor por tempo (mais simples e robusto que graus/posição).\nvelocidade: -100 a 100 (negativo = sentido contrário)"}, {"n": "girar_motor_graus", "p": [{"n": "porta", "d": null}, {"n": "graus", "d": null}, {"n": "velocidade", "d": "30"}, {"n": "frear", "d": "True"}, {"n": "esperar", "d": "True"}, {"n": "rampa_graus", "d": "0"}, {"n": "tempo_limite", "d": "30"}], "doc": "Gira o motor por uma quantidade exata de graus (usa o encoder).\n\ngraus: quantos graus girar (sempre positivo)\nvelocidade: -100 a 100 — o sinal decide o sentido\nrampa_graus: graus gastos acelerando e desacelerando, pra um\n             movimento mais suave\nesperar: se True, só retorna quando o motor terminar"}, {"n": "girar_motor_voltas", "p": [{"n": "porta", "d": null}, {"n": "voltas", "d": null}, {"n": "**kwargs", "d": null}], "doc": "Igual ao girar_motor_graus, mas contando voltas do eixo."}, {"n": "led", "p": [{"n": "cor", "d": null}], "doc": ""}, {"n": "ler_graus_motor", "p": [{"n": "porta", "d": null}], "doc": "Lê a contagem do encoder, em graus, desde o último zeramento."}, {"n": "ler_sensor", "p": [{"n": "porta", "d": null}, {"n": "modo", "d": null}], "doc": "Leitura direta e imediata de um sensor (sem esperar mudança) — pro\nuso em loops de controle (linha, obstáculo). `modo` vem das\nconstantes MODO_* de jacarev3.protocolo (ex: p.MODO_COR_REFLETIDA)."}, {"n": "motor_ocupado", "p": [{"n": "porta", "d": null}], "doc": "True enquanto o motor ainda está executando um comando."}, {"n": "mover_base", "p": [{"n": "velocidade", "d": "30"}, {"n": "direcao", "d": "0"}, {"n": "duracao_ms", "d": "500"}, {"n": "frear", "d": "False"}], "doc": "Move os dois motores da base sincronizados, por tempo.\n\nvelocidade: -100 a 100 (negativo = ré)\ndirecao: -200 a 200. 0 é reto, -100 para o motor esquerdo, +100\n         para o direito, ±200 gira no próprio eixo.\nduracao_ms: o EV3 para sozinho quando esse tempo acaba. É o que\n            torna essa função segura pra controle remoto: se o PC\n            morrer, o robô para em vez de sair correndo.\n\nNão bloqueia. Pra movimento contínuo, chama de novo antes do tempo\nacabar (ex: duracao_ms=400, reenviando a cada 100 ms)."}, {"n": "mover_base_graus", "p": [{"n": "graus", "d": null}, {"n": "velocidade", "d": "30"}, {"n": "direcao", "d": "0"}, {"n": "frear", "d": "True"}, {"n": "esperar", "d": "True"}, {"n": "tempo_limite", "d": "30"}], "doc": "Move a base uma distância exata, contada em graus do motor.\n\nMesma convenção de direção do mover_base. Com esperar=True, só\nretorna quando os motores pararem."}, {"n": "mover_continuo", "p": [{"n": "porta", "d": null}, {"n": "velocidade", "d": "30"}], "doc": "Liga o motor numa velocidade e deixa rodando (não para sozinho).\n\nUsa opOUTPUT_SPEED (define a velocidade, com regulação) seguido de\nopOUTPUT_START (liga a partir dos valores atuais) — é o jeito que o\nfirmware documenta pra movimento sem fim. Pra parar, chama\nparar_motor(). Serve pra loops de controle (seguir linha, desviar\nobstáculo) onde a velocidade muda a cada iteração."}, {"n": "parar_base", "p": [{"n": "frear", "d": "True"}], "doc": "Para os dois motores da base de uma vez."}, {"n": "parar_motor", "p": [{"n": "porta", "d": null}, {"n": "frear", "d": "True"}], "doc": ""}, {"n": "testar_cor", "p": [{"n": "porta", "d": null}, {"n": "tempo_limite", "d": "15"}], "doc": ""}, {"n": "testar_motor", "p": [{"n": "porta", "d": null}, {"n": "velocidade", "d": "30"}, {"n": "duracao_ms", "d": "800"}], "doc": ""}, {"n": "testar_motores", "p": [], "doc": ""}, {"n": "testar_sensores", "p": [{"n": "tipos", "d": "('ultrassonico', 'toque', 'cor')"}, {"n": "tempo_limite", "d": "15"}], "doc": "tipos: quais tipos testar por padrão. Se uma porta específica foi\nconfigurada com (apelido, tipo), ela só é testada quando esse tipo\nestiver na rodada atual — as outras rodadas pulam ela."}, {"n": "testar_toque", "p": [{"n": "porta", "d": null}, {"n": "tempo_limite", "d": "15"}], "doc": ""}, {"n": "testar_tudo", "p": [{"n": "tempo_limite", "d": "15"}], "doc": ""}, {"n": "testar_ultrassonico", "p": [{"n": "porta", "d": null}, {"n": "tempo_limite", "d": "15"}], "doc": ""}, {"n": "zerar_graus_motor", "p": [{"n": "porta", "d": null}], "doc": "Zera a contagem do encoder do motor."}], "topicos": {"circuito": [{"n": "calibrar", "p": [{"n": "robo", "d": null}, {"n": "porta_sensor", "d": null}, {"n": "amostras", "d": "20"}, {"n": "intervalo", "d": "0.1"}], "doc": "Calibração simples: pede pra passar o sensor por cima do \"claro\" e do\n\"escuro\" e calcula o ponto médio como limiar. Chamada automaticamente\npor seguir_linha() se você não passar um limiar manual."}, {"n": "seguir_linha", "p": [{"n": "robo", "d": null}, {"n": "porta_sensor", "d": "1"}, {"n": "porta_motor_esquerdo", "d": "'B'"}, {"n": "porta_motor_direito", "d": "'C'"}, {"n": "velocidade", "d": "25"}, {"n": "limiar", "d": "None"}, {"n": "duracao_s", "d": "None"}, {"n": "verboso", "d": "False"}], "doc": "Segue uma linha preta no chão branco (ou vice-versa) usando controle\nbang-bang: se o sensor vê \"claro\", gira pra um lado; se vê \"escuro\",\ngira pro outro. Bom ponto de partida pra ensinar o conceito antes de\nevoluir pra PID.\n\nporta_sensor: porta (1-4) do sensor de cor, em modo refletância\nporta_motor_esquerdo / porta_motor_direito: portas (A-D) dos motores\nvelocidade: velocidade base (0-100)\nlimiar: valor de refletância que separa \"linha\" de \"fundo\" (0-100).\n        Se None, calibra automaticamente no começo (ver calibrar()).\nduracao_s: se informado, para sozinho depois desse tempo. Se None,\n           roda até Ctrl+C.\nverboso: se True, imprime leitura e decisão a cada iteração — bom\n         pra entender o que o loop tá fazendo (mais lento por causa\n         do print, desliga quando já entendeu a lógica)."}], "controle": [{"n": "controle_remoto", "p": [{"n": "robo", "d": null}, {"n": "fonte", "d": "None"}, {"n": "velocidade", "d": "35"}, {"n": "giro", "d": "100"}, {"n": "janela_ms", "d": "400"}, {"n": "intervalo", "d": "0.1"}, {"n": "expira", "d": "0.25"}, {"n": "verboso", "d": "False"}], "doc": "Dirige a base motriz até a fonte pedir pra sair (ou Ctrl+C).\n\nfonte: de onde vêm os comandos. Padrão: teclado do computador.\nvelocidade: velocidade base, 1 a 100\ngiro: quanto vira no comando de curva (0 a 200; 100 trava uma roda,\n      200 gira no próprio eixo)\njanela_ms: prazo de cada comando no EV3 — quanto tempo o robô anda se\n           parar de receber ordens\nintervalo: de quanto em quanto tempo o comando é renovado (precisa ser\n           bem menor que janela_ms)\nexpira: quanto tempo sem notícia da fonte até parar por segurança\nverboso: imprime cada comando enviado, bom pra aula\n\nBloqueia até sair. Sempre para o robô na saída, inclusive com erro."}], "desvio": [{"n": "desviar_obstaculo", "p": [{"n": "robo", "d": null}, {"n": "porta_sensor", "d": "4"}, {"n": "porta_motor_esquerdo", "d": "'B'"}, {"n": "porta_motor_direito", "d": "'C'"}, {"n": "velocidade", "d": "30"}, {"n": "distancia_minima_cm", "d": "15"}, {"n": "tempo_giro_s", "d": "0.6"}, {"n": "duracao_s", "d": "None"}, {"n": "verboso", "d": "False"}], "doc": "Anda reto; quando o ultrassônico detecta algo mais perto que\ndistancia_minima_cm, para, gira pra um lado por tempo_giro_s, e segue\nandando reto de novo.\n\nduracao_s: se informado, para sozinho depois desse tempo. Se None,\n           roda até Ctrl+C.\nverboso: se True, imprime a distância lida a cada iteração."}]}, "constantes": [{"n": "PORTA_A", "v": 1}, {"n": "PORTA_B", "v": 2}, {"n": "PORTA_C", "v": 4}, {"n": "PORTA_D", "v": 8}, {"n": "INDICE_A", "v": 0}, {"n": "INDICE_B", "v": 1}, {"n": "INDICE_C", "v": 2}, {"n": "INDICE_D", "v": 3}, {"n": "PARAR_COAST", "v": 0}, {"n": "PARAR_BRAKE", "v": 1}, {"n": "TURN_MIN", "v": -200}, {"n": "TURN_MAX", "v": 200}, {"n": "LED_PRETO", "v": 0}, {"n": "LED_VERDE", "v": 1}, {"n": "LED_VERMELHO", "v": 2}, {"n": "LED_AMBAR", "v": 3}, {"n": "LED_VERDE_PISCA", "v": 4}, {"n": "LED_VERMELHO_PISCA", "v": 5}, {"n": "LED_AMBAR_PISCA", "v": 6}, {"n": "LED_VERDE_PULSA", "v": 7}, {"n": "LED_VERMELHO_PULSA", "v": 8}, {"n": "LED_AMBAR_PULSA", "v": 9}, {"n": "MODO_TOQUE", "v": 0}, {"n": "MODO_ULTRASSONICO_CM", "v": 0}, {"n": "MODO_COR_REFLETIDA", "v": 0}, {"n": "MODO_COR_AMBIENTE", "v": 1}, {"n": "MODO_COR_COR", "v": 2}], "leds": ["PRETO", "DESLIGADO", "OFF", "VERDE", "VERMELHO", "AMBAR", "LARANJA", "VERDE_PISCA", "VERMELHO_PISCA", "AMBAR_PISCA", "VERDE_PULSA", "VERMELHO_PULSA", "AMBAR_PULSA"]}</script>
+
+<!-- ORDEM IMPORTA: pyodide.js ANTES do loader do Monaco. O loader AMD define `define.amd`,
+     e o pyodide.js (UMD) passaria a se registrar como módulo AMD em vez de criar `loadPyodide`. -->
 <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+
 <script>
 // ============================================================
 // SimEV3 — EV3 virtual. Recebe os bytes REAIS (Direct Commands) que a
@@ -456,12 +528,221 @@ class SimEV3 {
 
 </script>
 <script>
-const $ = (id) => document.getElementById(id);
-const ESC = 6;                                   // px por cm
-const COR_LED = { VERDE:'#2ecc40', VERMELHO:'#ff4136', AMBAR:'#ff9f1a', DESLIGADO:'#555' };
+// ============================================================
+// Sugestoes — motor de autocomplete/hover da jacarEV3.
+// Puro (sem Monaco, sem DOM): recebe a API descrita pelo api.py
+// (introspecção da lib REAL instalada) + o texto até o cursor.
+// ============================================================
+const Sugestoes = (() => {
+  const PORTAS = 'B,C,A,D';
+  const DOC_CONST = {
+    MODO_TOQUE: '0 = solto, 1 = pressionado.',
+    MODO_ULTRASSONICO_CM: 'Distância medida, em cm.',
+    MODO_COR_REFLETIDA: 'Luz refletida, 0 a 100 (útil pra seguir linha).',
+    MODO_COR_AMBIENTE: 'Luz ambiente, 0 a 100.',
+    MODO_COR_COR: 'Cor detectada, 0-7: nenhuma, preto, azul, verde, amarelo, vermelho, branco, marrom.',
+  };
+  // Snippets escritos à mão só onde ajudam (choices de porta/cor/modo); o resto é gerado da assinatura.
+  const CURADOS = {
+    apitar: () => 'apitar($0)',
+    led: () => "led('${1|VERDE,VERMELHO,AMBAR,DESLIGADO|}')",
+    girar_motor: () => "girar_motor('${1|" + PORTAS + "|}', velocidade=${2:30}, duracao_ms=${3:1000})",
+    girar_motor_graus: () => "girar_motor_graus('${1|" + PORTAS + "|}', ${2:360}, ${3:30})",
+    mover_continuo: () => "mover_continuo('${1|" + PORTAS + "|}', ${2:30})",
+    parar_motor: () => "parar_motor('${1|" + PORTAS + "|}')",
+    mover_base: () => 'mover_base(velocidade=${1:30}, direcao=${2:0}, duracao_ms=${3:500})',
+    ler_sensor: (alias) => 'ler_sensor(${1|1,2,3,4|}, ${2|' +
+      ['MODO_COR_REFLETIDA', 'MODO_ULTRASSONICO_CM', 'MODO_TOQUE', 'MODO_COR_AMBIENTE', 'MODO_COR_COR']
+        .map((m) => alias + '.' + m).join(',') + '|})',
+  };
 
+  const assinatura = (item) => item.n + '(' + item.p.map((q) => q.n + (q.d !== null ? '=' + q.d : '')).join(', ') + ')';
+  const snippetGerado = (item) => {
+    const obrig = item.p.filter((q) => q.d === null && !q.n.startsWith('*'));
+    return item.n + '(' + obrig.map((q, i) => '${' + (i + 1) + ':' + q.n + '}').join(', ') + ')';
+  };
+
+  function detectar(codigo) {
+    const robos = new Set(['robo']), protos = new Set(['p']); let alias = 'p';
+    for (const m of codigo.matchAll(/RoboEV3\s*\([^)]*\)\s+as\s+(\w+)/g)) robos.add(m[1]);
+    for (const m of codigo.matchAll(/^\s*(\w+)\s*=\s*RoboEV3\s*\(/gm)) robos.add(m[1]);
+    for (const m of codigo.matchAll(/protocolo\s+as\s+(\w+)/g)) { protos.add(m[1]); alias = m[1]; }
+    if (/from\s+jacarev3\s+import[^\n]*\bprotocolo\b(?!\s+as)/.test(codigo)) { protos.add('protocolo'); if (alias === 'p' && !/protocolo\s+as/.test(codigo)) alias = 'protocolo'; }
+    return { robos, protos, alias };
+  }
+
+  function itensMetodos(api, alias) {
+    return api.robo.map((m) => ({
+      label: m.n, tipo: 'metodo', detail: assinatura(m), doc: m.doc,
+      insertText: (CURADOS[m.n] ? CURADOS[m.n](alias) : snippetGerado(m)), snippet: true,
+    }));
+  }
+  const itensConst = (api, prefixo) => api.constantes.map((c) => ({
+    label: prefixo + c.n, tipo: 'constante', detail: '= ' + c.v, doc: DOC_CONST[c.n] || '',
+    insertText: prefixo + c.n, snippet: false,
+  }));
+
+  // Retorna { itens, recuo }: recuo = quantos caracteres antes do cursor o item substitui.
+  function sugerir(api, linha, codigo) {
+    const det = detectar(codigo);
+    let m;
+    // dentro de led('...')
+    if ((m = /\.led\(\s*(['"])(\w*)$/.exec(linha)))
+      return { recuo: m[2].length, itens: api.leds.map((c) => ({ label: c, tipo: 'valor', insertText: c, snippet: false, detail: 'cor do LED' })) };
+    // 2º argumento de ler_sensor(porta, <aqui>)
+    if ((m = /\.ler_sensor\(\s*[^,()]+,\s*([\w.]*)$/.exec(linha))) {
+      const itens = [];
+      for (const al of [det.alias]) itens.push(...itensConst(api, al + '.').filter((i) => i.label.includes('.MODO_')));
+      return { recuo: m[1].length, itens };
+    }
+    // receptor.<membro>
+    if ((m = /([A-Za-z_]\w*)\.(\w*)$/.exec(linha))) {
+      const [, recv, pref] = m;
+      if (det.robos.has(recv)) return { recuo: pref.length, itens: itensMetodos(api, det.alias) };
+      if (det.protos.has(recv)) return { recuo: pref.length, itens: itensConst(api, '') };
+      if (api.topicos[recv]) return { recuo: pref.length, itens: api.topicos[recv].map((f) => ({
+        label: f.n, tipo: 'funcao', detail: assinatura(f), doc: f.doc, insertText: snippetGerado(f), snippet: true })) };
+      return { recuo: 0, itens: [] };
+    }
+    // from jacarev3[.topicos] import <...>
+    if ((m = /^\s*from\s+jacarev3(\.topicos)?\s+import\s+(?:[\w\s]*,\s*)?(\w*)$/.exec(linha))) {
+      const nomes = m[1] ? Object.keys(api.topicos) : ['RoboEV3', 'protocolo'];
+      return { recuo: m[2].length, itens: nomes.map((n) => ({ label: n, tipo: 'modulo', insertText: n, snippet: false })) };
+    }
+    // início de palavra: snippets de esqueleto
+    if ((m = /(?:^|[^\w.])([A-Za-z_]\w*)$/.exec(linha))) {
+      const al = det.alias;
+      const S = (label, insert, doc) => ({ label, tipo: 'snippet', insertText: insert, snippet: true, detail: 'jacarEV3', doc });
+      return { recuo: m[1].length, itens: [
+        S('jacar_import', 'from jacarev3 import RoboEV3, protocolo as p', 'Importa a classe do robô e as constantes.'),
+        S('jacar_topicos', 'from jacarev3.topicos import circuito, desvio', 'Rotinas prontas da lib.'),
+        S('jacar_with', "with RoboEV3('${1:00:16:53:64:F8:B8}') as robo:\n\t${0:robo.apitar()}", 'Bloco padrão: conecta, roda e fecha sozinho.'),
+        S('jacar_seguidor', "while True:\n\tluz = robo.ler_sensor(${1:3}, " + al + ".MODO_COR_REFLETIDA)\n\tif luz < ${2:30}:\n\t\trobo.mover_continuo('B', ${3:10})\n\t\trobo.mover_continuo('C', ${4:35})\n\telse:\n\t\trobo.mover_continuo('B', ${4:35})\n\t\trobo.mover_continuo('C', ${3:10})", 'Esqueleto de seguidor de linha.'),
+        S('jacar_desvio', "while True:\n\td = robo.ler_sensor(${1:4}, " + al + ".MODO_ULTRASSONICO_CM)\n\tif d < ${2:20}:\n\t\trobo.apitar()\n\t\trobo.mover_base(velocidade=25, direcao=200, duracao_ms=400)\n\telse:\n\t\trobo.mover_base(velocidade=40, direcao=0, duracao_ms=300)", 'Esqueleto de desvio de obstáculo.'),
+      ] };
+    }
+    return { recuo: 0, itens: [] };
+  }
+
+  // Texto markdown pro hover; null se a palavra não é da jacarEV3.
+  function hover(api, linha, palavra, codigo) {
+    const det = detectar(codigo), i = linha.indexOf(palavra);
+    const m = /([A-Za-z_]\w*)\.$/.exec(linha.slice(0, i));
+    if (!m) return null;
+    if (det.robos.has(m[1])) { const it = api.robo.find((x) => x.n === palavra);
+      return it ? '```python\n' + m[1] + '.' + assinatura(it) + '\n```\n' + it.doc : null; }
+    if (det.protos.has(m[1])) { const c = api.constantes.find((x) => x.n === palavra);
+      return c ? '```python\n' + m[1] + '.' + c.n + ' = ' + c.v + '\n```\n' + (DOC_CONST[c.n] || '') : null; }
+    if (api.topicos[m[1]]) { const it = api.topicos[m[1]].find((x) => x.n === palavra);
+      return it ? '```python\n' + m[1] + '.' + assinatura(it) + '\n```\n' + it.doc : null; }
+    return null;
+  }
+  return { sugerir, hover, detectar, assinatura };
+})();
+
+
+</script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+
+// =====================================================================
+// Terminal — saída estilizada (stdout verde, sistema azul, erros vermelhos)
+// =====================================================================
+const Terminal = (() => {
+  const el = $('terminal');
+  const linha = (texto, cls) => {
+    const d = document.createElement('div'); d.className = cls; d.textContent = texto;   // textContent: sem XSS
+    el.appendChild(d); el.scrollTop = el.scrollHeight;
+  };
+  const limparVazio = () => { const v = el.querySelector('.vazio'); if (v) v.remove(); };
+  const classeErro = (l) => (/^\s+/.test(l) ? 'quadro' : 'err');  // "  File ..." mais claro; Traceback e exceção final vibrantes
+  return {
+    out(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, l.startsWith('[simulador]') ? 'sys' : 'out')); },
+    err(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, classeErro(l))); },
+    sys(t) { limparVazio(); linha(t, 'sys'); },
+    limpar() { el.innerHTML = ''; linha('terminal limpo', 'vazio'); },
+  };
+})();
+
+// =====================================================================
+// Api — descrição da jacarev3 (embutida; trocada pela introspecção da lib instalada)
+// =====================================================================
+const Api = { atual: JSON.parse($('api-embutida').textContent) };
+
+// =====================================================================
+// Ide — Monaco (vs-dark, python) + providers de autocomplete/hover. Fallback: textarea.
+// =====================================================================
+const Ide = (() => {
+  const BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
+
+  function fallback(el, aviso) {
+    el.innerHTML = '<textarea spellcheck="false"></textarea>';
+    const ta = el.firstChild;
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') { e.preventDefault(); ta.setRangeText('    ', ta.selectionStart, ta.selectionEnd, 'end'); }
+    });
+    return { tipo: 'textarea', aviso, getValue: () => ta.value, setValue: (v) => { ta.value = v; },
+      aoRodar(fn) { ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); fn(); } }); } };
+  }
+
+  function registrarProviders(monaco, getApi) {
+    const K = monaco.languages.CompletionItemKind;
+    const tipos = { metodo: K.Method, funcao: K.Function, constante: K.Constant, snippet: K.Snippet, valor: K.Value, modulo: K.Module };
+    monaco.languages.registerCompletionItemProvider('python', {
+      triggerCharacters: ['.', "'", '"', ','],
+      provideCompletionItems(model, pos) {
+        const linha = model.getLineContent(pos.lineNumber).slice(0, pos.column - 1);
+        const r = Sugestoes.sugerir(getApi(), linha, model.getValue());
+        const range = { startLineNumber: pos.lineNumber, endLineNumber: pos.lineNumber, startColumn: pos.column - r.recuo, endColumn: pos.column };
+        return { suggestions: r.itens.map((it, i) => ({
+          label: it.label, kind: tipos[it.tipo], detail: it.detail, range,
+          documentation: it.doc ? { value: it.doc } : undefined,
+          insertText: it.insertText,
+          insertTextRules: it.snippet ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
+          sortText: String(i).padStart(3, '0'),
+        })) };
+      },
+    });
+    monaco.languages.registerHoverProvider('python', {
+      provideHover(model, pos) {
+        const w = model.getWordAtPosition(pos); if (!w) return null;
+        const md = Sugestoes.hover(getApi(), model.getLineContent(pos.lineNumber), w.word, model.getValue());
+        return md ? { range: new monaco.Range(pos.lineNumber, w.startColumn, pos.lineNumber, w.endColumn), contents: [{ value: md }] } : null;
+      },
+    });
+  }
+
+  function criar(el, valorInicial) {
+    if (typeof require === 'undefined' || !require.config) {
+      const ed = fallback(el, 'Monaco não carregou (CDN bloqueado?) — usando editor simples.'); ed.setValue(valorInicial); return Promise.resolve(ed);
+    }
+    return new Promise((resolve) => {
+      window.MonacoEnvironment = { getWorkerUrl: () => URL.createObjectURL(new Blob(   // worker cross-origin via blob
+        ["self.MonacoEnvironment={baseUrl:'" + BASE.replace(/vs$/, '') + "'};importScripts('" + BASE + "/base/worker/workerMain.js');"],
+        { type: 'text/javascript' })) };
+      require.config({ paths: { vs: BASE } });
+      require(['vs/editor/editor.main'], () => {
+        registrarProviders(monaco, () => Api.atual);
+        const m = monaco.editor.create(el, {
+          value: valorInicial, language: 'python', theme: 'vs-dark', automaticLayout: true,
+          fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false, tabSize: 4, insertSpaces: true,
+          wordBasedSuggestions: 'off', quickSuggestions: { other: true, comments: false, strings: true },
+          suggestOnTriggerCharacters: true, snippetSuggestions: 'top',
+        });
+        resolve({ tipo: 'monaco', getValue: () => m.getValue(), setValue: (v) => m.setValue(v),
+          aoRodar: (fn) => m.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, fn) });
+      }, () => { const ed = fallback(el, 'Monaco falhou ao carregar — usando editor simples.'); ed.setValue(valorInicial); resolve(ed); });
+    });
+  }
+  return { criar };
+})();
+
+// =====================================================================
+// Exemplos (só API real da jacarev3)
+// =====================================================================
 const EXEMPLOS = {
-  linha: { nome:'Seguidor de linha (ler_sensor + mover_continuo)', cenario:'linha', codigo:
+  linha: { nome: 'Seguidor de linha (ler_sensor + mover_continuo)', cenario: 'linha', codigo:
 `from jacarev3 import RoboEV3, protocolo as p
 
 with RoboEV3('00:16:53:64:F8:B8') as robo:
@@ -475,7 +756,7 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
             robo.mover_continuo('B', 35)
             robo.mover_continuo('C', 10)  # vira pra direita
 ` },
-  topico: { nome:'Pronto da lib: topicos.circuito.seguir_linha', cenario:'linha', codigo:
+  topico: { nome: 'Pronto da lib: circuito.seguir_linha', cenario: 'linha', codigo:
 `from jacarev3 import RoboEV3
 from jacarev3.topicos import circuito
 
@@ -483,7 +764,7 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
     # limiar fixo: calibrar() pede pra mover o sensor com a mão
     circuito.seguir_linha(robo, porta_sensor=3, limiar=35, velocidade=30, duracao_s=20)
 ` },
-  desvio: { nome:'Desviar de obstáculo (ler_sensor + mover_base)', cenario:'obstaculo', codigo:
+  desvio: { nome: 'Desviar de obstáculo (ler_sensor + mover_base)', cenario: 'obstaculo', codigo:
 `import time
 from jacarev3 import RoboEV3, protocolo as p
 
@@ -501,7 +782,7 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
             robo.mover_base(velocidade=40, direcao=0, duracao_ms=300)
             time.sleep(0.1)
 ` },
-  basico: { nome:'Teste dos comandos (bytes de cada método)', cenario:'linha', codigo:
+  basico: { nome: 'Teste dos comandos (bytes de cada método)', cenario: 'linha', codigo:
 `import time
 from jacarev3 import RoboEV3
 
@@ -515,139 +796,155 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
     print('encoder C =', robo.ler_graus_motor('C'), 'graus')
     print('luz refletida porta 3 =', robo.ler_sensor(3, 0))
 ` },
+  erro: { nome: 'Erro de propósito (veja o Traceback em vermelho)', cenario: 'linha', codigo:
+`from jacarev3 import RoboEV3
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('ROXO')          # cor que não existe
+` },
 };
 
-let py, executarPy, sim = null;
-let tocando = false, tAtual = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, ctxAudio = null;
+// =====================================================================
+// Playback — desenha o robô a partir dos frames gravados pelo simulador
+// =====================================================================
+const Playback = (() => {
+  const ESC = 6, COR_LED = { VERDE: '#2ecc40', VERMELHO: '#ff4136', AMBAR: '#ff9f1a', DESLIGADO: '#555' };
+  let sim = null, tocando = false, t = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, audio = null;
 
-const log = (s) => { const c = $('console'); c.textContent += s + '\n'; c.scrollTop = c.scrollHeight; };
+  function acharFrame(tt) {
+    const F = sim.frames; let lo = 0, hi = F.length / 4 - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (F[4 * m] <= tt) lo = m; else hi = m - 1; }
+    return lo;
+  }
+  function ledEm(tt) {
+    let cor = 'DESLIGADO'; for (const e of sim.eventos) { if (e.t > tt) break; if (e.tipo === 'led') cor = e.cor; }
+    let a = 1; if (cor.endsWith('PISCA')) a = (Math.floor(tt * 2) % 2) ? 0.15 : 1; if (cor.endsWith('PULSA')) a = 0.4 + 0.6 * Math.abs(Math.sin(tt * 3));
+    return [COR_LED[cor.split('_')[0]] || '#555', a];
+  }
+  function desenhar(tt) {
+    const g = $('cv').getContext('2d'), cen = sim ? sim.cen : CENARIOS[$('cenario').value];
+    g.setTransform(ESC, 0, 0, ESC, 0, 0); g.clearRect(0, 0, 120, 80);
+    g.fillStyle = '#f4f3ee'; g.fillRect(0, 0, ARENA.w, ARENA.h);
+    g.strokeStyle = '#999'; g.lineWidth = 0.5; g.strokeRect(0.25, 0.25, ARENA.w - 0.5, ARENA.h - 0.5);
+    if (cen.trilha.length) { g.beginPath(); cen.trilha.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+      g.strokeStyle = '#111'; g.lineWidth = 2; g.lineJoin = 'round'; g.stroke(); }
+    g.fillStyle = '#7a8793'; cen.caixas.forEach((b) => g.fillRect(b.x, b.y, b.w, b.h));
+    let x, y, th, led = ['#555', 1];
+    if (sim && sim.frames.length > 4) {
+      const i = acharFrame(tt), F = sim.frames; x = F[4 * i + 1]; y = F[4 * i + 2]; th = F[4 * i + 3];
+      g.beginPath(); const passo = Math.max(1, Math.floor(i / 700));
+      for (let k = 0; k <= i; k += passo) (k ? g.lineTo : g.moveTo).call(g, F[4 * k + 1], F[4 * k + 2]);
+      g.strokeStyle = 'rgba(74,163,255,.55)'; g.lineWidth = 0.6; g.stroke(); led = ledEm(tt);
+    } else { const s = cen.inicio; x = s.x; y = s.y; th = s.th; }
+    g.save(); g.translate(x, y); g.rotate(th);
+    g.fillStyle = '#222'; g.fillRect(-3, -7, 6, 2); g.fillRect(-3, 5, 6, 2);
+    g.fillStyle = '#e8b800'; g.fillRect(-7, -5, 14, 10); g.fillStyle = '#c99a00'; g.fillRect(4, -5, 3, 10);
+    g.globalAlpha = led[1]; g.fillStyle = led[0]; g.beginPath(); g.arc(-2, 0, 1.6, 0, 7); g.fill(); g.globalAlpha = 1;
+    g.fillStyle = '#0b84ff'; g.beginPath(); g.arc(5.5, 0, 0.9, 0, 7); g.fill();
+    g.fillStyle = '#444'; g.fillRect(6.5, -3, 1, 6); g.restore();
+    if (sim) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(0,0,0,.65)'; g.font = '13px ui-monospace, monospace'; g.fillText(`t = ${tt.toFixed(2)} s`, 10, 20); }
+  }
+  function sincronizarLog(tt) {
+    const corpo = $('corpo'); if (tt < ultimoT) { corpo.innerHTML = ''; logIdx = 0; } ultimoT = tt;
+    const P = sim.pacotes;
+    while (logIdx < P.length && P[logIdx].t <= tt) { const q = P[logIdx++];
+      corpo.insertRow().innerHTML = `<td class="t">${q.t.toFixed(3)}s</td><td class="hex">${q.hex}</td><td class="d">${q.desc}${q.resposta ? ' ↩' : ''}</td>`;
+      if (corpo.rows.length > 150) corpo.deleteRow(0); }
+    $('tabela').scrollTop = 1e9; $('contaPacotes').textContent = `${logIdx} de ${P.length} pacotes (↩ = EV3 devolve resposta)`;
+  }
+  function sons(tt) {
+    if (!tocando || !$('som').checked || !audio) return;
+    const E = sim.eventos;
+    while (evIdx < E.length && E[evIdx].t <= tt) { const e = E[evIdx++];
+      if (e.tipo === 'bip') { const o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = e.freq; g.gain.value = 0.05;
+        o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + e.ms / 1000); } }
+  }
+  function atualizar() { $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0; desenhar(t); sincronizarLog(t); sons(t); }
+  function loop(agora) {
+    if (!tocando) return;
+    t += (agora - ultimoRaf) / 1000 * (+$('vel').value); ultimoRaf = agora;
+    if (t >= sim.t) { t = sim.t; tocar(false); }
+    atualizar(); if (tocando) requestAnimationFrame(loop);
+  }
+  function tocar(v) {
+    tocando = v; $('btnPlay').textContent = v ? '⏸ Pausar' : '▶ Reproduzir';
+    if (v) { ultimoRaf = performance.now(); if (!audio && $('som').checked && (window.AudioContext || window.webkitAudioContext)) audio = new (window.AudioContext || window.webkitAudioContext)(); requestAnimationFrame(loop); }
+  }
+  function irPara(tt) { t = Math.max(0, Math.min(tt, sim.t)); evIdx = sim.eventos.findIndex((e) => e.t >= t); if (evIdx < 0) evIdx = sim.eventos.length; atualizar(); }
+  $('btnPlay').onclick = () => { if (t >= sim.t - 1e-6) irPara(0); tocar(!tocando); };
+  $('slider').oninput = () => { tocar(false); irPara($('slider').value / 1000 * sim.t); };
+  return {
+    desenhar,
+    carregar(s) { sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0; $('corpo').innerHTML = '';
+      $('slider').disabled = $('btnPlay').disabled = false; tocar(true); },
+  };
+})();
+
+// =====================================================================
+// App — Pyodide + jacarev3 real + ponte; fluxo de execução
+// =====================================================================
+const App = { py: null, executarPy: null, editor: null, sim: null, pronto: false, executando: false };
+
+// a ponte Python chama js.ev3Ponte.* -> delega ao simulador da vez
+globalThis.ev3Ponte = {
+  enviar: (b) => App.sim.processar(b),
+  avancar: (dt) => App.sim.avancar(dt),
+  agora: () => App.sim.agora(),
+};
 const status = (s, cls = '') => { const e = $('status'); e.textContent = s; e.className = cls; };
 
-// ponte JS que o Python chama (js.ev3Ponte) — delega ao simulador da vez
-globalThis.ev3Ponte = {
-  enviar: (b) => sim.processar(b),
-  avancar: (dt) => sim.avancar(dt),
-  agora: () => sim.agora(),
-};
-
-async function iniciar() {
-  for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
-  $('exemplo').onchange = () => carregarExemplo($('exemplo').value);
-  carregarExemplo('linha');
-  desenhar(0);
-  try {
-    status('carregando Pyodide (Python em WebAssembly)…');
-    py = await loadPyodide();
-    py.setStdout({ batched: log }); py.setStderr({ batched: log });
-    status('instalando jacarev3 do PyPI via micropip…');
-    await instalar();
-    status('pronto — jacarev3 real carregada', 'ok');
-    $('btnRodar').disabled = false;
-  } catch (e) { status('falhou: ' + e.message, 'erro'); log(String(e)); }
-}
-async function instalar() {
+async function iniciarPython() {
+  status('carregando Pyodide (Python em WebAssembly)…');
+  const py = App.py = await loadPyodide();
+  py.setStdout({ batched: (s) => Terminal.out(s) });
+  py.setStderr({ batched: (s) => Terminal.err(s) });
+  status('instalando jacarev3 do PyPI via micropip…');
   await py.loadPackage('micropip');
   const v = $('versao').value.trim();
   await py.pyimport('micropip').install(v ? 'jacarev3==' + v : 'jacarev3');
-  py.runPython($('ponte-py').textContent);       // importa jacarev3 + aplica a ponte
-  executarPy = py.globals.get('executar');
-  $('versaoInst').textContent = 'instalada: v' +
-    py.runPython("import importlib.metadata as m; m.version('jacarev3')");
-}
-function carregarExemplo(k) { $('codigo').value = EXEMPLOS[k].codigo; $('cenario').value = EXEMPLOS[k].cenario; desenhar(0); }
-
-$('btnRodar').onclick = () => {
-  $('console').textContent = '';
-  sim = new SimEV3($('cenario').value);
-  const t0 = performance.now();
-  try { executarPy($('codigo').value, +$('limite').value || 30); }
-  catch (e) { log('ERRO: ' + e.message); }
-  const ms = (performance.now() - t0).toFixed(0);
-  $('resumo').textContent = `${sim.t.toFixed(1)} s simulados em ${ms} ms reais · ${sim.pacotes.length} pacotes · ${sim.dist.toFixed(0)} cm andados`;
-  tAtual = 0; logIdx = 0; evIdx = 0; ultimoT = 0; $('corpo').innerHTML = '';
-  $('slider').disabled = $('btnPlay').disabled = false;
-  tocar(true);
-};
-$('btnPlay').onclick = () => { if (tAtual >= sim.t - 1e-6) irPara(0); tocar(!tocando); };
-$('slider').oninput = () => { tocar(false); irPara($('slider').value / 1000 * sim.t); };
-function tocar(v) {
-  tocando = v; $('btnPlay').textContent = v ? '⏸ Pausar' : '▶ Reproduzir';
-  if (v) { ultimoRaf = performance.now(); if (!ctxAudio && $('som').checked) ctxAudio = new (window.AudioContext || window.webkitAudioContext)(); requestAnimationFrame(loop); }
-}
-function irPara(t) { tAtual = Math.max(0, Math.min(t, sim.t)); evIdx = sim.eventos.findIndex((e) => e.t >= tAtual); if (evIdx < 0) evIdx = sim.eventos.length; atualizar(); }
-function loop(agora) {
-  if (!tocando) return;
-  tAtual += (agora - ultimoRaf) / 1000 * (+$('vel').value); ultimoRaf = agora;
-  if (tAtual >= sim.t) { tAtual = sim.t; tocar(false); }
-  atualizar(); if (tocando) requestAnimationFrame(loop);
-}
-function atualizar() {
-  $('slider').value = sim.t ? Math.round(tAtual / sim.t * 1000) : 0;
-  desenhar(tAtual); sincronizarLog(tAtual); tocarSons(tAtual);
-}
-function sincronizarLog(t) {
-  const corpo = $('corpo');
-  if (t < ultimoT) { corpo.innerHTML = ''; logIdx = 0; }
-  ultimoT = t;
-  const P = sim.pacotes;
-  while (logIdx < P.length && P[logIdx].t <= t) {
-    const q = P[logIdx++];
-    const tr = corpo.insertRow(); tr.innerHTML =
-      `<td class="t">${q.t.toFixed(3)}s</td><td class="hex">${q.hex}</td><td class="d">${q.desc}${q.resposta ? ' ↩' : ''}</td>`;
-    if (corpo.rows.length > 150) corpo.deleteRow(0);
-  }
-  $('tabela').scrollTop = 1e9;
-  $('contaPacotes').textContent = `${logIdx} de ${P.length} pacotes (↩ = EV3 devolve resposta)`;
-}
-function tocarSons(t) {
-  if (!tocando || !$('som').checked || !ctxAudio) return;
-  const E = sim.eventos;
-  while (evIdx < E.length && E[evIdx].t <= t) {
-    const e = E[evIdx++];
-    if (e.tipo === 'bip') { const o = ctxAudio.createOscillator(), g = ctxAudio.createGain();
-      o.frequency.value = e.freq; g.gain.value = 0.05; o.connect(g); g.connect(ctxAudio.destination);
-      o.start(); o.stop(ctxAudio.currentTime + e.ms / 1000); }
-  }
+  py.runPython($('ponte-py').textContent);                       // importa a lib real + ponte
+  App.executarPy = py.globals.get('executar');
+  py.runPython($('api-py').textContent);                         // introspecção da lib instalada
+  Api.atual = JSON.parse(py.globals.get('descrever_api')());
+  $('versaoInst').textContent = 'jacarev3 v' + Api.atual.versao;
+  Terminal.sys(`jacarev3 v${Api.atual.versao} instalada — ${Api.atual.robo.length} métodos no autocomplete.`);
 }
 
-// ---------- desenho ----------
-function acharFrame(t) {                          // busca binária em frames [t,x,y,th]*
-  const F = sim.frames; let lo = 0, hi = F.length / 4 - 1;
-  while (lo < hi) { const m = (lo + hi + 1) >> 1; if (F[4 * m] <= t) lo = m; else hi = m - 1; }
-  return lo;
+async function rodar() {
+  if (!App.pronto || App.executando) return;                      // evita clique/atalho duplo
+  const btn = $('btnRodar');
+  App.executando = true; btn.disabled = true; btn.textContent = '⏳ Executando…';
+  Terminal.sys('▶ executando script…');
+  await new Promise((r) => setTimeout(r, 40));                    // deixa o navegador pintar antes do Python bloquear
+  App.sim = new SimEV3($('cenario').value);
+  const t0 = performance.now(); let res = 'erro';
+  try { res = App.executarPy(App.editor.getValue(), +$('limite').value || 30); }
+  catch (e) { Terminal.err('Erro interno: ' + e.message); }
+  finally { App.executando = false; btn.disabled = false; btn.textContent = '▶ Rodar script'; }
+  const ms = (performance.now() - t0).toFixed(0), s = App.sim;
+  $('resumo').textContent = `${s.t.toFixed(1)} s simulados em ${ms} ms reais · ${s.pacotes.length} pacotes · ${s.dist.toFixed(0)} cm andados`;
+  Terminal.sys(res === 'erro' ? '✖ terminou com erro' : `✔ fim (${res === 'limite' ? 'limite de tempo' : 'ok'}): ${s.pacotes.length} pacotes, ${s.t.toFixed(1)} s simulados`);
+  Playback.carregar(s);
 }
-function ledEm(t) {
-  let cor = 'DESLIGADO'; for (const e of sim.eventos) { if (e.t > t) break; if (e.tipo === 'led') cor = e.cor; }
-  const base = cor.split('_')[0], pisca = cor.endsWith('PISCA'), pulsa = cor.endsWith('PULSA');
-  let a = 1; if (pisca) a = (Math.floor(t * 2) % 2) ? 0.15 : 1; if (pulsa) a = 0.4 + 0.6 * Math.abs(Math.sin(t * 3));
-  return [COR_LED[base] || '#555', a];
-}
-function desenhar(t) {
-  const cv = $('cv'), g = cv.getContext('2d'), cen = sim ? sim.cen : CENARIOS[$('cenario').value];
-  g.setTransform(ESC, 0, 0, ESC, 0, 0); g.clearRect(0, 0, 120, 80);
-  g.fillStyle = '#f4f3ee'; g.fillRect(0, 0, ARENA.w, ARENA.h);
-  g.strokeStyle = '#999'; g.lineWidth = 0.5; g.strokeRect(0.25, 0.25, ARENA.w - 0.5, ARENA.h - 0.5);
-  if (cen.trilha.length) { g.beginPath(); cen.trilha.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-    g.strokeStyle = '#111'; g.lineWidth = 2; g.lineJoin = 'round'; g.stroke(); }
-  g.fillStyle = '#7a8793'; cen.caixas.forEach((b) => g.fillRect(b.x, b.y, b.w, b.h));
-  let x, y, th, ledTxt = ['#555', 1];
-  if (sim && sim.frames.length > 4) {
-    const i = acharFrame(t), F = sim.frames; x = F[4 * i + 1]; y = F[4 * i + 2]; th = F[4 * i + 3];
-    g.beginPath(); const passo = Math.max(1, Math.floor(i / 700));            // rastro
-    for (let k = 0; k <= i; k += passo) (k ? g.lineTo : g.moveTo).call(g, F[4 * k + 1], F[4 * k + 2]);
-    g.strokeStyle = 'rgba(74,163,255,.55)'; g.lineWidth = 0.6; g.stroke();
-    ledTxt = ledEm(t);
-  } else { const s = cen.inicio; x = s.x; y = s.y; th = s.th; }
-  g.save(); g.translate(x, y); g.rotate(th);
-  g.fillStyle = '#222'; g.fillRect(-3, -7, 6, 2); g.fillRect(-3, 5, 6, 2);                 // rodas
-  g.fillStyle = '#e8b800'; g.fillRect(-7, -5, 14, 10);                                       // corpo
-  g.fillStyle = '#c99a00'; g.fillRect(4, -5, 3, 10);                                         // frente
-  g.globalAlpha = ledTxt[1]; g.fillStyle = ledTxt[0]; g.beginPath(); g.arc(-2, 0, 1.6, 0, 7); g.fill(); g.globalAlpha = 1;
-  g.fillStyle = '#0b84ff'; g.beginPath(); g.arc(5.5, 0, 0.9, 0, 7); g.fill();                // sensor de cor
-  g.fillStyle = '#444'; g.fillRect(6.5, -3, 1, 6);                                           // ultrassônico
-  g.restore();
-  if (sim) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(0,0,0,.65)'; g.font = '13px ui-monospace, monospace';
-    g.fillText(`t = ${t.toFixed(2)} s`, 10, 20); }
+
+function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); $('cenario').value = EXEMPLOS[k].cenario; Playback.desenhar(0); }
+
+async function iniciar() {
+  for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
+  $('btnLimpar').onclick = () => Terminal.limpar();
+  $('btnRodar').onclick = rodar;
+  $('cenario').onchange = () => Playback.desenhar(0);
+  Terminal.limpar();
+  Playback.desenhar(0);
+  const [ed] = await Promise.all([
+    Ide.criar($('editor'), EXEMPLOS.linha.codigo),
+    iniciarPython().catch((e) => { status('falhou: ' + e.message, 'erro'); Terminal.err(String(e)); }),
+  ]);
+  App.editor = ed;
+  ed.aoRodar(rodar);
+  $('exemplo').onchange = () => carregarExemplo($('exemplo').value);
+  if (ed.aviso) Terminal.sys('⚠ ' + ed.aviso);
+  if (App.executarPy) { App.pronto = true; $('btnRodar').disabled = false; status('pronto — jacarev3 real carregada' + (ed.tipo === 'monaco' ? ' · Monaco ativo' : ''), 'ok'); }
 }
 iniciar();
 </script>
