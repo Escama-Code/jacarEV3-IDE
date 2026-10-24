@@ -68,7 +68,7 @@ const CENARIOS = _Cen.lista;                   // { treino, fll } — cada um co
 const STRIDE = 8;                              // frames: [t, x, y, th, encA, encB, encC, encD] (enc em graus)
 
 class SimEV3 {
-  /** cenario: 'treino' | 'fll'. cfg.inicio: chave de CENARIOS[...].inicios (padrão: 'padrao') */
+  /** cenario: 'treino' | 'fll'. cfg.inicio: chave de CENARIOS[...].inicios (null = inicioPadrao do cenário) */
   constructor(cenario = 'treino', cfg = {}) {
     this.cfg = Object.assign({
       grausPorPct: 10,          // 100% ≈ 1000 °/s (motor grande EV3)
@@ -76,7 +76,7 @@ class SimEV3 {
       bitola: 12, raio: 7, passo: 0.01,
       latEnvio: 0.005, latResposta: 0.02,   // tempo virtual gasto por pacote (Bluetooth)
       sensores: { 1: 'cor', 2: 'toque', 3: 'cor', 4: 'ultrassonico' },
-      inicio: 'padrao',
+      inicio: null,             // null = o início padrão do cenário
       amostragem: 'area',       // 'area' (média 3×3 num quadrado de ±raioSensorCm) | 'pixel' (1 pixel exato)
       raioSensorCm: 0.35,
       modoLuz: 'luminancia',    // 'luminancia' (Rec.709) | 'vermelho' (LED vermelho do sensor real)
@@ -133,6 +133,18 @@ class SimEV3 {
       const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
       return Math.hypot(x - cx, y - cy) < r;
     });
+  }
+
+  /**
+   * Chamado quando o script Python termina. Num EV3 real, fechar a conexão NÃO para os motores:
+   * comandos por tempo/graus terminam sozinhos; mover_continuo segue ligado. Aqui terminamos os
+   * temporizados e avisamos quais motores ficaram ligados.
+   */
+  concluirComandos(maxS = 30) {
+    const t0 = this.t;
+    while (Object.values(this.motores).some((m) => m.modo === 'tempo') && this.t - t0 < maxS) this.avancar(0.05);
+    const ligados = Object.entries(this.motores).filter(([, m]) => m.modo === 'continuo' && m.v !== 0).map(([p]) => p);
+    return { drenado: this.t - t0, ligados };
   }
 
   // ---------- sensores ----------

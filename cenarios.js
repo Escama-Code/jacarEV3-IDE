@@ -74,15 +74,14 @@ const Cenarios = (() => {
   }
 
   // ---------------------------------------------------------
-  // Cenário A — Pista de Treino Clássica (120×80 cm)
+  // Cenário A — Pista de Treino (Sem Obstáculos) · 120×80 cm
+  // Só o oval preto sobre fundo branco: o robô pode orbitar sem nada no caminho.
   // ---------------------------------------------------------
   const treino = {
-    id: 'treino', nome: 'A · Pista de Treino Clássica (120×80 cm)', w: 120, h: 80, pxPorCm: 10,
+    id: 'treino', nome: 'Pista de Treino (Sem Obstáculos)', w: 120, h: 80, pxPorCm: 10,
+    inicioPadrao: 'padrao',
     inicios: { padrao: { rotulo: 'sobre a linha (parte de baixo)', x: 60, y: 62, th: PI }, centro: { rotulo: 'centro, olhando pra esquerda', x: 60, y: 40, th: PI } },
-    caixas: [
-      { nome: 'Caixa esquerda', x: 4, y: 26, w: 10, h: 28, altura: 10, cor: '#5f86a6' },
-      { nome: 'Caixa direita', x: 106, y: 26, w: 10, h: 28, altura: 10, cor: '#5f86a6' },
-    ],
+    caixas: [], rampas: [],
     desenhar(ctx, c) {
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.w, c.h);                       // fundo branco
       ctx.strokeStyle = '#111111'; ctx.lineWidth = 2;                                // circuito oval, fita de 2 cm
@@ -91,16 +90,41 @@ const Cenarios = (() => {
   };
 
   // ---------------------------------------------------------
-  // Cenário B — Tapete de Competição estilo FLL (236×114 cm)
+  // Cenário B — Desvio Clássico (Paredes) · 120×80 cm
+  // Duas paredes paralelas escalonadas: o robô sai do centro-esquerda, enxerga a parede
+  // pelo ultrassônico (<15 cm), recua, gira e segue até a próxima.
+  // ---------------------------------------------------------
+  const desvio = {
+    id: 'desvio', nome: 'Desvio Clássico (Paredes)', w: 120, h: 80, pxPorCm: 10,
+    inicioPadrao: 'centro',
+    inicios: { centro: { rotulo: 'centro (lado esquerdo, olhando as paredes)', x: 14, y: 40, th: 0 }, baixo: { rotulo: 'canto inferior esquerdo', x: 14, y: 66, th: 0 } },
+    caixas: [
+      { nome: 'Parede 1', x: 55, y: 22, w: 10, h: 34, altura: 12, cor: '#5f86a6', modelo: 'parede' },
+      { nome: 'Parede 2', x: 88, y: 40, w: 10, h: 38, altura: 12, cor: '#5f86a6', modelo: 'parede' },
+    ],
+    rampas: [],
+    desenhar(ctx, c) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.w, c.h);
+      ctx.strokeStyle = '#d4d8dc'; ctx.lineWidth = 1.2; ctx.strokeRect(0.6, 0.6, c.w - 1.2, c.h - 1.2);   // moldura clara (o robô nunca a alcança com o sensor)
+      ctx.strokeStyle = '#c3cbd3'; ctx.lineWidth = 0.4; ctx.setLineDash([2, 2]);                          // guia pontilhada do caminho central
+      ctx.beginPath(); ctx.moveTo(4, 40); ctx.lineTo(c.w - 4, 40); ctx.stroke(); ctx.setLineDash([]);
+    },
+  };
+
+  // ---------------------------------------------------------
+  // Cenário C — Tapete de Competição FLL (Com Rampa) · 236×114 cm
   // ---------------------------------------------------------
   const fll = {
-    id: 'fll', nome: 'B · Tapete estilo FLL (236×114 cm)', w: 236, h: 114, pxPorCm: 8,
-    inicios: { padrao: { rotulo: 'área verde, olhando pra linha', x: 24, y: 92, th: 0 }, azul: { rotulo: 'área azul, olhando pra esquerda', x: 212, y: 92, th: PI } },
+    id: 'fll', nome: 'Tapete de Competição FLL (Com Rampa)', w: 236, h: 114, pxPorCm: 8,
+    inicioPadrao: 'padrao',
+    inicios: { padrao: { rotulo: 'área verde, olhando pra linha', x: 24, y: 92, th: 0 }, azul: { rotulo: 'área azul, olhando pra esquerda', x: 212, y: 92, th: PI }, rampa: { rotulo: 'diante da rampa, olhando pra ela', x: 46, y: 104, th: 0 } },
     caixas: [
-      { nome: 'Missão 1', x: 96, y: 8, w: 12, h: 12, altura: 8, cor: '#f28c28' },
-      { nome: 'Missão 2', x: 154, y: 40, w: 12, h: 16, altura: 12, cor: '#8e44ad' },
-      { nome: 'Missão 3', x: 214, y: 18, w: 14, h: 10, altura: 6, cor: '#c0392b' },
+      { nome: 'Missão 1 · Torre', x: 96, y: 8, w: 12, h: 12, altura: 8, cor: '#f28c28', modelo: 'torre' },
+      { nome: 'Missão 2 · Plataforma', x: 154, y: 40, w: 12, h: 16, altura: 12, cor: '#8e44ad', modelo: 'plataforma' },
+      { nome: 'Missão 3 · Contêiner', x: 214, y: 18, w: 14, h: 10, altura: 6, cor: '#c0392b', modelo: 'conteiner' },
     ],
+    // rampa física: sobe em +x ao longo de 18 cm até 4,5 cm de altura e segue em platô (16 cm de largura cabe o robô)
+    rampas: [{ nome: 'Rampa', x: 62, y: 96, w: 34, h: 16, altura: 4.5, subida: 18, dir: '+x', cor: '#8c8c8c' }],
     desenhar(ctx, c) {
       const retArred = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
       // base do tapete
@@ -116,7 +140,7 @@ const Cenarios = (() => {
       ctx.fillStyle = '#d62828'; ctx.beginPath(); ctx.arc(150, 96, 9, 0, 2 * PI); ctx.fill();
       ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(150, 96, 4, 0, 2 * PI); ctx.fill();
       ctx.fillStyle = '#7b4a2a'; ctx.fillRect(104, 82, 22, 10);
-      ctx.fillStyle = '#8c8c8c'; ctx.fillRect(64, 100, 28, 10);
+      ctx.fillStyle = '#8c8c8c'; ctx.fillRect(62, 96, 34, 16);                      // rampa (cinza): o 3D ergue uma rampa real aqui
       // áreas de partida: VERDE e AZUL
       ctx.fillStyle = '#2e9d4f'; ctx.fillRect(6, 76, 36, 32);
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(8, 78, 32, 28);
@@ -138,12 +162,33 @@ const Cenarios = (() => {
     },
   };
 
-  const lista = { treino, fll };
+  // ---------------------------------------------------------
+  // Terreno: altura do chão (rampas). Usado só pra POSE VISUAL no 3D; a física 2D e o sensor não mudam.
+  // ---------------------------------------------------------
+  function alturaEm(cen, x, y) {
+    let h = 0;
+    for (const r of cen.rampas || []) {
+      if (x < r.x || x > r.x + r.w || y < r.y || y > r.y + r.h) continue;
+      const u = r.dir === '+x' ? x - r.x : r.dir === '-x' ? r.x + r.w - x : r.dir === '+y' ? y - r.y : r.y + r.h - y;
+      h = Math.max(h, r.altura * Math.max(0, Math.min(1, u / r.subida)));
+    }
+    return h;
+  }
+  /** altura (z) do robô e inclinações a partir de 4 pontos de apoio: frente/trás (±5 cm) e roda esq./dir. (±6 cm) */
+  function terreno(cen, x, y, th) {
+    if (!cen.rampas || !cen.rampas.length) return { z: 0, pitch: 0, roll: 0 };
+    const c = Math.cos(th), s = Math.sin(th);
+    const f = alturaEm(cen, x + 5 * c, y + 5 * s), b = alturaEm(cen, x - 5 * c, y - 5 * s);
+    const l = alturaEm(cen, x + 6 * s, y - 6 * c), r = alturaEm(cen, x - 6 * s, y + 6 * c);
+    return { z: (f + b + l + r) / 4, pitch: Math.atan2(f - b, 10), roll: Math.atan2(l - r, 12) };      // pitch>0 = nariz pra cima · roll>0 = lado esquerdo mais alto
+  }
+
+  const lista = { treino, desvio, fll };
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
-  const inicioDe = (cen, chave) => cen.inicios[chave] || cen.inicios.padrao;
+  const inicioDe = (cen, chave) => cen.inicios[chave] || cen.inicios[cen.inicioPadrao];
 
-  return { lista, obterTapete, gerarTapete, lerPixel, lerArea, intensidade, classificarCor, NOMES_COR, inicioDe,
+  return { lista, obterTapete, gerarTapete, lerPixel, lerArea, intensidade, classificarCor, NOMES_COR, inicioDe, alturaEm, terreno,
     usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } };
 })();
 if (typeof module !== 'undefined') module.exports = Cenarios;

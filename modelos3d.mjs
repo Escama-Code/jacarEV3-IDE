@@ -305,8 +305,9 @@ export function construirRoboJacare() {
 //  est = { x, y, th, t, encA..encD, led, ledAlpha, refletida, bip }
 // =====================================================================
 export function aplicarEstado(rig, est) {
-  rig.grupo.position.set(est.x, 0, est.y);                      // sim (x,y) → mundo (X,Z)
-  rig.grupo.rotation.y = Math.PI / 2 - est.th;                  // +Z local → (cosθ, 0, sinθ)
+  rig.grupo.position.set(est.x, est.z || 0, est.y);             // sim (x,y) → mundo (X,Z); z = altura do terreno (rampa)
+  rig.grupo.rotation.order = 'YXZ';                             // 1º rumo (Y), depois inclinação e rolagem nos eixos do próprio robô
+  rig.grupo.rotation.set(-(est.pitch || 0), Math.PI / 2 - est.th, est.roll || 0);   // +Z local → (cosθ, 0, sinθ); pitch>0 = nariz pra cima; roll>0 = lado esquerdo mais alto
   rig.rodaB.rotation.x = est.encB * DEG;                        // encoder REAL do sim.js
   rig.rodaC.rotation.x = est.encC * DEG;
   const base = String(est.led || 'DESLIGADO').split('_')[0];

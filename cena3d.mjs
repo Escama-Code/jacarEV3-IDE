@@ -27,26 +27,93 @@ function texturaDoTapete(tapete, renderer) {
   return tex;
 }
 
-/** arena do cenário: mesa, chão (com o tapete), paredes e caixas — tudo no tamanho cen.w × cen.h */
+const matC = (cor, o = {}) => new THREE.MeshStandardMaterial({ color: cor, roughness: 0.6, ...o });
+const sombraC = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
+const caixaC = (w, h, d, material, x, y, z) => { const m = sombraC(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material)); m.position.set(x, y, z); return m; };
+const pinoC = (r, h, material, x, y, z) => { const m = sombraC(new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), material)); m.position.set(x, y, z); return m; };   // "stud" de LEGO
+
+/** Missão 1 — torre de dois andares com pinos e bandeira */
+function blocoTorre(b, cor) {
+  const g = new THREE.Group(), escura = cor.clone().offsetHSL(0, 0, -0.1), clara = cor.clone().offsetHSL(0, 0, 0.12);
+  g.add(caixaC(b.w, 4, b.h, matC(cor), 0, 2, 0));
+  for (const dx of [-b.w / 4, b.w / 4]) for (const dz of [-b.h / 4, b.h / 4]) g.add(pinoC(0.9, 0.5, matC(clara), dx, 4.25, dz));
+  g.add(caixaC(b.w - 4, 3.2, b.h - 4, matC(escura), 0, 5.6, 0));
+  for (const dx of [-1.4, 1.4]) for (const dz of [-1.4, 1.4]) g.add(pinoC(0.7, 0.8, matC(clara), dx, 7.6, dz));
+  g.add(pinoC(0.12, 3.2, matC(0xdddddd), 0, 9.2, 0));                                           // mastro
+  const bandeira = sombraC(new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.1), matC(0xe53935, { side: THREE.DoubleSide }))); bandeira.position.set(0.95, 10.4, 0); g.add(bandeira);
+  return g;
+}
+/** Missão 2 — plataforma com guarda-corpo, faixa de alerta e carga amarela */
+function blocoPlataforma(b, cor) {
+  const g = new THREE.Group(), clara = cor.clone().offsetHSL(0, 0, 0.15), amarelo = matC(0xf2c230);
+  g.add(caixaC(b.w, 9, b.h, matC(cor), 0, 4.5, 0));
+  for (const [w, d, x, z] of [[b.w + 0.1, 0.1, 0, b.h / 2], [b.w + 0.1, 0.1, 0, -b.h / 2], [0.1, b.h + 0.1, b.w / 2, 0], [0.1, b.h + 0.1, -b.w / 2, 0]]) g.add(caixaC(w, 0.9, d, amarelo, x, 3.2, z));   // faixa
+  g.add(caixaC(b.w + 1, 0.8, b.h + 1, matC(clara), 0, 9.4, 0));                                   // deck
+  const poste = matC(0xdddddd);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(pinoC(0.3, 2.4, poste, sx * (b.w / 2 + 0.2), 10.8, sz * (b.h / 2 + 0.2)));
+  for (const sz of [-1, 1]) g.add(caixaC(b.w + 0.8, 0.25, 0.25, poste, 0, 11.8, sz * (b.h / 2 + 0.2)));
+  for (const sx of [-1, 1]) g.add(caixaC(0.25, 0.25, b.h + 0.8, poste, sx * (b.w / 2 + 0.2), 11.8, 0));
+  g.add(caixaC(4, 2.2, 4, amarelo, 0, 10.9, 0)); g.add(caixaC(4.1, 0.25, 0.4, matC(0x222222), 0, 10.9, 2.05));       // carga com cinta
+  return g;
+}
+/** Missão 3 — contêiner corrugado com portas, cantoneiras e gancho */
+function blocoConteiner(b, cor) {
+  const g = new THREE.Group(), escura = cor.clone().offsetHSL(0, 0, -0.12), corte = matC(0x2b2b2b);
+  g.add(caixaC(b.w, 5.6, b.h, matC(cor), 0, 2.8, 0));
+  const n = Math.floor(b.w / 1.3);
+  for (let i = 0; i < n; i++) for (const sz of [-1, 1]) g.add(caixaC(0.45, 5.0, 0.2, matC(escura), -b.w / 2 + 0.9 + i * ((b.w - 1.8) / (n - 1)), 2.8, sz * (b.h / 2 + 0.08)));   // corrugado
+  g.add(caixaC(0.1, 5.2, b.h - 1, corte, b.w / 2 + 0.03, 2.8, 0)); g.add(caixaC(0.12, 5.0, 0.15, matC(0xcccccc), b.w / 2 + 0.06, 2.8, 0));   // portas
+  g.add(caixaC(b.w + 0.3, 0.5, b.h + 0.3, matC(escura), 0, 5.85, 0));
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) g.add(caixaC(1, 1, 1, corte, sx * (b.w / 2 - 0.3), 5.85, sz * (b.h / 2 - 0.3)));       // cantoneiras
+  const gancho = sombraC(new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.16, 8, 20), matC(0xcccccc, { metalness: 0.7, roughness: 0.3 }))); gancho.position.set(0, 7.0, 0); gancho.rotation.x = Math.PI / 2; g.add(gancho);
+  return g;
+}
+/** parede do cenário de desvio: bloco com faixas de alerta no topo */
+function blocoParede(b, cor) {
+  const g = new THREE.Group(), alt = b.altura;
+  g.add(caixaC(b.w, alt, b.h, matC(cor), 0, alt / 2, 0));
+  g.add(caixaC(b.w + 0.4, 0.8, b.h + 0.4, matC(cor.clone().offsetHSL(0, 0, 0.14)), 0, alt + 0.4, 0));
+  const n = Math.floor(b.h / 4);
+  for (let i = 0; i < n; i++) for (const sx of [-1, 1]) g.add(caixaC(0.12, 1.4, 1.6, matC(i % 2 ? 0x222222 : 0xf2c230), sx * (b.w / 2 + 0.05), alt - 1.4, -b.h / 2 + 2.4 + i * 4));   // listras amarelo/preto
+  return g;
+}
+const MODELOS_BLOCO = { torre: blocoTorre, plataforma: blocoPlataforma, conteiner: blocoConteiner, parede: blocoParede };
+/** bloco rígido na MESMA pegada (x, y, w, h) que o sim.js usa na colisão e no ultrassônico */
+function construirBloco(b) {
+  const cor = new THREE.Color(b.cor || '#5f86a6'), g = (MODELOS_BLOCO[b.modelo] || ((bb, cc) => {
+    const gg = new THREE.Group(); gg.add(caixaC(bb.w, bb.altura || 10, bb.h, matC(cc), 0, (bb.altura || 10) / 2, 0)); return gg; }))(b, cor);
+  g.position.set(b.x + b.w / 2, 0, b.y + b.h / 2); g.name = b.nome || 'bloco'; return g;
+}
+
+/** rampa 3D (cunha + platô). O topo usa a MESMA textura do chão, mapeada em planta, então o aluno vê o que o sensor lê. */
+function construirRampa(r, cen, mapa) {
+  const L = r.w, H = r.altura, run = r.subida, sh = new THREE.Shape();
+  if (r.dir === '-x') { sh.moveTo(L, 0); sh.lineTo(0, 0); sh.lineTo(0, H); sh.lineTo(L - run, H); } else { sh.moveTo(0, 0); sh.lineTo(L, 0); sh.lineTo(L, H); sh.lineTo(run, H); }
+  sh.closePath();
+  const geo = new THREE.ExtrudeGeometry(sh, { depth: r.h, bevelEnabled: false });          // perfil em XY, largura em Z
+  geo.translate(r.x, 0, r.y);
+  const pos = geo.attributes.position, uv = geo.attributes.uv;
+  for (let i = 0; i < pos.count; i++) uv.setXY(i, pos.getX(i) / cen.w, 1 - pos.getZ(i) / cen.h);      // planta → textura do tapete
+  uv.needsUpdate = true; geo.computeVertexNormals();
+  const m = sombraC(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: mapa, roughness: 0.85 }))); m.name = r.nome || 'rampa';
+  return m;
+}
+
+/** arena do cenário: mesa, chão (com o tapete), paredes, rampas e blocos — tudo no tamanho cen.w × cen.h */
 export function construirArena(cen, tapete, renderer = null) {
   const g = new THREE.Group(); g.name = 'arena';
   const cx = cen.w / 2, cz = cen.h / 2;
   const mesa = new THREE.Mesh(new THREE.BoxGeometry(cen.w + 60, 3, cen.h + 50), new THREE.MeshStandardMaterial({ color: 0x6d5a48, roughness: 0.9 }));
   mesa.position.set(cx, -1.6, cz); mesa.receiveShadow = true; g.add(mesa);
-  const chao = new THREE.Mesh(new THREE.PlaneGeometry(cen.w, cen.h).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ map: texturaDoTapete(tapete, renderer), roughness: 0.9 }));
+  const mapa = texturaDoTapete(tapete, renderer);
+  const chao = new THREE.Mesh(new THREE.PlaneGeometry(cen.w, cen.h).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: mapa, roughness: 0.9 }));
   chao.position.set(cx, 0, cz); chao.receiveShadow = true; chao.name = 'chao'; g.add(chao);
   const parede = new THREE.MeshStandardMaterial({ color: 0x8c96a0, roughness: 0.7 });
   for (const [w, d, x, z] of [[cen.w + 3, 1.5, cx, -0.75], [cen.w + 3, 1.5, cx, cen.h + 0.75], [1.5, cen.h, -0.75, cz], [1.5, cen.h, cen.w + 0.75, cz]]) {
     const p = new THREE.Mesh(new THREE.BoxGeometry(w, 5, d), parede); p.position.set(x, 2.5, z); p.castShadow = p.receiveShadow = true; g.add(p);
   }
-  for (const b of cen.caixas) {                                    // MESMAS caixas que o sim.js usa na colisão/ultrassônico
-    const alt = b.altura || 10, cor = new THREE.Color(b.cor || '#5f86a6');
-    const m = new THREE.Mesh(new THREE.BoxGeometry(b.w, alt, b.h), new THREE.MeshStandardMaterial({ color: cor, roughness: 0.6 }));
-    m.position.set(b.x + b.w / 2, alt / 2, b.y + b.h / 2); m.castShadow = m.receiveShadow = true; m.name = b.nome || 'caixa'; g.add(m);
-    const topo = new THREE.Mesh(new THREE.BoxGeometry(b.w + 0.3, 0.8, b.h + 0.3), new THREE.MeshStandardMaterial({ color: cor.clone().offsetHSL(0, 0, 0.14), roughness: 0.6 }));
-    topo.position.set(b.x + b.w / 2, alt + 0.4, b.y + b.h / 2); topo.castShadow = true; g.add(topo);
-  }
+  for (const r of cen.rampas || []) g.add(construirRampa(r, cen, mapa));
+  for (const b of cen.caixas) g.add(construirBloco(b));
   return g;
 }
 
@@ -79,7 +146,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100 };
+  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100 };
 
   /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
   const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
@@ -109,6 +176,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   function setCenario(cen, novoTapete) {
     if (S.arena) { scene.remove(S.arena); S.arena.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); }); }
     S.cen = cen; centro.set(cen.w / 2, 0, cen.h / 2);
+    S.ultimo = null; S.snap = true;                 // não herda a pose do cenário anterior; câmera de perseguição reposiciona sem deslizar
     S.arena = construirArena(cen, novoTapete, renderer); scene.add(S.arena);
     ajustarLuz(); setModoCamera(S.modo);
   }
@@ -128,8 +196,11 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     if (S.modo === 'seguir' && S.ultimo) {                          // câmera de perseguição atrás do robô
       const { x, y, th } = S.ultimo, fx = Math.cos(th), fz = Math.sin(th);
       const desejada = new THREE.Vector3(x - fx * 30, 20, y - fz * 30);
-      camera.up.set(0, 1, 0); camera.position.lerp(desejada, 0.12);
-      S.alvoCam.lerp(new THREE.Vector3(x + fx * 8, 3, y + fz * 8), 0.2); camera.lookAt(S.alvoCam);
+      const alvo = new THREE.Vector3(x + fx * 8, 3, y + fz * 8);
+      camera.up.set(0, 1, 0);
+      if (S.snap) { camera.position.copy(desejada); S.alvoCam.copy(alvo); S.snap = false; }
+      else { camera.position.lerp(desejada, 0.12); S.alvoCam.lerp(alvo, 0.2); }
+      camera.lookAt(S.alvoCam);
     } else if (S.modo === 'livre') controls.update();
   }
   function aplicar(est) { S.ultimo = est; if (S.rig) aplicarEstado(S.rig, est); }
