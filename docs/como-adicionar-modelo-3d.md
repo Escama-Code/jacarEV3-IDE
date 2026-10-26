@@ -6,7 +6,7 @@ Cada animal vive em **um arquivo próprio** em `src/js/3d/modelos/`.
 
 ```text
 src/js/3d/modelos/
-├── _helpers.mjs          # Geometria compartilhada (roda, sensor, feixe, LCD…)
+├── helpers.mjs          # Geometria compartilhada (roda, sensor, feixe, LCD…)
 ├── aplicar-estado.mjs    # Aplica posição/LED/sensor no rig
 ├── index.mjs             # Reexporta tudo (ponto de entrada)
 ├── ev3.mjs
@@ -26,7 +26,7 @@ import * as THREE from 'three';
 import {
   M, pronto, posicionar, caixa, cil, chanfrada, cone,
   construirRoda, criarFeixe, RAIO_RODA,
-} from './_helpers.mjs';
+} from './helpers.mjs';
 
 export function construirRoboTartaruga() {
   const root = new THREE.Group();

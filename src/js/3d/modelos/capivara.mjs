@@ -7,7 +7,7 @@ import {
   M, pronto, posicionar, caixa, cil, chanfrada, cone, cabo, viga,
   criarLCD, planoLCD, construirRoda, olhoUltra, sensorCor, criarFeixe,
   DEG, CM_POR_GRAU, RAIO_RODA, LARG_RODA, SEMI_BITOLA, COR_LED,
-} from './_helpers.mjs';
+} from './helpers.mjs';
 
 export function construirRoboCapivara() {
   const root = new THREE.Group(); root.name = 'capivara';

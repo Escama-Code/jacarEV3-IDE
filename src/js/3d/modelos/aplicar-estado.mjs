@@ -2,7 +2,7 @@
 // aplicar-estado.mjs — aplica um instante do playback no rig 3D
 // est = { x, y, th, t, encA..encD, led, ledAlpha, refletida, bip, pitch?, roll?, z? }
 // ============================================================
-import { DEG, COR_LED } from './_helpers.mjs';
+import { DEG, COR_LED } from './helpers.mjs';
 
 export function aplicarEstado(rig, est) {
   rig.grupo.position.set(est.x, est.z || 0, est.y);             // sim (x,y) → mundo (X,Z); z = altura do terreno (rampa)
