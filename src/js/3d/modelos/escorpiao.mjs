@@ -6,7 +6,7 @@ import {
   M, pronto, posicionar, caixa, cil, chanfrada, cone,
   criarLCD, planoLCD, construirRoda, olhoUltra, sensorCor, criarFeixe,
   CM_POR_GRAU, RAIO_RODA,
-} from './_helpers.mjs';
+} from './helpers.mjs';
 
 export function construirRoboEscorpiao() {
   const root = new THREE.Group(); root.name = 'escorpiao';
