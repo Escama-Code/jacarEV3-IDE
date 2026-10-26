@@ -15,6 +15,7 @@
 <header>
   <h1>🐊 jacarEV3 IDE</h1>
   <span id="status">iniciando…</span>
+  <span id="gpStatus" class="info" title="Controle USB/Bluetooth">controle: —</span>
 </header>
 <main>
   <section class="painel">
@@ -34,6 +35,7 @@
     </div>
     <div class="linha">
       <button id="btnPlay" disabled>▶ Reproduzir</button>
+      <button type="button" id="btnTeleop" title="WASD ou gamepad — ao vivo">🎮 Teleop</button>
       <input id="slider" type="range" min="0" max="1000" value="0" disabled>
       <select id="vel"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
       <label><input id="som" type="checkbox" checked> som</label>
@@ -929,14 +931,29 @@ const EXEMPLOS = {
 with RoboEV3('00:16:53:64:F8:B8') as robo:
     robo.led('VERDE')
     while True:
-        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)   # 0-100, lida do PIXEL do tapete
-        if luz < 30:                      # sobre a linha preta
-            robo.mover_continuo('B', 10)  # esquerda devagar
-            robo.mover_continuo('C', 35)  # direita rápido -> vira pra esquerda
-        else:                             # fundo branco
+        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
+        if luz < 30:
+            robo.mover_continuo('B', 10)
+            robo.mover_continuo('C', 35)
+        else:
             robo.mover_continuo('B', 35)
-            robo.mover_continuo('C', 10)  # vira pra direita
+            robo.mover_continuo('C', 10)
 ` },
+  gamepad: { nome: 'Controle / teclado — teleop pelo código', cenario: 'treino', inicio: 'padrao', codigo:
+`"""Teleop pelo código da IDE (Rodar script).
+
+WASD/setas = andar | Espaço = parar | E = apitar | Q/R = LED | Esc = sair
+Gamepad: stick/D-pad | B = parar | A = apitar | X/Y = LED | Start = sair
+
+O await gamepadPonte.teleop(segundos, velocidade) inicia o modo ao vivo.
+"""
+from js import gamepadPonte
+
+print("Teleop 90s pelo código — mexa WASD ou o controle")
+await gamepadPonte.teleop(90, 45)
+print("fim do teleop")
+` },
+
   fll_linha: { nome: 'Seguidor de linha — tapete FLL (acha a linha e segue a borda)', cenario: 'fll', inicio: 'padrao', codigo:
 `from jacarev3 import RoboEV3, protocolo as p
 
@@ -1149,6 +1166,10 @@ const Playback = (() => {
     const est = estadoEm(tt);
     if (modo === '3d' && vista) vista.aplicar(est); else desenhar2D(est);
   }
+  function desenharEstado(est) {
+    if (!est) return;
+    if (modo === '3d' && vista) vista.aplicar(est); else desenhar2D(est);
+  }
   function sincronizarLog(tt) {
     const corpo = $('corpo'); if (tt < ultimoT) { corpo.innerHTML = ''; logIdx = 0; } ultimoT = tt;
     const P = sim.pacotes;
@@ -1185,7 +1206,7 @@ const Playback = (() => {
   $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); };   // início volta ao PADRÃO do novo cenário
   $('inicio').onchange = () => { descartarSimulacao(); desenhar(0); };
   return {
-    desenhar, setModo, estadoEm,
+    desenhar, desenharEstado, setModo, estadoEm,
     iniciar() {                                               // popula o seletor de cenários e mostra o primeiro
       for (const [id, c] of Object.entries(CENARIOS)) $('cenario').add(new Option(c.nome, id));
       aplicarCenario(); desenhar(0);
@@ -1198,6 +1219,324 @@ const Playback = (() => {
       $('slider').disabled = $('btnPlay').disabled = false; tocar(true); },
   };
 })();
+
+
+
+
+// =====================================================================
+// Teleop ao vivo — teclado (WASD) + gamepad. Não depende do Python.
+// =====================================================================
+const GamepadPonte = (() => {
+  const DEAD = 0.15;
+  let index = null;
+  let ultimoId = '';
+  let teleopRaf = 0;
+  let teleopStop = false;
+  let ativo = false;
+
+  // Teclado: set de teclas pressionadas
+  const keys = new Set();
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    keys.add(k);
+    // evita scroll com setas durante teleop
+    if (ativo && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  });
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    keys.delete(k);
+  });
+  window.addEventListener('blur', () => keys.clear());
+
+  function deadzone(v) {
+    return Math.abs(v) < DEAD ? 0 : v;
+  }
+
+  function atualizarUi(txt) {
+    const el = document.getElementById('gpStatus');
+    if (el) el.textContent = txt;
+  }
+
+  function setBotaoTeleop(rodando) {
+    const b = document.getElementById('btnTeleop');
+    if (!b) return;
+    if (rodando) {
+      b.textContent = '⏹ Parar teleop';
+      b.classList.add('ativo');
+    } else {
+      b.textContent = '🎮 Teleop';
+      b.classList.remove('ativo');
+    }
+  }
+
+  window.addEventListener('gamepadconnected', (e) => {
+    index = e.gamepad.index;
+    ultimoId = e.gamepad.id || 'gamepad';
+    atualizarUi('controle: ' + (ultimoId.length > 36 ? ultimoId.slice(0, 36) + '…' : ultimoId));
+    if (typeof Terminal !== 'undefined' && Terminal.sys) Terminal.sys('🎮 pad: ' + ultimoId);
+  });
+  window.addEventListener('gamepaddisconnected', (e) => {
+    if (index === e.gamepad.index) {
+      index = null;
+      atualizarUi(ativo ? 'teleop: teclado WASD' : 'controle: —');
+      if (typeof Terminal !== 'undefined' && Terminal.sys) Terminal.sys('🎮 pad desconectado');
+    }
+  });
+
+  function lerPad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let gp = null;
+    if (index != null && pads[index]) gp = pads[index];
+    else {
+      for (const p of pads) {
+        if (p) { gp = p; index = p.index; ultimoId = p.id || 'gamepad'; break; }
+      }
+    }
+    if (!gp) return null;
+
+    const buttons = [];
+    for (let i = 0; i < gp.buttons.length; i++) {
+      const b = gp.buttons[i];
+      buttons.push(!!(b && (b.pressed || (b.value || 0) > 0.5)));
+    }
+    const axes = [];
+    for (let i = 0; i < gp.axes.length; i++) axes.push(deadzone(Number(gp.axes[i]) || 0));
+
+    let mx = axes[0] || 0, my = axes[1] || 0;
+    if (buttons[14]) mx = -1;
+    if (buttons[15]) mx = 1;
+    if (buttons[12]) my = -1;
+    if (buttons[13]) my = 1;
+
+    return {
+      id: String(gp.id || ''),
+      mx, my,
+      a: !!buttons[0], b: !!buttons[1], x: !!buttons[2], y: !!buttons[3],
+      start: !!buttons[9],
+      buttons, axes,
+      lx: axes[0] || 0, ly: axes[1] || 0,
+    };
+  }
+
+  /** Combina teclado + gamepad num único estado de movimento */
+  function lerEntrada() {
+    let mx = 0, my = 0, stop = false, bip = false, ledV = false, ledR = false, end = false;
+    const fonte = [];
+
+    // Teclado
+    if (keys.has('w') || keys.has('ArrowUp')) { my -= 1; }
+    if (keys.has('s') || keys.has('ArrowDown')) { my += 1; }
+    if (keys.has('a') || keys.has('ArrowLeft')) { mx -= 1; }
+    if (keys.has('d') || keys.has('ArrowRight')) { mx += 1; }
+    if (keys.has(' ') || keys.has('shift')) stop = true;
+    if (keys.has('e')) bip = true;
+    if (keys.has('q')) ledV = true;
+    if (keys.has('r')) ledR = true;
+    if (keys.has('Escape')) end = true;
+    if (mx || my || stop || bip || ledV || ledR) fonte.push('teclado');
+
+    // Gamepad (soma / sobrescreve)
+    const gp = lerPad();
+    if (gp) {
+      fonte.push('pad');
+      if (Math.abs(gp.mx) > Math.abs(mx)) mx = gp.mx;
+      if (Math.abs(gp.my) > Math.abs(my)) my = gp.my;
+      // se pad tem stick, usa
+      if (gp.mx || gp.my) { mx = gp.mx; my = gp.my; }
+      if (gp.b) stop = true;
+      if (gp.a) bip = true;
+      if (gp.y) ledV = true;
+      if (gp.x) ledR = true;
+      if (gp.start) end = true;
+    }
+
+    // normaliza diagonal do teclado
+    const mag = Math.hypot(mx, my);
+    if (mag > 1) { mx /= mag; my /= mag; }
+
+    return { mx, my, stop, bip, ledV, ledR, end, fonte: fonte.join('+') || 'nenhuma' };
+  }
+
+  function ler() {
+    // API compatível com Python: snapshot estilo pad
+    const e = lerEntrada();
+    const gp = lerPad();
+    return {
+      id: gp ? gp.id : (e.fonte.includes('teclado') ? 'teclado' : ''),
+      lx: e.mx, ly: e.my, mx: e.mx, my: e.my,
+      a: e.bip, b: e.stop, x: e.ledR, y: e.ledV,
+      start: e.end,
+      axes: [e.mx, e.my, 0, 0],
+      buttons: [],
+    };
+  }
+
+  function conectado() {
+    return !!lerPad() || keys.size > 0;
+  }
+
+  function mostrarAoVivo() {
+    if (!App.sim) return;
+    if (typeof Playback === 'undefined' || typeof Playback.desenharEstado !== 'function') return;
+    const s = App.sim;
+    const M = s.motores || {};
+    let refletida = 50;
+    try {
+      if (typeof s.refletidaEm === 'function') refletida = s.refletidaEm(s.x, s.y, s.th);
+    } catch (_) {}
+    Playback.desenharEstado({
+      t: s.t, x: s.x, y: s.y, th: s.th,
+      encA: (M.A && M.A.enc) || 0, encB: (M.B && M.B.enc) || 0,
+      encC: (M.C && M.C.enc) || 0, encD: (M.D && M.D.enc) || 0,
+      led: s.led || 'DESLIGADO', ledAlpha: 1, bip: false, refletida,
+    });
+  }
+
+  function aplicarMotores(e, vel) {
+    if (!App.sim) return;
+    const M = App.sim.motores;
+    if (!M || !M.B || !M.C) return;
+
+    if (e.stop) {
+      M.B.v = 0; M.C.v = 0; M.B.modo = 'ocioso'; M.C.modo = 'ocioso';
+    } else {
+      const frente = -e.my;
+      const giro = e.mx;
+      let vB = vel * frente + vel * giro;
+      let vC = vel * frente - vel * giro;
+      vB = Math.max(-100, Math.min(100, vB));
+      vC = Math.max(-100, Math.min(100, vC));
+      if (Math.abs(vB) < 0.5 && Math.abs(vC) < 0.5) {
+        M.B.v = 0; M.C.v = 0; M.B.modo = 'ocioso'; M.C.modo = 'ocioso';
+      } else {
+        M.B.v = vB; M.C.v = vC; M.B.modo = 'continuo'; M.C.modo = 'continuo';
+      }
+    }
+    if (e.ledV) App.sim.led = 'VERDE';
+    if (e.ledR) App.sim.led = 'VERMELHO';
+    if (e.bip) {
+      // no máximo 1 bip a cada ~0.2s para não floodar
+      const evs = App.sim.eventos;
+      const last = evs.length ? evs[evs.length - 1] : null;
+      if (!last || last.tipo !== 'bip' || App.sim.t - last.t > 0.2) {
+        evs.push({ t: App.sim.t, tipo: 'bip', freq: 880, ms: 80 });
+      }
+    }
+  }
+
+  function teleop(limite_s, vel) {
+    limite_s = Number(limite_s) > 0 ? Number(limite_s) : 120;
+    vel = Number(vel) > 0 ? Number(vel) : 45;
+    teleopStop = false;
+    if (teleopRaf) cancelAnimationFrame(teleopRaf);
+    ativo = true;
+    setBotaoTeleop(true);
+
+    // pausa playback se estiver tocando
+    try {
+      if (typeof Playback !== 'undefined') {
+        const playBtn = document.getElementById('btnPlay');
+        if (playBtn && playBtn.textContent.indexOf('Pausar') >= 0) playBtn.click();
+      }
+    } catch (_) {}
+
+    if (!App.sim) {
+      App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+    }
+
+    const t0 = performance.now();
+    let last = t0;
+    atualizarUi('teleop: WASD/setas ou pad');
+    if (typeof Terminal !== 'undefined' && Terminal.sys) {
+      Terminal.sys('🎮 TELEOP — WASD ou setas andam · Espaço para · E apita · Q/R LED · Esc para · pad também vale');
+    }
+
+    return new Promise((resolve) => {
+      function frame(now) {
+        if (teleopStop) {
+          teleopRaf = 0; ativo = false; setBotaoTeleop(false);
+          if (App.sim) {
+            App.sim.motores.B.v = 0; App.sim.motores.C.v = 0;
+            App.sim.motores.B.modo = 'ocioso'; App.sim.motores.C.modo = 'ocioso';
+          }
+          mostrarAoVivo();
+          atualizarUi(lerPad() ? ('controle: ' + ultimoId) : 'controle: —');
+          if (typeof Terminal !== 'undefined' && Terminal.sys) Terminal.sys('🎮 teleop parado');
+          if (App.sim && (App.sim.frames || []).length > 1 && typeof Playback !== 'undefined') {
+            Playback.carregar(App.sim);
+          }
+          resolve('parado');
+          return;
+        }
+
+        const elapsed = (now - t0) / 1000;
+        if (elapsed >= limite_s) {
+          teleopStop = true;
+          teleopRaf = requestAnimationFrame(frame);
+          return;
+        }
+
+        let dt = (now - last) / 1000;
+        last = now;
+        if (dt > 0.08) dt = 0.08;
+        if (dt < 0.001) dt = 0.001;
+
+        const e = lerEntrada();
+        if (e.end) teleopStop = true;
+        aplicarMotores(e, vel);
+
+        if (App.sim) App.sim.avancar(dt);
+        mostrarAoVivo();
+
+        // status leve
+        const st = document.getElementById('resumo');
+        if (st && App.sim) {
+          st.textContent = `teleop ${(elapsed).toFixed(0)}/${limite_s}s · (${App.sim.x.toFixed(0)}, ${App.sim.y.toFixed(0)}) cm · ${e.fonte}`;
+        }
+
+        teleopRaf = requestAnimationFrame(frame);
+      }
+      teleopRaf = requestAnimationFrame(frame);
+    });
+  }
+
+  function pararTeleop() { teleopStop = true; }
+
+  function toggleTeleop() {
+    if (ativo) pararTeleop();
+    else teleop(120, 45);
+  }
+
+  /** Um passo de teleop para loops Python async (lê entrada, move, avança, desenha).
+   *  Devolve true se o usuário pediu para sair (Esc / Start). */
+  let _passoLast = 0;
+  function passo(vel) {
+    vel = Number(vel) > 0 ? Number(vel) : 45;
+    if (!App.sim) {
+      App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+    }
+    const now = performance.now();
+    let dt = _passoLast ? (now - _passoLast) / 1000 : 0.05;
+    _passoLast = now;
+    if (dt > 0.1) dt = 0.1;
+    if (dt < 0.001) dt = 0.05;
+    const e = lerEntrada();
+    aplicarMotores(e, vel);
+    App.sim.avancar(dt);
+    mostrarAoVivo();
+    const st = document.getElementById('resumo');
+    if (st) st.textContent = `teleop py · (${App.sim.x.toFixed(0)}, ${App.sim.y.toFixed(0)}) cm · ${e.fonte}`;
+    return !!e.end;
+  }
+  function resetPasso() { _passoLast = 0; }
+
+  globalThis.gamepadPonte = { ler, conectado, mostrarAoVivo, teleop, pararTeleop, toggleTeleop, lerEntrada, passo, resetPasso };
+  return globalThis.gamepadPonte;
+})();
+
+
+
 
 // =====================================================================
 // App — Pyodide + jacarev3 real + ponte; fluxo de execução
@@ -1230,26 +1569,63 @@ async function iniciarPython() {
 }
 
 async function rodar() {
-  if (!App.pronto || App.executando) return;                      // evita clique/atalho duplo
+  if (!App.pronto || App.executando) return;
   const btn = $('btnRodar');
-  App.executando = true; btn.disabled = true; btn.textContent = '⏳ Executando…';
-  Terminal.sys('▶ executando script…');
-  await new Promise((r) => setTimeout(r, 40));                    // deixa o navegador pintar antes do Python bloquear
+  App.executando = true; btn.disabled = true; btn.textContent = '⏳ Rodando…';
+  Terminal.limpar();
   App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
-  const t0 = performance.now(); let res = 'erro';
-  try { res = App.executarPy(App.editor.getValue(), +$('limite').value || 30); }
-  catch (e) { Terminal.err('Erro interno: ' + e.message); }
-  finally { App.executando = false; btn.disabled = false; btn.textContent = '▶ Rodar script'; }
-  const s = App.sim;
-  if (res !== 'limite') {                                          // o EV3 real termina comandos por tempo mesmo depois do script
-    const fim = s.concluirComandos();
-    if (fim.drenado > 0.05) Terminal.sys(`↳ o script acabou, mas os comandos por tempo continuaram (+${fim.drenado.toFixed(1)} s), como no EV3 real.`);
-    if (fim.ligados.length) Terminal.sys(`⚠ motor ${fim.ligados.join(' e ')} ficou ligado (mover_continuo): no EV3 real ele continuaria girando. Use robo.parar_motor().`);
+  const codigo = App.editor.getValue();
+  const limite = +$('limite').value || 30;
+  const t0 = performance.now();
+  let res = 'erro';
+  try {
+    // Código com gamepadPonte.teleop(...) → teleop JS ao vivo (mesma coisa do botão)
+    const mTele = codigo.match(/gamepadPonte\s*\.\s*teleop\s*\(\s*([^)]*)\)/);
+    if (mTele) {
+      const args = mTele[1].split(',').map((s) => s.trim()).filter(Boolean);
+      const sec = args[0] && !isNaN(+args[0]) ? +args[0] : Math.max(limite, 60);
+      const vel = args[1] && !isNaN(+args[1]) ? +args[1] : 45;
+      Terminal.sys('▶ teleop pelo código (' + sec + 's, vel ' + vel + ') — WASD/setas ou gamepad');
+      if (typeof gamepadPonte === 'undefined') throw new Error('gamepadPonte não carregou');
+      await gamepadPonte.teleop(sec, vel);
+      res = 'ok';
+    } else if (/\bawait\b/.test(codigo) || /gamepadPonte\s*\.\s*passo/.test(codigo)) {
+      // Loop Python async: envolve em async def + await
+      Terminal.sys('▶ script async…');
+      if (typeof gamepadPonte !== 'undefined' && gamepadPonte.resetPasso) gamepadPonte.resetPasso();
+      const body = codigo.split('\n').map((l) => '    ' + l).join('\n');
+      await App.py.runPythonAsync(
+        'import asyncio\n' +
+        'from js import gamepadPonte\n' +
+        'async def __jacar_main():\n' +
+        body + '\n' +
+        'await __jacar_main()'
+      );
+      res = 'ok';
+    } else {
+      res = App.executarPy(codigo, limite);
+    }
+  } catch (e) {
+    console.error(e);
+    Terminal.err('Erro: ' + (e.message || String(e)));
+    res = 'erro';
+  } finally {
+    App.executando = false; btn.disabled = false; btn.textContent = '▶ Rodar script';
   }
-  const ms = (performance.now() - t0).toFixed(0);
-  $('resumo').textContent = `${s.t.toFixed(1)} s simulados em ${ms} ms reais · ${s.pacotes.length} pacotes · ${s.dist.toFixed(0)} cm andados`;
-  Terminal.sys(res === 'erro' ? '✖ terminou com erro' : `✔ fim (${res === 'limite' ? 'limite de tempo' : 'ok'}): ${s.pacotes.length} pacotes, ${s.t.toFixed(1)} s simulados`);
-  Playback.carregar(s);
+  const s = App.sim;
+  if (s && res !== 'erro') {
+    try {
+      if (typeof s.concluirComandos === 'function') {
+        const fim = s.concluirComandos();
+        if (fim && fim.drenado > 0.05) Terminal.sys(`↳ comandos por tempo continuaram (+${fim.drenado.toFixed(1)} s).`);
+        if (fim && fim.ligados && fim.ligados.length) Terminal.sys(`⚠ motor ${fim.ligados.join(' e ')} ficou ligado: use parar_motor().`);
+      }
+    } catch (_) {}
+    const ms = (performance.now() - t0).toFixed(0);
+    $('resumo').textContent = `${(s.t||0).toFixed(1)} s simulados em ${ms} ms · ${(s.pacotes||[]).length} pacotes · ${(s.dist||0).toFixed(0)} cm andados`;
+    Terminal.sys(res === 'erro' ? '✖ terminou com erro' : `✔ fim (${res}): ${(s.pacotes||[]).length} pacotes, ${(s.t||0).toFixed(1)} s`);
+    if ((s.frames || []).length > 1) Playback.carregar(s);
+  }
 }
 
 function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); Playback.escolher(EXEMPLOS[k].cenario, EXEMPLOS[k].inicio); }
@@ -1258,8 +1634,15 @@ async function iniciar() {
   for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
   $('btnLimpar').onclick = () => Terminal.limpar();
   $('btnRodar').onclick = rodar;
+  const btnT = $('btnTeleop');
+  if (btnT) btnT.onclick = () => {
+    if (typeof gamepadPonte !== 'undefined') gamepadPonte.toggleTeleop();
+    else Terminal.err('teleop não carregou');
+  };
   Terminal.limpar();
   Playback.iniciar();
+  Terminal.sys('🎮 Controle: conecte o pad e aperte um botão (exemplo "Controle (gamepad)")');
+
   window.addEventListener('vista3d-pronta', () => Playback.habilitar3D());
   if (window.Vista3D) Playback.habilitar3D();
   setTimeout(() => { if (!window.Vista3D) { $('btn3d').title = 'Three.js não carregou (CDN bloqueado?)'; $('btn3d').textContent = '3D ✕'; } }, 20000);
