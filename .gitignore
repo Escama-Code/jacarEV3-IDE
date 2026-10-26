@@ -1,0 +1,15 @@
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+
+# Dependências e saídas locais
+node_modules/
+dist/
+coverage/
+*.log
+.env

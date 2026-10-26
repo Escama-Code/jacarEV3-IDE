@@ -322,3 +322,248 @@ export function aplicarEstado(rig, est) {
   rig.feixe.matCone.opacity = 0.22 + 0.4 * k;
   if (rig.animar) rig.animar(est);
 }
+
+// =====================================================================
+//  ROBÔ 3 — "Capivara Robótica"
+//  Mantém a mesma interface de rig usada pelo simulador.
+// =====================================================================
+export function construirRoboCapivara() {
+  const root = new THREE.Group(); root.name = 'capivara';
+  const marrom = M(0x9a623b, { roughness: 0.82 });
+  const marromEsc = M(0x68432d, { roughness: 0.85 });
+  const focinhoMat = M(0x5b3b2a, { roughness: 0.8 });
+  const barriga = M(0xc69a70, { roughness: 0.9 });
+  const preto = M(0x171411, { roughness: 0.45 });
+  const garra = M(0x34251c);
+  const rodaB = construirRoda('ev3', +1), rodaC = construirRoda('ev3', -1);
+  root.add(rodaB, rodaC);
+
+  // Corpo arredondado e barriga inferior
+  const corpo = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 28, 20), marrom));
+  corpo.scale.set(4.45, 2.55, 5.25); corpo.position.set(0, 4.65, -0.35); root.add(corpo);
+  const ventre = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), barriga));
+  ventre.scale.set(3.45, 0.72, 3.65); ventre.position.set(0, 2.75, -0.1); root.add(ventre);
+
+  // Pernas decorativas nos quatro cantos; as rodas continuam sendo a tração real
+  for (const sx of [-1, 1]) for (const z of [-3.2, 3.0]) {
+    const perna = pronto(new THREE.Mesh(new THREE.CapsuleGeometry(0.68, 1.15, 4, 8), marromEsc));
+    perna.position.set(sx * 3.05, 2.45, z); perna.rotation.x = z > 0 ? -0.12 : 0.12; root.add(perna);
+    root.add(chanfrada(1.15, 0.34, 1.05, 0.12, garra, sx * 3.08, 1.72, z + 0.1));
+  }
+
+  // Cabeça e focinho apontados para +Z
+  const cabeca = new THREE.Group(); cabeca.name = 'cabeca'; posicionar(cabeca, 0, 5.0, 3.55);
+  const cr = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 24, 18), marrom));
+  cr.scale.set(2.35, 1.8, 2.25); cr.position.set(0, 0.3, 0.65); cabeca.add(cr);
+  const focinho = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 20, 14), focinhoMat));
+  focinho.scale.set(1.65, 0.92, 1.6); focinho.position.set(0, -0.25, 2.35); cabeca.add(focinho);
+  const nariz = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), preto));
+  nariz.scale.set(0.62, 0.4, 0.28); nariz.position.set(0, 0.05, 3.68); cabeca.add(nariz);
+  for (const sx of [-1, 1]) {
+    // orelhas pequenas
+    const orelha = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 16, 12), marromEsc));
+    orelha.scale.set(0.48, 0.62, 0.32); orelha.position.set(sx * 1.72, 1.55, 0.25); cabeca.add(orelha);
+    const olho = pronto(new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), preto));
+    olho.position.set(sx * 1.72, 0.72, 1.55); cabeca.add(olho);
+    const brilho = pronto(new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 8), M(0xffffff, { emissive: 0x333333 })));
+    brilho.position.set(sx * 1.78, 0.8, 1.75); cabeca.add(brilho);
+  }
+  root.add(cabeca);
+
+  // Painel dorsal com LEDs, mantendo resposta ao estado do simulador
+  root.add(chanfrada(4.6, 0.42, 3.8, 0.15, M(0x49423b), 0, 7.0, -1.25));
+  const ledMat = new THREE.MeshStandardMaterial({ color: 0x1a1d1f, emissive: 0x000000, emissiveIntensity: 1.5, roughness: 0.3 });
+  root.add(caixa(0.75, 0.14, 0.35, ledMat, -1.25, 7.28, -1.3));
+  root.add(caixa(0.75, 0.14, 0.35, ledMat, 1.25, 7.28, -1.3));
+  const feixe = criarFeixe(1.4); posicionar(feixe.grupo, 0, 0, 5.5); root.add(feixe.grupo);
+  function animar(est) {
+    const t = est.t || 0;
+    cabeca.rotation.y = 0.045 * Math.sin(t * 2.2);
+    cabeca.rotation.x = est.bip ? -0.06 : 0.025 * Math.sin(t * 1.7);
+  }
+  return { nome: 'capivara', grupo: root, rodaB, rodaC, leds: [ledMat], feixe, animar };
+}
+
+// =====================================================================
+//  ROBÔ 4 — "Caranguejo Robótico"
+// =====================================================================
+export function construirRoboCaranguejo() {
+  const root = new THREE.Group(); root.name = 'caranguejo';
+  const vermelho = M(0xc9362b, { roughness: 0.58 });
+  const vermelhoEsc = M(0x84251f, { roughness: 0.62 });
+  const laranja = M(0xf07835, { roughness: 0.55 });
+  const branco = M(0xfff5df, { roughness: 0.35 });
+  const preto = M(0x171313, { roughness: 0.35 });
+  const rodaB = construirRoda('ev3', +1), rodaC = construirRoda('ev3', -1);
+  root.add(rodaB, rodaC);
+
+  // Carapaça larga, com placa superior e segmentos na borda
+  const casco = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 28, 18), vermelho));
+  casco.scale.set(5.2, 1.75, 4.45); casco.position.set(0, 5.05, -0.35); root.add(casco);
+  root.add(chanfrada(7.8, 0.42, 5.7, 0.2, vermelhoEsc, 0, 4.1, -0.25));
+  const placa = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12), laranja));
+  placa.scale.set(3.75, 0.45, 2.8); placa.position.set(0, 6.45, -0.35); root.add(placa);
+  for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
+    const seg = pronto(new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 10), vermelhoEsc));
+    seg.scale.set(0.58, 0.38, 0.78); seg.position.set(sx * (4.1 + (i === 1 ? 0.2 : 0)), 4.75, -2.25 + i * 1.85); root.add(seg);
+  }
+
+  // Seis patas laterais estilizadas (decorativas)
+  for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
+    const z = 2.15 - i * 2.1;
+    const junta = new THREE.Group(); posicionar(junta, sx * 3.7, 3.9, z);
+    const parte1 = caixa(1.9, 0.48, 0.58, vermelhoEsc, sx * 0.85, 0, 0); parte1.rotation.y = sx * -0.18; junta.add(parte1);
+    const parte2 = caixa(1.5, 0.38, 0.48, vermelho, sx * 2.0, -0.55, 0.25); parte2.rotation.z = sx * 0.28; junta.add(parte2);
+    const ponta = cone(0.32, 0.75, laranja, 5, sx * 2.62, -0.78, 0.35, Math.PI / 2); junta.add(ponta);
+    root.add(junta);
+  }
+
+  // Olhos erguidos em hastes frontais
+  for (const sx of [-1, 1]) {
+    root.add(cil(0.16, 1.45, vermelhoEsc, 'y', sx * 1.35, 6.65, 3.05));
+    const olho = pronto(new THREE.Mesh(new THREE.SphereGeometry(0.72, 20, 16), branco));
+    olho.position.set(sx * 1.35, 7.35, 3.1); root.add(olho);
+    const pupila = pronto(new THREE.Mesh(new THREE.SphereGeometry(0.31, 16, 12), preto));
+    pupila.position.set(sx * 1.35, 7.35, 3.72); root.add(pupila);
+    const brilho = pronto(new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), M(0xffffff)));
+    brilho.position.set(sx * 1.45, 7.48, 3.98); root.add(brilho);
+  }
+
+  // Garras frontais em grupos animáveis
+  const garras = [];
+  for (const sx of [-1, 1]) {
+    const garra = new THREE.Group(); garra.name = sx < 0 ? 'garra_esquerda' : 'garra_direita';
+    posicionar(garra, sx * 4.1, 4.55, 3.25);
+    const braco = caixa(1.9, 0.62, 0.72, vermelhoEsc, sx * 0.85, 0.05, 0.55); braco.rotation.y = sx * -0.25; garra.add(braco);
+    const palma = pronto(new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), vermelho));
+    palma.scale.set(1.0, 0.72, 0.9); palma.position.set(sx * 1.8, 0.05, 1.0); garra.add(palma);
+    const pinça1 = cone(0.48, 1.35, laranja, 5, sx * 2.45, 0.25, 1.75, Math.PI / 2);
+    pinça1.rotation.y = sx * -0.5; garra.add(pinça1);
+    const pinça2 = cone(0.42, 1.15, laranja, 5, sx * 1.5, -0.28, 1.85, Math.PI / 2);
+    pinça2.rotation.y = sx * 0.5; garra.add(pinça2);
+    root.add(garra); garras.push(garra);
+  }
+
+  // Painel eletrônico no dorso e LEDs
+  root.add(chanfrada(3.6, 0.35, 2.5, 0.12, M(0x34383b), 0, 6.9, -0.45));
+  const ledMat = new THREE.MeshStandardMaterial({ color: 0x1a1d1f, emissive: 0x000000, emissiveIntensity: 1.5, roughness: 0.3 });
+  root.add(caixa(0.8, 0.14, 0.32, ledMat, -0.85, 7.12, -0.5), caixa(0.8, 0.14, 0.32, ledMat, 0.85, 7.12, -0.5));
+  const feixe = criarFeixe(1.4); posicionar(feixe.grupo, 0, 0, 5.5); root.add(feixe.grupo);
+  function animar(est) {
+    const t = est.t || 0;
+    const abre = est.bip ? 0.18 : 0.04 * Math.sin(t * 2.5);
+    garras[0].rotation.y = -abre + 0.035 * Math.sin(t * 1.6);
+    garras[1].rotation.y = abre - 0.035 * Math.sin(t * 1.6);
+  }
+  return { nome: 'caranguejo', grupo: root, rodaB, rodaC, leds: [ledMat], feixe, partes: { garras }, animar };
+}
+
+// ============================================================
+// tubarao.mjs — modelo 3D: Tubarão (Robô EV3)
+// ============================================================
+import * as THREE from 'three';
+import {
+  M, pronto, posicionar, caixa, cil, chanfrada, cone,
+  criarLCD, planoLCD, construirRoda, olhoUltra, sensorCor, criarFeixe,
+  CM_POR_GRAU, RAIO_RODA,
+} from './_helpers.mjs';
+
+export function construirRoboTubarao() {
+  const root = new THREE.Group(); root.name = 'tubarao';
+  const cinzaAzulado = M(0x4a6572, { roughness: 0.5 });
+  const cinzaEsc = M(0x232f34, { roughness: 0.6 });
+  const barriga = M(0xe0e6ed, { roughness: 0.4 });
+  const vermelhoBoca = M(0x900c3f);
+  const dente = M(0xfffdf0, { roughness: 0.3 });
+
+  const rodaB = construirRoda('tubarao', +1), rodaC = construirRoda('tubarao', -1);
+  root.add(rodaB, rodaC);
+
+  // Corpo / Chassi Hidrodinâmico
+  root.add(chanfrada(8.2, 5.2, 11.8, 0.9, cinzaAzulado, 0, 4.8, -0.2));
+  root.add(chanfrada(6.8, 1.4, 10.2, 0.4, barriga, 0, 2.5, -0.2));
+
+  // Barbatana Dorsal no Topo
+  const barbatana = new THREE.Group();
+  posicionar(barbatana, 0, 7.8, -1.0);
+  barbatana.add(chanfrada(1.2, 3.4, 2.8, 0.3, cinzaEsc, 0, 1.2, 0));
+  barbatana.rotation.x = -0.35;
+  root.add(barbatana);
+
+  // Barbatanas Peitorais Laterais
+  for (const s of [+1, -1]) {
+    const peitoral = new THREE.Group();
+    posicionar(peitoral, s * 4.3, 4.2, 1.5);
+    const aba = chanfrada(3.2, 0.5, 2.2, 0.2, cinzaEsc, s * 1.4, 0, -0.2);
+    aba.rotation.z = -s * 0.3;
+    aba.rotation.y = s * 0.25;
+    peitoral.add(aba);
+    root.add(peitoral);
+  }
+
+  // Painel Dorsal: LCD + LEDs
+  root.add(chanfrada(4.8, 0.4, 4.8, 0.15, M(0x3b3f43), 0, 7.5, -0.2));
+  const lcd = criarLCD(); root.add(planoLCD(2.8, 1.9, lcd, 0, 7.75, 0.4));
+  const ledMat = new THREE.MeshStandardMaterial({ color: 0x1a1d1f, emissive: 0x000000, emissiveIntensity: 1.5 });
+  root.add(caixa(1.2, 0.14, 0.4, ledMat, -1.6, 7.7, -1.8), caixa(1.2, 0.14, 0.4, ledMat, 1.6, 7.7, -1.8));
+
+  // Cabeça e Boca Articulada
+  const cabeca = new THREE.Group(); posicionar(cabeca, 0, 5.2, 4.2);
+  cabeca.add(chanfrada(5.6, 2.8, 4.0, 0.5, cinzaAzulado, 0, 0.4, 1.6)); // Crânio
+  cabeca.add(chanfrada(4.8, 1.6, 2.6, 0.4, cinzaAzulado, 0, 0.6, 3.8)); // Focinho elevado
+
+  // Olhos Ultrassônicos nas laterais
+  for (const s of [-1, 1]) {
+    const olho = olhoUltra(0.85, s * 2.2, 0.4, 2.0);
+    olho.rotation.y = s * 0.4;
+    cabeca.add(olho);
+  }
+
+  // Mandíbula inferior (Boca que abre no Bip)
+  const mandibula = new THREE.Group(); posicionar(mandibula, 0, -0.6, 0.8);
+  mandibula.add(chanfrada(4.4, 0.8, 3.8, 0.3, vermelhoBoca, 0, -0.3, 1.8));
+  for (let i = 0; i < 5; i++) for (const s of [-1, 1]) {
+    mandibula.add(cone(0.15, 0.45, dente, 4, s * 1.8, 0.2, 0.8 + i * 0.6));
+  }
+  cabeca.add(mandibula); root.add(cabeca);
+
+  // Cauda Articulada (4 segmentos)
+  const caudaRaiz = new THREE.Group(); posicionar(caudaRaiz, 0, 4.8, -6.0); root.add(caudaRaiz);
+  const cauda = []; let pai = caudaRaiz;
+  const larg = [3.8, 2.8, 1.8, 1.0], comp = [2.0, 1.8, 1.6, 1.4];
+  for (let i = 0; i < 4; i++) {
+    const seg = new THREE.Group(); seg.position.z = i === 0 ? 0 : -comp[i - 1];
+    seg.add(chanfrada(larg[i], 3.0 - i * 0.4, comp[i], 0.25, i % 2 ? cinzaEsc : cinzaAzulado, 0, 0, -comp[i] / 2));
+    pai.add(seg); cauda.push(seg); pai = seg;
+  }
+  // Nadadeira Caudal Vertical
+  pai.add(chanfrada(0.5, 4.2, 2.2, 0.2, cinzaEsc, 0, 0, -2.2));
+
+  // Apoio Traseiro e Feixe
+  root.add(cil(0.45, 1.3, M(0x3b3f43), 'y', 0, 2.4, -4.2, 12));
+  const bola = pronto(new THREE.Mesh(new THREE.SphereGeometry(1.2, 18, 12), M(0xd7d9db, { metalness: 0.6, roughness: 0.25 })));
+  posicionar(bola, 0, 1.2, -4.2); root.add(bola);
+  const sensorGrounded = sensorCor(0x28a745); posicionar(sensorGrounded, 0, 2.2, 5.0); root.add(sensorGrounded);
+  const feixe = criarFeixe(1.4); posicionar(feixe.grupo, 0, 0, 5.5); root.add(feixe.grupo);
+
+  let tAnt = null, encAnt = null, fase = 0, amp = 0, mordida = 0;
+  function animar(est) {
+    if (lcd) lcd.desenhar(est);
+    let dist = 0, dt = 0;
+    if (tAnt !== null) {
+      dt = est.t - tAnt;
+      if (dt > 0 && dt < 0.25) dist = (Math.abs(est.encB - encAnt[0]) + Math.abs(est.encC - encAnt[1])) / 2 * CM_POR_GRAU;
+    }
+    tAnt = est.t; encAnt = [est.encB, est.encC];
+    const vel = dt > 0 ? dist / dt : 0;
+    amp += ((Math.min(vel / 20, 1) * 0.4) - amp) * Math.min(1, (dt || 0.05) * 8);
+    fase += dist * 0.9;
+
+    cauda.forEach((s, i) => { s.rotation.y = amp * Math.sin(fase - i * 0.7); });
+    mordida += ((est.bip ? 0.5 : 0) - mordida) * Math.min(1, (dt || 0.05) * 14);
+    mandibula.rotation.x = mordida;
+    cabeca.rotation.y = Math.sin(fase * 0.5) * amp * 0.2;
+  }
+
+  return { nome: 'tubarao', grupo: root, rodaB, rodaC, leds: [ledMat], feixe, lcd, partes: { cabeca, mandibula, cauda }, animar };
+}
