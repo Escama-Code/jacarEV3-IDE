@@ -1,0 +1,118 @@
+/* Tela inicial */
+.tela-inicio {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at 30% 20%, #1a3a2a 0%, #0d1117 55%, #0a0e14 100%);
+  padding: 24px;
+}
+.tela-inicio[hidden] { display: none !important; }
+.tela-inicio-card {
+  max-width: 720px; width: 100%; text-align: center;
+  color: #e6edf3;
+}
+.tela-inicio-logo { font-size: 3.5rem; line-height: 1; margin-bottom: 8px; }
+.tela-inicio-card h1 {
+  font-size: 1.75rem; font-weight: 700; margin: 0 0 8px;
+  letter-spacing: 0.02em;
+}
+.tela-inicio-sub { color: #8b9bab; margin: 0 0 28px; font-size: 0.95rem; }
+.tela-inicio-modos {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  margin-bottom: 24px;
+}
+@media (max-width: 700px) {
+  .tela-inicio-modos { grid-template-columns: 1fr; }
+}
+.modo-card {
+  background: #161b22; border: 1px solid #30363d; border-radius: 12px;
+  padding: 20px 14px; cursor: pointer; color: inherit;
+  transition: border-color .15s, transform .15s, background .15s;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-family: inherit;
+}
+.modo-card:hover, .modo-card:focus {
+  border-color: #3fb950; background: #1c2128; transform: translateY(-2px);
+  outline: none;
+}
+.modo-card#btnModoMulti { opacity: 0.75; }
+.modo-icon { font-size: 1.8rem; }
+.modo-titulo { font-weight: 600; font-size: 1.05rem; }
+.modo-desc { font-size: 0.8rem; color: #8b9bab; line-height: 1.35; }
+.tela-inicio-rodape { font-size: 0.75rem; color: #6e7681; margin: 0; }
+
+body.modo-inicio main, body.modo-inicio header {
+  /* menu cobre tudo; header ainda existe atrás */
+}
+
+.btn-menu-modos {
+  margin-left: 10px; font-size: 0.75rem; padding: 4px 10px;
+  border-radius: 6px; border: 1px solid #30363d; background: #21262d;
+  color: #e6edf3; cursor: pointer;
+}
+.badge-modo {
+  margin-left: 8px; font-size: 0.7rem; padding: 2px 8px;
+  border-radius: 999px; background: #238636; color: #fff;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+/* Painel campanha */
+.painel-campanha {
+  position: fixed; top: 48px; right: 12px; bottom: 12px;
+  width: min(420px, 94vw); z-index: 9000;
+  background: #0d1117; border: 1px solid #30363d; border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.painel-campanha[hidden] { display: none !important; }
+.painel-campanha.camp-recolhido {
+  bottom: auto; max-height: 52px; overflow: hidden;
+}
+.camp-inner { display: flex; flex-direction: column; height: 100%; overflow: auto; }
+.camp-header {
+  display: flex; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; border-bottom: 1px solid #21262d; align-items: flex-start;
+}
+.camp-header h2 { margin: 0; font-size: 1.1rem; color: #e6edf3; }
+.camp-desc { margin: 4px 0 0; font-size: 0.8rem; color: #8b9bab; }
+.camp-header-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.camp-xp {
+  font-size: 0.75rem; color: #3fb950; font-weight: 600; margin-right: 4px;
+}
+.camp-btn-sec {
+  font-size: 0.75rem; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid #30363d; background: #21262d; color: #e6edf3; cursor: pointer;
+}
+.camp-body { display: flex; flex-direction: column; gap: 12px; padding: 12px 16px 16px; }
+.camp-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.camp-missao {
+  display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center;
+  padding: 10px 12px; border-radius: 8px; border: 1px solid #30363d;
+  background: #161b22; color: #e6edf3; cursor: pointer;
+}
+.camp-missao.bloqueada { opacity: 0.45; cursor: not-allowed; }
+.camp-missao.selecionada { border-color: #3fb950; background: #1a2f1a; }
+.camp-missao-ordem {
+  width: 24px; height: 24px; border-radius: 50%; background: #21262d;
+  display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+}
+.camp-missao-titulo { font-size: 0.9rem; text-align: left; }
+.camp-missao-st { font-size: 0.75rem; color: #8b9bab; }
+.camp-dialogo {
+  background: #161b22; border-radius: 8px; padding: 12px; font-size: 0.9rem;
+  color: #e6edf3; line-height: 1.45; border: 1px solid #21262d;
+}
+.camp-dialogo p { margin: 0 0 8px; }
+.camp-dialogo p:last-child { margin: 0; }
+.camp-objetivos h3 { margin: 0 0 6px; font-size: 0.85rem; color: #8b9bab; }
+.camp-objetivos ul { margin: 0; padding-left: 1.2em; font-size: 0.85rem; color: #e6edf3; }
+.camp-actions { margin-top: 10px; }
+.camp-resultado {
+  margin-top: 12px; padding: 12px; border-radius: 8px;
+  border: 1px solid #3fb950; background: #122117; color: #e6edf3;
+}
+.camp-resultado h3 { margin: 0 0 8px; font-size: 1rem; }
+.camp-stars { color: #e3b341; margin-left: 6px; }
+.camp-obj-result { list-style: none; padding: 0; margin: 8px 0; font-size: 0.85rem; }
+.camp-obj-result .ok { color: #3fb950; }
+.camp-obj-result .fail { color: #f85149; }
+.camp-metricas { font-size: 0.8rem; color: #8b9bab; margin: 0; }
