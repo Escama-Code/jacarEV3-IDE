@@ -1,0 +1,22 @@
+{
+  "name": "jacarev3-ide",
+  "version": "0.1.0",
+  "description": "IDE educacional para programação de robôs virtuais EV3, com simulação 2D/3D no navegador",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "dev": "python3 -m http.server 8000",
+    "serve": "npx --yes serve . -p 8000"
+  },
+  "keywords": [
+    "ev3",
+    "lego",
+    "robotics",
+    "education",
+    "python",
+    "pyodide",
+    "three.js"
+  ],
+  "license": "MIT"
+}
