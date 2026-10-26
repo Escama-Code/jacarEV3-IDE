@@ -1,0 +1,6 @@
+{
+  "id": "pantanal-1",
+  "titulo": "Operação Pantanal",
+  "descricao": "O jacaré-robô aprende a biblioteca jacarev3 em missões curtas.",
+  "missoes": ["m01-led", "m02-linha", "m03-teleop"]
+}

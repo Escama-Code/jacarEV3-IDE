@@ -10,10 +10,76 @@
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/" } }
 </script>
 <link rel="stylesheet" href="../src/css/main.css">
+<link rel="stylesheet" href="../src/css/campanha.css">
+<style>
+  /* modo campanha: mapa fixo pela missão, só 2D/3D pode trocar */
+  body.modo-campanha #cenario,
+  body.modo-campanha #inicio,
+  body.modo-campanha #exemplo { display: none; }
+</style>
 </head>
 <body>
+
+<!-- Tela inicial: Campanha / Multiplayer / Sandbox -->
+<div id="telaInicio" class="tela-inicio">
+  <div class="tela-inicio-card">
+    <div class="tela-inicio-logo">🐊</div>
+    <h1>jacarEV3 IDE</h1>
+    <p class="tela-inicio-sub">Aprenda robótica com Python real no navegador</p>
+    <div class="tela-inicio-modos">
+      <button type="button" class="modo-card" data-modo="campanha">
+        <span class="modo-icon">📖</span>
+        <span class="modo-titulo">Campanha</span>
+        <span class="modo-desc">Missões com história para aprender a biblioteca</span>
+      </button>
+      <button type="button" class="modo-card" data-modo="multiplayer" id="btnModoMulti">
+        <span class="modo-icon">👥</span>
+        <span class="modo-titulo">Multiplayer</span>
+        <span class="modo-desc">Sala do professor — em breve</span>
+      </button>
+      <button type="button" class="modo-card" data-modo="sandbox">
+        <span class="modo-icon">🧪</span>
+        <span class="modo-titulo">Sandbox</span>
+        <span class="modo-desc">Editor livre, simulador 2D/3D e teleop</span>
+      </button>
+    </div>
+    <p class="tela-inicio-rodape">jacarev3 · simulação EV3 no browser</p>
+  </div>
+</div>
+
+<!-- Painel Campanha -->
+<div id="painelCampanha" class="painel-campanha" hidden>
+  <div class="camp-inner">
+    <header class="camp-header">
+      <div>
+        <h2 id="campTitulo">Operação Pantanal</h2>
+        <p id="campDesc" class="camp-desc"></p>
+      </div>
+      <div class="camp-header-actions">
+        <span id="campXp" class="camp-xp">0 XP</span>
+        <button type="button" id="campSandbox" class="camp-btn-sec">Sandbox</button>
+        <button type="button" id="campInicio" class="camp-btn-sec">Menu</button>
+      </div>
+    </header>
+    <div class="camp-body">
+      <ul id="campListaMissoes" class="camp-lista"></ul>
+      <div class="camp-detalhe">
+        <div id="campDialogo" class="camp-dialogo"></div>
+        <div id="campObjetivos" class="camp-objetivos"></div>
+        <div class="camp-actions">
+          <button type="button" id="campIniciar" class="principal" disabled>Iniciar missão</button>
+        </div>
+        <div id="campResultado" class="camp-resultado" hidden></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <header>
   <h1>🐊 jacarEV3 IDE</h1>
+  <button type="button" id="btnMenuModos" class="btn-menu-modos" title="Trocar modo">Menu</button>
+  <span id="badgeModo" class="badge-modo">Sandbox</span>
   <span id="status">iniciando…</span>
   <span id="gpStatus" class="info" title="Controle USB/Bluetooth">controle: —</span>
 </header>
@@ -824,6 +890,9 @@ const Sugestoes = (() => {
 // Carrega a cena 3D e os modelos a partir de src/js/3d/
 // (define window.Vista3D e dispara o evento "vista3d-pronta")
 import '../src/js/3d/cena3d.mjs';
+import * as Campanha from '../src/campanha/index.mjs';
+window.Campanha = Campanha;
+window.dispatchEvent(new Event('campanha-pronta'));
 </script>
 <script>
 'use strict';
@@ -1625,10 +1694,194 @@ async function rodar() {
     $('resumo').textContent = `${(s.t||0).toFixed(1)} s simulados em ${ms} ms · ${(s.pacotes||[]).length} pacotes · ${(s.dist||0).toFixed(0)} cm andados`;
     Terminal.sys(res === 'erro' ? '✖ terminou com erro' : `✔ fim (${res}): ${(s.pacotes||[]).length} pacotes, ${(s.t||0).toFixed(1)} s`);
     if ((s.frames || []).length > 1) Playback.carregar(s);
+    if (window.CampanhaUI && CampanhaUI.missaoAtiva && res !== 'erro') {
+      CampanhaUI.avaliarTentativa(s, codigo);
+    }
   }
 }
 
 function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); Playback.escolher(EXEMPLOS[k].cenario, EXEMPLOS[k].inicio); }
+
+
+// =====================================================================
+// CampanhaUI — menu, missões, avaliação pós-rodar
+// =====================================================================
+const CampanhaUI = {
+  missaoAtiva: null,
+  missaoSelecionada: null,
+  save: null,
+  modo: 'inicio', // inicio | sandbox | campanha | multiplayer
+
+  ready() {
+    return typeof window.Campanha !== 'undefined';
+  },
+
+  ensureSave() {
+    if (!this.ready()) return null;
+    if (!this.save) this.save = Campanha.carregarSave(Campanha.CAMPANHA.id);
+    return this.save;
+  },
+
+  mostrarInicio() {
+    this.modo = 'inicio';
+    this.missaoAtiva = null;
+    $('telaInicio').hidden = false;
+    $('painelCampanha').hidden = true;
+    document.body.classList.add('modo-inicio');
+    document.body.classList.remove('modo-sandbox', 'modo-campanha');
+    const b = $('badgeModo'); if (b) b.textContent = 'Menu';
+  },
+
+  entrarSandbox() {
+    this.modo = 'sandbox';
+    this.missaoAtiva = null;
+    $('telaInicio').hidden = true;
+    $('painelCampanha').hidden = true;
+    document.body.classList.remove('modo-inicio', 'modo-campanha');
+    document.body.classList.add('modo-sandbox');
+    const b = $('badgeModo'); if (b) b.textContent = 'Sandbox';
+  },
+
+  entrarCampanha() {
+    if (!this.ready()) {
+      Terminal.err('Módulo campanha ainda não carregou — aguarde um instante.');
+      return;
+    }
+    this.modo = 'campanha';
+    this.ensureSave();
+    $('telaInicio').hidden = true;
+    $('painelCampanha').hidden = false;
+    document.body.classList.remove('modo-inicio');
+    document.body.classList.add('modo-sandbox', 'modo-campanha');
+    const b = $('badgeModo'); if (b) b.textContent = 'Campanha';
+    $('campTitulo').textContent = Campanha.CAMPANHA.titulo;
+    $('campDesc').textContent = Campanha.CAMPANHA.descricao;
+    this.renderLista();
+    $('campResultado').hidden = true;
+  },
+
+  entrarMultiplayer() {
+    Terminal.sys('👥 Multiplayer (sala do professor) — em breve. Por enquanto use Campanha ou Sandbox.');
+    // mantém na tela inicial
+  },
+
+  renderLista() {
+    const ul = $('campListaMissoes');
+    ul.innerHTML = '';
+    const save = this.ensureSave();
+    $('campXp').textContent = (save.xp || 0) + ' XP';
+    const primeira = Campanha.MISSOES[0]?.id;
+    for (const m of Campanha.MISSOES) {
+      const st = Campanha.statusMissao(save, m.id, primeira);
+      const info = save.missoes[m.id] || {};
+      const li = document.createElement('li');
+      li.className = 'camp-missao ' + st;
+      li.dataset.id = m.id;
+      const stars = '★'.repeat(info.estrelas || 0) + '☆'.repeat(3 - (info.estrelas || 0));
+      li.innerHTML = `<span class="camp-missao-ordem">${m.ordem}</span>
+        <span class="camp-missao-titulo">${m.titulo}</span>
+        <span class="camp-missao-st">${st === 'bloqueada' ? '🔒' : st === 'concluida' ? stars : 'Disponível'}</span>`;
+      if (st !== 'bloqueada') {
+        li.onclick = () => this.selecionar(m.id);
+      }
+      ul.appendChild(li);
+    }
+  },
+
+  selecionar(id) {
+    const m = Campanha.getMissao(id);
+    if (!m) return;
+    this.missaoSelecionada = m;
+    document.querySelectorAll('.camp-missao').forEach((el) => {
+      el.classList.toggle('selecionada', el.dataset.id === id);
+    });
+    const intro = (m.narrativa?.intro || []).map((d) => `<p><strong>${d.personagem}:</strong> ${d.texto}</p>`).join('');
+    $('campDialogo').innerHTML = intro || '<p>Sem introdução.</p>';
+    const objs = (m.objetivos || []).map((o) => {
+      let t = o.id;
+      if (o.tipo === 'dist_min') t = `Andar ≥ ${o.cm} cm`;
+      if (o.tipo === 'api_usada') t = `Usar: ${(o.metodos || []).join(', ')}`;
+      if (o.tipo === 'regiao') t = `Chegar na região marcada`;
+      return `<li>${t}</li>`;
+    }).join('');
+    $('campObjetivos').innerHTML = `<h3>Objetivos</h3><ul>${objs}</ul>`;
+    $('campIniciar').disabled = false;
+    $('campResultado').hidden = true;
+  },
+
+  iniciarSelecionada() {
+    const m = this.missaoSelecionada;
+    if (!m) return;
+    this.missaoAtiva = m;
+    const s = m.setup || {};
+    if (typeof Playback !== 'undefined') Playback.escolher(s.cenario || 'treino', s.inicio || 'padrao');
+    if (s.robo3d && $('robo3d')) {
+      $('robo3d').value = s.robo3d;
+      $('robo3d').dispatchEvent(new Event('change'));
+    }
+    if (App.editor && s.codigoInicial != null) App.editor.setValue(s.codigoInicial);
+    $('campResultado').hidden = true;
+    Terminal.sys('📖 Missão: ' + m.titulo + ' — edite o código e clique em Rodar script');
+    // recolhe painel para ver a arena (continua acessível pelo badge)
+    $('painelCampanha').classList.add('camp-recolhido');
+  },
+
+  avaliarTentativa(sim, codigo) {
+    if (!this.missaoAtiva || !this.ready()) return null;
+    const r = Campanha.avaliar(sim, codigo, this.missaoAtiva);
+    this.save = Campanha.aplicarResultado(this.ensureSave(), this.missaoAtiva, r);
+    this.mostrarResultado(r);
+    this.renderLista();
+    return r;
+  },
+
+  mostrarResultado(r) {
+    const box = $('campResultado');
+    box.hidden = false;
+    $('painelCampanha').hidden = false;
+    $('painelCampanha').classList.remove('camp-recolhido');
+    const m = this.missaoAtiva;
+    const falas = r.ok ? (m.narrativa?.sucesso || []) : (m.narrativa?.fracasso || []);
+    const fala = falas.map((d) => `<p><strong>${d.personagem}:</strong> ${d.texto}</p>`).join('');
+    const stars = '★'.repeat(r.estrelas) + '☆'.repeat(3 - r.estrelas);
+    const objs = Object.entries(r.objetivos || {}).map(([id, ok]) =>
+      `<li class="${ok ? 'ok' : 'fail'}">${ok ? '✓' : '✗'} ${id}</li>`).join('');
+    box.innerHTML = `
+      <h3>${r.ok ? 'Missão cumprida!' : 'Ainda não…'} <span class="camp-stars">${stars}</span></h3>
+      ${fala}
+      <ul class="camp-obj-result">${objs}</ul>
+      <p class="camp-metricas">${r.metricas.tempoSim.toFixed(1)} s · ${r.metricas.dist.toFixed(0)} cm · ${r.metricas.pacotes} pacotes</p>`;
+  },
+
+  wire() {
+    document.querySelectorAll('.modo-card').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const modo = btn.dataset.modo;
+        if (modo === 'sandbox') this.entrarSandbox();
+        else if (modo === 'campanha') this.entrarCampanha();
+        else if (modo === 'multiplayer') this.entrarMultiplayer();
+      });
+    });
+    const menu = $('btnMenuModos');
+    if (menu) menu.onclick = () => { window.location.href = '../index.html'; };
+    // entra direto no modo se vier do seletor externo (?modo=)
+    const modoUrl = new URLSearchParams(location.search).get('modo');
+    if (modoUrl === 'sandbox') {
+      this.entrarSandbox();
+    } else if (modoUrl === 'campanha') {
+      $('telaInicio').hidden = true;
+      if (this.ready()) {
+        this.entrarCampanha();
+      } else {
+        window.addEventListener('campanha-pronta', () => this.entrarCampanha(), { once: true });
+      }
+    } else {
+      this.mostrarInicio();
+    }
+  },
+};
+window.CampanhaUI = CampanhaUI;
+
 
 async function iniciar() {
   for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
@@ -1641,13 +1894,16 @@ async function iniciar() {
   };
   Terminal.limpar();
   Playback.iniciar();
+  if (window.CampanhaUI) CampanhaUI.wire();
+  else window.addEventListener('campanha-pronta', () => CampanhaUI.wire());
   Terminal.sys('🎮 Controle: conecte o pad e aperte um botão (exemplo "Controle (gamepad)")');
 
   window.addEventListener('vista3d-pronta', () => Playback.habilitar3D());
   if (window.Vista3D) Playback.habilitar3D();
   setTimeout(() => { if (!window.Vista3D) { $('btn3d').title = 'Three.js não carregou (CDN bloqueado?)'; $('btn3d').textContent = '3D ✕'; } }, 20000);
+  const _modoUrl = new URLSearchParams(location.search).get('modo');
   const [ed] = await Promise.all([
-    Ide.criar($('editor'), EXEMPLOS.linha.codigo),
+    Ide.criar($('editor'), _modoUrl === 'campanha' ? '' : EXEMPLOS.linha.codigo),
     iniciarPython().catch((e) => { status('falhou: ' + e.message, 'erro'); Terminal.err(String(e)); }),
   ]);
   App.editor = ed;
