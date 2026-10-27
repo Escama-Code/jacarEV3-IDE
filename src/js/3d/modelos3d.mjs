@@ -13,11 +13,5 @@ export {
   construirRoboCapivara,
   construirRoboCaranguejo,
   construirRoboTubarao,
-  construirRoboSapo,
-  construirRoboElefante,
-  construirRoboCamaleao,
-  construirRoboEscorpiao,
-  construirRoboCoruja,
-  construirRoboArara,
   aplicarEstado,
 } from './modelos/index.mjs';
