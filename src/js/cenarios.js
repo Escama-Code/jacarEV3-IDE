@@ -75,7 +75,6 @@ const Cenarios = (() => {
 
   // ---------------------------------------------------------
   // Cenário A — Pista de Treino (Sem Obstáculos) · 120×80 cm
-  // Só o oval preto sobre fundo branco: o robô pode orbitar sem nada no caminho.
   // ---------------------------------------------------------
   const treino = {
     id: 'treino', nome: 'Pista de Treino (Sem Obstáculos)', w: 120, h: 80, pxPorCm: 10,
@@ -91,8 +90,6 @@ const Cenarios = (() => {
 
   // ---------------------------------------------------------
   // Cenário B — Desvio Clássico (Paredes) · 120×80 cm
-  // Duas paredes paralelas escalonadas: o robô sai do centro-esquerda, enxerga a parede
-  // pelo ultrassônico (<15 cm), recua, gira e segue até a próxima.
   // ---------------------------------------------------------
   const desvio = {
     id: 'desvio', nome: 'Desvio Clássico (Paredes)', w: 120, h: 80, pxPorCm: 10,
@@ -105,7 +102,7 @@ const Cenarios = (() => {
     rampas: [],
     desenhar(ctx, c) {
       ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.w, c.h);
-      ctx.strokeStyle = '#d4d8dc'; ctx.lineWidth = 1.2; ctx.strokeRect(0.6, 0.6, c.w - 1.2, c.h - 1.2);   // moldura clara (o robô nunca a alcança com o sensor)
+      ctx.strokeStyle = '#d4d8dc'; ctx.lineWidth = 1.2; ctx.strokeRect(0.6, 0.6, c.w - 1.2, c.h - 1.2);   // moldura clara
       ctx.strokeStyle = '#c3cbd3'; ctx.lineWidth = 0.4; ctx.setLineDash([2, 2]);                          // guia pontilhada do caminho central
       ctx.beginPath(); ctx.moveTo(4, 40); ctx.lineTo(c.w - 4, 40); ctx.stroke(); ctx.setLineDash([]);
     },
@@ -123,47 +120,105 @@ const Cenarios = (() => {
       { nome: 'Missão 2 · Plataforma', x: 154, y: 40, w: 12, h: 16, altura: 12, cor: '#8e44ad', modelo: 'plataforma' },
       { nome: 'Missão 3 · Contêiner', x: 214, y: 18, w: 14, h: 10, altura: 6, cor: '#c0392b', modelo: 'conteiner' },
     ],
-    // rampa física: sobe em +x ao longo de 18 cm até 4,5 cm de altura e segue em platô (16 cm de largura cabe o robô)
     rampas: [{ nome: 'Rampa', x: 62, y: 96, w: 34, h: 16, altura: 4.5, subida: 18, dir: '+x', cor: '#8c8c8c' }],
     desenhar(ctx, c) {
-      const retArred = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
-      // base do tapete
       ctx.fillStyle = '#f2efe6'; ctx.fillRect(0, 0, c.w, c.h);
-      // lago fundo (azul-marinho: luminância BAIXA — pode enganar o sensor como se fosse linha)
       ctx.fillStyle = '#1b2a5c'; ctx.beginPath(); ctx.ellipse(38, 24, 30, 15, 0, 0, 2 * PI); ctx.fill();
       ctx.strokeStyle = '#3a5fc0'; ctx.lineWidth = 0.7;
       for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.ellipse(38, 24 + i * 0.01, 24 - i * 5, 11 - i * 2.2, 0, PI * 1.1, PI * 1.9); ctx.stroke(); }
-      // deserto amarelo com dunas laranja
       ctx.fillStyle = '#f2c230'; ctx.fillRect(176, 6, 54, 34);
       ctx.fillStyle = '#e8902a'; for (const [x, y, r] of [[190, 34, 9], [208, 12, 7], [222, 33, 8]]) { ctx.beginPath(); ctx.arc(x, y, r, PI, 2 * PI); ctx.fill(); }
-      // vulcão (vermelho + laranja), floresta (marrom), rampa cinza
       ctx.fillStyle = '#d62828'; ctx.beginPath(); ctx.arc(150, 96, 9, 0, 2 * PI); ctx.fill();
       ctx.fillStyle = '#ff8c1a'; ctx.beginPath(); ctx.arc(150, 96, 4, 0, 2 * PI); ctx.fill();
       ctx.fillStyle = '#7b4a2a'; ctx.fillRect(104, 82, 22, 10);
-      ctx.fillStyle = '#8c8c8c'; ctx.fillRect(62, 96, 34, 16);                      // rampa (cinza): o 3D ergue uma rampa real aqui
-      // áreas de partida: VERDE e AZUL
+      ctx.fillStyle = '#8c8c8c'; ctx.fillRect(62, 96, 34, 16);
       ctx.fillStyle = '#2e9d4f'; ctx.fillRect(6, 76, 36, 32);
       ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(8, 78, 32, 28);
       ctx.fillStyle = '#2f6fd6'; ctx.fillRect(194, 76, 36, 32);
       ctx.strokeStyle = '#ffffff'; ctx.strokeRect(196, 78, 32, 28);
       ctx.fillStyle = '#ffffff'; ctx.font = 'bold 5px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('VERDE', 24, 102); ctx.fillText('AZUL', 212, 102);
-      // linhas pretas: percurso principal, bifurcação (A em cima / B embaixo), reencontro, ladrão, ramal em T
       ctx.strokeStyle = '#0d0d0d'; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
       ctx.beginPath(); ctx.moveTo(42, 92); ctx.lineTo(64, 92); ctx.bezierCurveTo(80, 92, 84, 76, 92, 64); ctx.lineTo(116, 48); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(116, 48); ctx.bezierCurveTo(126, 40, 134, 30, 148, 30); ctx.lineTo(168, 30); ctx.bezierCurveTo(180, 30, 184, 40, 186, 48); ctx.stroke();   // ramo A
-      ctx.beginPath(); ctx.moveTo(116, 48); ctx.bezierCurveTo(126, 56, 134, 66, 148, 66); ctx.lineTo(168, 66); ctx.bezierCurveTo(180, 66, 184, 56, 186, 48); ctx.stroke();    // ramo B
-      ctx.beginPath(); ctx.moveTo(186, 48); ctx.lineTo(204, 48); ctx.bezierCurveTo(214, 48, 214, 60, 212, 70); ctx.lineTo(212, 76); ctx.stroke();                          // reencontro → área azul
-      ctx.beginPath(); ctx.moveTo(148, 30); ctx.lineTo(148, 66); ctx.stroke();                                                                                           // ponte entre os ramos
-      ctx.beginPath(); ctx.moveTo(92, 64); ctx.lineTo(92, 28); ctx.moveTo(82, 28); ctx.lineTo(102, 28); ctx.stroke();                                                    // ramal em T
-      ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(48, 106); ctx.lineTo(60, 106); ctx.moveTo(130, 106); ctx.lineTo(188, 106); ctx.stroke();                             // linha fina
-      // moldura escura do tapete
+      ctx.beginPath(); ctx.moveTo(116, 48); ctx.bezierCurveTo(126, 40, 134, 30, 148, 30); ctx.lineTo(168, 30); ctx.bezierCurveTo(180, 30, 184, 40, 186, 48); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(116, 48); ctx.bezierCurveTo(126, 56, 134, 66, 148, 66); ctx.lineTo(168, 66); ctx.bezierCurveTo(180, 66, 184, 56, 186, 48); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(186, 48); ctx.lineTo(204, 48); ctx.bezierCurveTo(214, 48, 214, 60, 212, 70); ctx.lineTo(212, 76); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(148, 30); ctx.lineTo(148, 66); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(92, 64); ctx.lineTo(92, 28); ctx.moveTo(82, 28); ctx.lineTo(102, 28); ctx.stroke();
+      ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(48, 106); ctx.lineTo(60, 106); ctx.moveTo(130, 106); ctx.lineTo(188, 106); ctx.stroke();
       ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 3; ctx.strokeRect(1.5, 1.5, c.w - 3, c.h - 3);
     },
   };
 
   // ---------------------------------------------------------
-  // Terreno: altura do chão (rampas). Usado só pra POSE VISUAL no 3D; a física 2D e o sensor não mudam.
+  // Cenário D — O Grande Labirinto · 200×200 cm
+  // Paredes finas para colisão 3D + Quadrado Verde no centro para o Sensor de Cor.
+  // ---------------------------------------------------------
+  const labirinto = {
+    id: 'labirinto',
+    nome: 'O Grande Labirinto (Chegada no Centro)',
+    w: 200,
+    h: 200,
+    pxPorCm: 5,
+
+    inicioPadrao: 'entrada1',
+    inicios: {
+      entrada1: { rotulo: 'Entrada Inferior Esquerda', x: 15, y: 185, th: 0 },
+      entrada2: { rotulo: 'Entrada Superior Direita',  x: 185, y: 15,  th: PI }
+    },
+
+    caixas: [
+      // Paredes Externas
+      { nome: 'Parede Ext Norte', x: 0,   y: 0,   w: 200, h: 5,   altura: 15, cor: '#4a5568' },
+      { nome: 'Parede Ext Sul',   x: 0,   y: 195, w: 200, h: 5,   altura: 15, cor: '#4a5568' },
+      { nome: 'Parede Ext Oeste', x: 0,   y: 0,   w: 5,   h: 170, altura: 15, cor: '#4a5568' },
+      { nome: 'Parede Ext Leste', x: 195, y: 30,  w: 5,   h: 170, altura: 15, cor: '#4a5568' },
+
+      // Paredes Internas
+      { nome: 'Int 1A', x: 30,  y: 30,  w: 140, h: 5,   altura: 15, cor: '#2d3748' },
+      { nome: 'Int 1B', x: 30,  y: 30,  w: 5,   h: 110, altura: 15, cor: '#2d3748' },
+      { nome: 'Int 1C', x: 30,  y: 165, w: 110, h: 5,   altura: 15, cor: '#2d3748' },
+      { nome: 'Int 1D', x: 165, y: 65,  w: 5,   h: 105, altura: 15, cor: '#2d3748' },
+
+      { nome: 'Int 2A', x: 60,  y: 60,  w: 80,  h: 5,   altura: 15, cor: '#2d3748' },
+      { nome: 'Int 2B', x: 60,  y: 95,  w: 5,   h: 45,  altura: 15, cor: '#2d3748' },
+      { nome: 'Int 2C', x: 95,  y: 135, w: 45,  h: 5,   altura: 15, cor: '#2d3748' },
+      { nome: 'Int 2D', x: 135, y: 80,  w: 5,   h: 60,  altura: 15, cor: '#2d3748' },
+
+      // Paredes do Centro
+      { nome: 'Centro Norte', x: 80,  y: 80,  w: 40,  h: 5,   altura: 15, cor: '#1a202c' },
+      { nome: 'Centro Leste', x: 120, y: 80,  w: 5,   h: 40,  altura: 15, cor: '#1a202c' },
+      { nome: 'Centro Sul',   x: 80,  y: 120, w: 45,  h: 5,   altura: 15, cor: '#1a202c' },
+      { nome: 'Centro Oeste', x: 80,  y: 105, w: 5,   h: 20,  altura: 15, cor: '#1a202c' }
+    ],
+
+    rampas: [],
+
+    desenhar(ctx, c) {
+      ctx.fillStyle = '#f7fafc';
+      ctx.fillRect(0, 0, c.w, c.h);
+
+      ctx.fillStyle = '#cbd5e0';
+      for (const caixa of c.caixas) {
+        ctx.fillRect(caixa.x, caixa.y, caixa.w, caixa.h);
+      }
+
+      // Zona de Chegada (Verde puro -> classificarCor() = 3)
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(90, 90, 20, 20);
+
+      ctx.strokeStyle = '#22543d';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(90, 90, 20, 20);
+
+      ctx.strokeStyle = '#a0aec0';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, c.w - 2, c.h - 2);
+    }
+  };
+
+  // ---------------------------------------------------------
+  // Terreno: altura do chão (rampas)
   // ---------------------------------------------------------
   function alturaEm(cen, x, y) {
     let h = 0;
@@ -174,21 +229,119 @@ const Cenarios = (() => {
     }
     return h;
   }
-  /** altura (z) do robô e inclinações a partir de 4 pontos de apoio: frente/trás (±5 cm) e roda esq./dir. (±6 cm) */
+
   function terreno(cen, x, y, th) {
     if (!cen.rampas || !cen.rampas.length) return { z: 0, pitch: 0, roll: 0 };
     const c = Math.cos(th), s = Math.sin(th);
     const f = alturaEm(cen, x + 5 * c, y + 5 * s), b = alturaEm(cen, x - 5 * c, y - 5 * s);
     const l = alturaEm(cen, x + 6 * s, y - 6 * c), r = alturaEm(cen, x - 6 * s, y + 6 * c);
-    return { z: (f + b + l + r) / 4, pitch: Math.atan2(f - b, 10), roll: Math.atan2(l - r, 12) };      // pitch>0 = nariz pra cima · roll>0 = lado esquerdo mais alto
+    return { z: (f + b + l + r) / 4, pitch: Math.atan2(f - b, 10), roll: Math.atan2(l - r, 12) };
   }
 
-  const lista = { treino, desvio, fll };
+  // ---------------------------------------------------------
+  // Cenário E — Pista Estilo OBR (Olimpíada Brasileira de Robótica) · 200×120 cm
+  // ---------------------------------------------------------
+  const obr = {
+    id: 'obr',
+    nome: 'Pista Estilo OBR (Linha + Obstáculo + Resgate)',
+    w: 200,
+    h: 120,
+    pxPorCm: 5,
+
+    inicioPadrao: 'largada',
+    inicios: {
+      largada: { rotulo: 'Área de Largada (Verde)', x: 20, y: 100, th: -Math.PI / 2 },
+      bifurcacao: { rotulo: 'Antes da Interseção T', x: 100, y: 30, th: 0 }
+    },
+
+    caixas: [
+      // Obstáculo (caixa preta no meio de um trecho da fita)
+      { nome: 'Obstáculo OBR', x: 50, y: 25, w: 10, h: 10, altura: 8, cor: '#222222' }
+    ],
+
+    rampas: [],
+
+    desenhar(ctx, c) {
+      // Fundo branco da arena
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, c.w, c.h);
+
+      // Moldura externa
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(1, 1, c.w - 2, c.h - 2);
+
+      // 1. Área de Largada (Verde)
+      ctx.fillStyle = '#2ecc40';
+      ctx.fillRect(10, 90, 20, 20);
+      ctx.strokeStyle = '#111111';
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(10, 90, 20, 20);
+
+      // 2. Trajeto da Fita Preta (Fita de 2 cm)
+      ctx.strokeStyle = '#111111';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'square';
+      ctx.lineJoin = 'miter';
+
+      ctx.beginPath();
+      // Linha saindo da largada e subindo
+      ctx.moveTo(20, 90);
+      ctx.lineTo(20, 30);
+      
+      // Curva em 90 graus para a direita
+      ctx.lineTo(100, 30);
+      
+      // Interseção / T
+      ctx.moveTo(100, 30);
+      ctx.lineTo(100, 60); // Ramo que desce
+      
+      ctx.moveTo(100, 30);
+      ctx.lineTo(160, 30); // Ramo que continua pra direita
+      
+      // Curva suave em direção à Área de Resgate
+      ctx.bezierCurveTo(180, 30, 180, 80, 160, 90);
+      ctx.lineTo(140, 90);
+      ctx.stroke();
+
+      // 3. Marcadores Verdes de Interseção (Estilo OBR)
+      // Indicador na bifurcação: virar à esquerda (quadrado verde)
+      ctx.fillStyle = '#2ecc40';
+      ctx.fillRect(95, 32, 4, 4);
+
+      // 4. Área de Resgate / Vitima (Canto inferior direito - Vermelho/Laranja)
+      ctx.fillStyle = '#ff4136';
+      ctx.fillRect(130, 80, 10, 20);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 3px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('RESGATE', 135, 92);
+    }
+  };
+
+  
+  // =========================================================================
+  // ATENÇÃO: COLOQUE / DECLARE O MODELO DO SEU NOVO MAPA NESTE LOCAL (ANTES DA LISTA)
+  // =========================================================================
+
+
+  // =========================================================================
+  // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
+  // =========================================================================
+  const lista = { treino, desvio, fll, labirinto, obr };
+
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
   const inicioDe = (cen, chave) => cen.inicios[chave] || cen.inicios[cen.inicioPadrao];
 
-  return { lista, obterTapete, gerarTapete, lerPixel, lerArea, intensidade, classificarCor, NOMES_COR, inicioDe, alturaEm, terreno,
-    usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } };
+  // Mantém tudo dentro do IIFE e retorna o objeto Cenarios
+  return { 
+    lista, obterTapete, gerarTapete, lerPixel, lerArea, 
+    intensidade, classificarCor, NOMES_COR, inicioDe, 
+    alturaEm, terreno, usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } 
+  };
 })();
+
+// Compatibilidade global (Navegador + Node.js)
+if (typeof window !== 'undefined') window.Cenarios = Cenarios;
 if (typeof module !== 'undefined') module.exports = Cenarios;

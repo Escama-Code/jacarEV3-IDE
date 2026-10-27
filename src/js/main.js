@@ -3,11 +3,18 @@ import { Jacare } from './animais/Jacare.mjs';
 import { Cobra } from './animais/Cobra.mjs';
 import { Escorpiao } from './animais/Escorpiao.mjs';
 
+// Importa do arquivo JS correto usando extensão explícita
+import Cenarios from './cenarios.js';
+
 class App {
     constructor() {
         this.cenaContainer = document.getElementById('canvas-container');
-        this.cena3d = new Cena3D(this.cenaContainer);
+        if (!this.cenaContainer) {
+            console.warn('Contêiner #canvas-container não encontrado.');
+            return;
+        }
         
+        this.cena3d = new Cena3D(this.cenaContainer);
         this.animais = [];
         this.init();
     }
@@ -15,15 +22,15 @@ class App {
     init() {
         // Instancia o Jacaré na posição central
         const jacare = new Jacare(this.cena3d.cena);
-        jacare.mesh.position.set(0, 0.3, 0);
+        if (jacare.mesh) jacare.mesh.position.set(0, 0.3, 0);
 
         // Instancia a Cobra na lateral
         const cobra = new Cobra(this.cena3d.cena);
-        cobra.mesh.position.set(0, 0.15, -2.5);
+        if (cobra.mesh) cobra.mesh.position.set(0, 0.15, -2.5);
 
         // Instancia o Escorpião na outra lateral
         const escorpiao = new Escorpiao(this.cena3d.cena);
-        escorpiao.mesh.position.set(0, 0.2, 2.5);
+        if (escorpiao.mesh) escorpiao.mesh.position.set(0, 0.2, 2.5);
 
         this.animais.push(jacare, cobra, escorpiao);
 
@@ -35,9 +42,15 @@ class App {
         const tempoSegundos = (tempo || 0) * 0.001;
 
         // Atualiza animações de todos os animais
-        this.animais.forEach(animal => animal.atualizar(0.016, tempoSegundos));
+        this.animais.forEach(animal => {
+            if (typeof animal.atualizar === 'function') {
+                animal.atualizar(0.016, tempoSegundos);
+            }
+        });
 
-        this.cena3d.renderizar();
+        if (this.cena3d && typeof this.cena3d.renderizar === 'function') {
+            this.cena3d.renderizar();
+        }
     }
 }
 
