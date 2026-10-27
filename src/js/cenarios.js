@@ -319,6 +319,196 @@ const Cenarios = (() => {
     }
   };
 
+// -------------------------------------------------------------------------
+// Cenário G — Megatapete FLL: Bairro do Derby Completo · 400×240 cm
+// -------------------------------------------------------------------------
+const derby = (() => {
+  const c = {
+    id: 'derby',
+    nome: 'Torneio FLL - Distrito do Derby (Recife)',
+    w: 400,
+    h: 240,
+    pxPorCm: 3,
+    inicioPadrao: 'baseLancamento',
+    inicios: {
+      baseLancamento: { rotulo: 'Base FLL (Noroeste)', x: 45, y: 45, th: 0 },
+      agamenonNorte:  { rotulo: 'Interseção Agamenon', x: 200, y: 35, th: Math.PI / 2 },
+      estacionamento: { rotulo: 'Entrada do Comando PMPE', x: 200, y: 170, th: -Math.PI / 2 }
+    },
+    rampas: [],
+    caixas: []
+  };
+
+  // =========================================================================
+  // 1. MODELAGEM 3D DE OBSTÁCULOS E ELEMENTOS URBANOS (ESTILO MODELOS LEGO FLL)
+  // =========================================================================
+
+  // --- [NOVO] REPREENCHIMENTO DO CANTO SUPERIOR ESQUERDO: Complexo Escolar/Comercial ---
+  c.caixas.push(
+    // Prédio do Colégio (Bloco grande para preencher o fundo da área vazia)
+    { nome: 'Colégio do Derby - Bloco A', x: 75, y: 80, w: 30, h: 25, altura: 20, cor: '#f8fafc', modelo: 'parede' },
+    { nome: 'Colégio do Derby - Bloco B', x: 105, y: 80, w: 15, h: 15, altura: 15, cor: '#3b82f6', modelo: 'parede' },
+    
+    // Obstáculos menores na área livre (Quiosques / Lixeiras Seletivas da FLL)
+    { nome: 'Quiosque Praça de Alimentação', x: 130, y: 105, w: 8, h: 8, altura: 5, cor: '#f97316', modelo: 'torre' },
+    { nome: 'Lixeira Seletiva Metal', x: 75, y: 115, w: 4, h: 3, altura: 4, cor: '#22c55e', modelo: 'conteiner' },
+    { nome: 'Lixeira Seletiva Plástico', x: 81, y: 115, w: 4, h: 3, altura: 4, cor: '#ef4444', modelo: 'conteiner' }
+  );
+
+  // --- MODELOS DA BASE E INFRAESTRUTURA ---
+  c.caixas.push(
+    // Estação de BRT Derby (Terminal de Integração da Missão)
+    { nome: 'BRT Plataforma Central', x: 20, y: 65, w: 45, h: 10, altura: 5, cor: '#0284c7', modelo: 'plataforma' },
+    { nome: 'BRT Cobertura Acrílica', x: 25, y: 66, w: 35, h: 8,  altura: 14, cor: '#f1f5f9' },
+    // Poste com Câmeras de Monitoramento (Próximo ao cruzamento)
+    { nome: 'Torre de Videomonitoramento', x: 175, y: 15, w: 3, h: 3, altura: 20, cor: '#334155', modelo: 'poste' }
+  );
+
+  // --- MISSÃO TRÂNSITO: ENGARRAFAMENTO DA AGAMENON ---
+  c.caixas.push(
+    { nome: 'Carro Retido A (Vermelho)', x: 115, y: 30, w: 14, h: 7, altura: 7, cor: '#ef4444', modelo: 'conteiner' },
+    { nome: 'Carro Retido B (Amarelo)',   x: 145, y: 45, w: 12, h: 7, altura: 6, cor: '#eab308', modelo: 'conteiner' },
+    { nome: 'Ônibus Interurbanos',        x: 110, y: 130, w: 28, h: 9, altura: 12, cor: '#16a34a', modelo: 'conteiner' }
+  );
+
+  // --- MISSÃO HISTÓRICA: Praça do Derby (Arborização Avançada e Coreto) ---
+  c.caixas.push(
+    { nome: 'Base Octogonal Coreto', x: 280, y: 65, w: 16, h: 16, altura: 4, cor: '#cbd5e1', modelo: 'torre' },
+    { nome: 'Cúpula do Coreto',      x: 283, y: 68, w: 10, h: 10, altura: 10, cor: '#ffffff' }
+  );
+
+  // Função procedural para gerar as Árvores Históricas
+  function plantarArvoreDerby(nome, x, y) {
+    c.caixas.push(
+      { nome: nome + ' Tronco', x: x - 0.5, y: y - 0.5, w: 1,  h: 1,  altura: 7,  cor: '#451a03', modelo: 'poste' },
+      { nome: nome + ' Copa L1', x: x - 5,   y: y - 5,   w: 10, h: 10, altura: 13, cor: '#064e3b' },
+      { nome: nome + ' Copa L2', x: x - 3,   y: y - 3,   w: 6,  h: 6,  altura: 18, cor: '#0f9f6e' }
+    );
+  }
+  
+  const coordenadasArvores = [, [270, 35], [320, 35], [345, 45],
+, [270, 125], [320, 125], [345, 115]
+  ];
+  coordenadasArvores.forEach((pos, i) => plantarArvoreDerby('ArvoreDerby_' + i, pos[0], pos[1]));
+
+  // --- MISSÃO COMANDO GERAL: Quartel da PMPE ---
+  c.caixas.push(
+    { nome: 'PMPE Ala Principal Esquerda', x: 60,  y: 205, w: 120, h: 22, altura: 12, cor: '#f1f5f9', modelo: 'parede' },
+    { nome: 'PMPE Ala Principal Direita',  x: 220, y: 205, w: 120, h: 22, altura: 12, cor: '#f1f5f9', modelo: 'parede' },
+    { nome: 'PMPE Pavilhão Central',       x: 180, y: 200, w: 40,  h: 28, altura: 18, cor: '#ffffff', modelo: 'parede' },
+    { nome: 'PMPE Torre do Relógio',       x: 195, y: 204, w: 10,  h: 5,  altura: 34, cor: '#f8fafc', modelo: 'torre' }
+  );
+
+  // =========================================================================
+  // 2. DESIGN DO TAPETE GRÁFICO (IMAGEM 2D + MAPEAMENTO DE CORES DO SENSOR)
+  // =========================================================================
+  c.desenhar = function(ctx, self) {
+    // Fundo de Asfalto Realista Escuro
+    ctx.fillStyle = '#1e1f22';
+    ctx.fillRect(0, 0, self.w, self.h);
+
+    // --- ARTWORK DO TAPETE ---
+    
+    // [NOVO] Calçadão e Pátio Interno do Colégio (Área Cinza Clara)
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(70, 75, 75, 50);
+
+    // Canteiro de Preservação Ambiental (Grama da Praça do Derby)
+    ctx.fillStyle = '#065f46';
+    ctx.fillRect(230, 20, 130, 110);
+    
+    // Ciclovia Metropolitana (Faixa Vermelha de Segurança - Cor 5)
+    ctx.fillStyle = '#991b1b';
+    ctx.fillRect(5, 15, 390, 6);   // Ciclovia Norte
+    ctx.fillRect(215, 21, 6, 129);  // Conexão vertical
+
+    // Espelho d'Água Monumental (Área Azul Pura - Cor 2)
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.arc(295, 100, 14, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Pátio Frontal do Quartel
+    ctx.fillStyle = '#374151';
+    ctx.fillRect(50, 165, 300, 35);
+    
+    // Áreas de Calçadão de Pedras
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(20, 75, 45, 12);
+    ctx.fillRect(230, 65, 35, 30);
+
+    // Base de Lançamento Oficial (Canto Superior Esquerdo)
+    ctx.fillStyle = '#f8fafc';
+    ctx.beginPath();
+    ctx.arc(0, 0, 65, 0, Math.PI / 2);
+    ctx.lineTo(0, 0);
+    ctx.fill();
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Faixas de Pedestres Urbanas
+    ctx.fillStyle = '#ffffff';
+    for (let f = 170; f <= 195; f += 6) {
+      ctx.fillRect(185, f, 6, 2.5);
+      ctx.fillRect(208, f, 6, 2.5);
+    }
+    for (let f = 90; f <= 140; f += 8) {
+      ctx.fillRect(f, 48, 3, 4);
+    }
+
+    // Retângulos Marcadores de Missões
+    ctx.strokeStyle = '#eab308';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(18, 63, 49, 14);   // Zona BRT
+    ctx.strokeRect(190, 180, 20, 15); // Zona PMPE
+
+    // -----------------------------------------------------------------------
+    // REDE DE TRILHAS DA MISSÃO (Linhas Pretas)
+    // -----------------------------------------------------------------------
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    ctx.moveTo(45, 45);
+    ctx.lineTo(95, 45);
+    
+    ctx.lineTo(105, 25);
+    ctx.lineTo(165, 25);
+    ctx.lineTo(175, 52);
+    ctx.lineTo(200, 52);
+    
+    ctx.lineTo(200, 115); 
+    ctx.lineTo(245, 115);
+    
+    ctx.lineTo(245, 55);
+    ctx.bezierCurveTo(275, 40, 335, 40, 345, 75);
+    ctx.lineTo(345, 115);
+    
+    ctx.lineTo(210, 115);
+    ctx.lineTo(200, 130);
+    ctx.lineTo(200, 180);
+    ctx.stroke();
+
+    // Marcadores Verdes
+    ctx.fillStyle = '#22c55e';
+    ctx.fillRect(198, 70, 4, 4);
+    ctx.fillRect(243, 85, 4, 4);
+
+    // Desenhar a base física projetada dos modelos
+    for (const caixa of self.caixas) {
+      ctx.fillStyle = caixa.cor || '#475569';
+      ctx.fillRect(caixa.x, caixa.y, caixa.w, caixa.h);
+    }
+  };
+
+  return c;
+})();
   
   // =========================================================================
   // ATENÇÃO: COLOQUE / DECLARE O MODELO DO SEU NOVO MAPA NESTE LOCAL (ANTES DA LISTA)
@@ -328,7 +518,7 @@ const Cenarios = (() => {
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-  const lista = { treino, desvio, fll, labirinto, obr };
+  const lista = { treino, desvio, fll, labirinto, obr, derby };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
