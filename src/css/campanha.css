@@ -116,3 +116,250 @@ body.modo-inicio main, body.modo-inicio header {
 .camp-obj-result .ok { color: #3fb950; }
 .camp-obj-result .fail { color: #f85149; }
 .camp-metricas { font-size: 0.8rem; color: #8b9bab; margin: 0; }
+
+.camp-tema {
+  list-style: none;
+  padding: 12px 4px 6px;
+  margin-top: 8px;
+  border-top: 1px solid #30363d;
+}
+.camp-tema:first-child { border-top: none; margin-top: 0; }
+.camp-tema-titulo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #58a6ff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.camp-tema-desc {
+  font-size: 0.75rem;
+  color: #8b9bab;
+  margin-top: 2px;
+}
+.camp-dica {
+  margin-top: 8px;
+  padding: 8px;
+  background: #1c2128;
+  border-left: 3px solid #e3b341;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.camp-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Tela de módulos */
+.camp-hint-mod {
+  font-size: 0.8rem;
+  color: #8b9bab;
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+.camp-grid-modulos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.camp-card-modulo {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #30363d;
+  background: linear-gradient(145deg, #161b22 0%, #0d1117 100%);
+  color: #e6edf3;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.camp-card-modulo:not(.bloqueado):hover {
+  border-color: #58a6ff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+}
+.camp-card-modulo.bloqueado {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.camp-card-modulo.completo {
+  border-color: #3fb950;
+}
+.camp-card-num {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #21262d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #58a6ff;
+  flex-shrink: 0;
+}
+.camp-card-modulo.completo .camp-card-num {
+  background: #1a2f1a;
+  color: #3fb950;
+}
+.camp-card-titulo {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+.camp-card-desc {
+  font-size: 0.78rem;
+  color: #8b9bab;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+.camp-card-meta {
+  font-size: 0.75rem;
+  color: #e3b341;
+  font-weight: 600;
+}
+.camp-voltar { margin-bottom: 10px; }
+.camp-modulo-titulo {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: #e6edf3;
+}
+.camp-stars {
+  color: #e3b341;
+  letter-spacing: 0.05em;
+  font-size: 1.05em;
+}
+
+/* Lobby exclusivo (antes da IDE) */
+.lobby-campanha {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse at 20% 10%, #1a3a2a 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 90%, #1a2a4a 0%, transparent 45%),
+    #0d1117;
+}
+.lobby-campanha[hidden] { display: none !important; }
+body.lobby-aberto main,
+body.lobby-aberto header {
+  visibility: hidden;
+  pointer-events: none;
+}
+.lobby-card {
+  width: min(820px, 96vw);
+  max-height: min(90vh, 900px);
+  overflow: auto;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5);
+  color: #e6edf3;
+}
+.lobby-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+.lobby-kicker {
+  margin: 0 0 4px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #3fb950;
+  font-weight: 600;
+}
+.lobby-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+.lobby-sub {
+  margin: 6px 0 0;
+  color: #8b9bab;
+  font-size: 0.9rem;
+}
+.lobby-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.lobby-missao-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+@media (max-width: 720px) {
+  .lobby-missao-layout { grid-template-columns: 1fr; }
+}
+
+/* HUD na IDE */
+.hud-campanha {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8000;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: min(640px, 92vw);
+  padding: 8px 14px;
+  background: #161b22ee;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  color: #e6edf3;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+}
+.hud-campanha[hidden] { display: none !important; }
+.hud-left, .hud-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hud-badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: #238636;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+.hud-meta { font-size: 0.75rem; color: #8b9bab; }
+
+.camp-resultado-float {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 8500;
+  width: min(360px, 92vw);
+  padding: 16px;
+  background: #0d1117;
+  border: 1px solid #3fb950;
+  border-radius: 12px;
+  color: #e6edf3;
+  box-shadow: 0 12px 40px rgba(0,0,0,.45);
+}
+.camp-resultado-float[hidden] { display: none !important; }
+.camp-resultado-fechar {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: none;
+  background: transparent;
+  color: #8b9bab;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.camp-resultado-float .principal { margin-top: 10px; width: 100%; }
