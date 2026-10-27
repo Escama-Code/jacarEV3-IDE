@@ -510,6 +510,160 @@ const derby = (() => {
   return c;
 })();
   
+// =========================================================================
+// Cenário: Tapete Urbano Ilustrativo (Estilo Pista de Carrinho Infantil)
+// Combina estética lúdica com linhas guia de 2cm para seguidor de linha.
+// =========================================================================
+const tapeteUrbanoInfantil = {
+  id: 'tapeteUrbanoInfantil',
+  nome: 'Tapete Urbano Ilustrativo',
+  w: 240, // Proporção vertical parecida com a imagem enviada
+  h: 360,
+  pxPorCm: 3,
+  inicioPadrao: 'rotatoria',
+  inicios: {
+    rotatoria: { rotulo: 'Início perto da Rotatória (Sul)', x: 60, y: 300, th: -Math.PI / 2 },
+    mercado: { rotulo: 'Início perto do Mercado (Norte)', x: 180, y: 50, th: Math.PI / 2 }
+  },
+  caixas: [], // Elementos urbanos 3D populados abaixo
+  rampas: [],
+
+  // Controle de tempo do semáforo urbano
+  semaforoEstado: 'VERMELHO',
+
+  desenhar(ctx, self) {
+    // 1. Fundo do Tapete (Grama Verde Claro)
+    ctx.fillStyle = '#87a922';
+    ctx.fillRect(0, 0, self.w, self.h);
+
+    // [ELEMENTOS ILUSTRATIVOS DO TAPETE - BACKGROUND 2D]
+    
+    // Parque e Árvores (Zonas Verdes Escuras)
+    ctx.fillStyle = '#14532d';
+    ctx.fillRect(170, 140, 50, 100); // Bosque lateral direito
+
+    // Pátio do Hospital e do Mercado (Áreas de estacionamento cinza claro)
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(100, 270, 40, 30);  // Hospital
+    ctx.fillRect(150, 40, 60, 40);   // Mercado
+
+    // 2. DESENHO DAS VIAS URBANA (Asfalto Cinza Escuro)
+    ctx.strokeStyle = '#3f3f46';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Reta de baixo, subida lateral direita, curvas superiores e rotatória inferior esquerda
+    ctx.lineWidth = 18; // Pista larga para dar aspecto de rua real
+    ctx.beginPath();
+    
+    // Malha Rodoviária Principal (Eixo do circuito)
+    ctx.moveTo(30, 330);
+    ctx.lineTo(210, 330); // Avenida Sul
+    ctx.lineTo(210, 120); // Subida Leste
+    ctx.lineTo(130, 120);
+    ctx.lineTo(130, 40);  // Subida Centro-Norte
+    ctx.lineTo(40, 40);   // Reta Norte
+    ctx.lineTo(40, 180);  // Descida Oeste
+    ctx.lineTo(100, 180); // Conecta na área central
+    ctx.stroke();
+
+    // Desenho da Grande Rotatória (Anel Viário Inferior Esquerdo)
+    ctx.beginPath();
+    ctx.arc(65, 250, 30, 0, 2 * Math.PI);
+    ctx.stroke();
+
+    // 3. LINHAS PRETAS GUIA PARA O SEGUIDOR DE LINHA (2 cm de espessura)
+    // Desenhadas exatamente nas bordas ou no centro para o robô rastrear
+    ctx.strokeStyle = '#111111';
+    ctx.lineWidth = 2; // Espessura padrão da fita isolante das competições
+
+    // Rastreamento das bordas das avenidas
+    ctx.strokeRect(30, 330, 180, 0); 
+    ctx.strokeRect(210, 120, 0, 210);
+
+    // Linha Guia que contorna a Rotatória
+    ctx.beginPath();
+    ctx.arc(65, 250, 30, 0, 2 * Math.PI);
+    ctx.stroke();
+
+
+    // 4. SINALIZAÇÃO HORIZONTAL (Efeito Visual de Tapete de Brinquedo)
+    
+    // Faixas Pontilhadas Brancas no meio da pista (Apenas estético)
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([4, 4]); // Aplica o efeito pontilhado/tracejado de rua
+    
+    ctx.beginPath();
+    ctx.moveTo(30, 330); ctx.lineTo(210, 330);
+    ctx.moveTo(210, 330); ctx.lineTo(210, 120);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reseta o estilo para traço contínuo
+
+    // Faixa de Pedestres perto do Hospital
+    ctx.fillStyle = '#ffffff';
+    for (let x = 145; x <= 165; x += 5) {
+      ctx.fillRect(x, 321, 2.5, 18);
+    }
+
+    // Gatilho Dinâmico do Semáforo no chão (Muda de cor a cada 4 segundos)
+    const ciclo = Math.floor(Date.now() / 4000) % 2;
+    self.semaforoEstado = ciclo === 0 ? 'VERMELHO' : 'VERDE';
+    ctx.fillStyle = self.semaforoEstado === 'VERMELHO' ? '#ef4444' : '#2ecc40';
+    ctx.fillRect(135, 321, 5, 18);
+
+
+    // 5. RENDERIZAÇÃO DAS CAIXAS 3D (Prédios Ilustrativos com Cores Vivas)
+    for (const caixa of self.caixas) {
+      ctx.fillStyle = caixa.cor || '#475569';
+      ctx.fillRect(caixa.x, caixa.y, caixa.w, caixa.h);
+    }
+  }
+};
+
+// =========================================================================
+// POPULANDO OS PRÉDIOS E ELEMENTOS URBANOS VIVOS EM 3D (ESTILO BRINQUEDO)
+// =========================================================================
+
+// 1. Prédios Comerciais e Habitacionais Altos (Cores pastel e azuladas)
+tapeteUrbanoInfantil.caixas.push(
+  { nome: 'Grande Edifício Azul', x: 25, y: 70, w: 25, h: 40, altura: 30, cor: '#38bdf8', modelo: 'parede' },
+  { nome: 'Bloco Comercial Cinza', x: 80, y: 50, w: 35, h: 20, altura: 22, cor: '#64748b', modelo: 'parede' },
+  { nome: 'Casinha Amarela', x: 170, y: 250, w: 15, h: 15, altura: 10, cor: '#fbbf24', modelo: 'parede' },
+  { nome: 'Casinha Laranja', x: 170, y: 190, w: 15, h: 15, altura: 10, cor: '#fb923c', modelo: 'parede' }
+);
+
+// 2. O Mercado Municipal (Norte)
+tapeteUrbanoInfantil.caixas.push(
+  { nome: 'Supermercado Central', x: 160, y: 15, w: 40, h: 25, altura: 15, cor: '#1e40af', modelo: 'parede' },
+  { nome: 'Placa Totem Mercado', x: 202, y: 20, w: 4, h: 4, altura: 18, cor: '#f8fafc', modelo: 'poste' }
+);
+
+// 3. Hospital Geral com Cruz Vermelha (Sul)
+tapeteUrbanoInfantil.caixas.push(
+  { nome: 'Prédio do Hospital', x: 105, y: 280, w: 30, h: 35, altura: 20, cor: '#f8fafc', modelo: 'parede' },
+  { nome: 'Detalhe Cruz do Hospital', x: 118, y: 278, w: 4, h: 4, altura: 22, cor: '#ef4444', modelo: 'torre' }
+);
+
+// 4. Carros de Brinquedo na Pista (Obstáculos lógicos para desvios)
+tapeteUrbanoInfantil.caixas.push(
+  { nome: 'Carrinho de Polícia Retido', x: 206, y: 200, w: 8, h: 14, altura: 6, cor: '#172554', modelo: 'conteiner' },
+  { nome: 'Sorveteiro Móvel na Rotatória', x: 55, y: 242, w: 12, h: 8, altura: 9, cor: '#f472b6', modelo: 'conteiner' }
+);
+
+// 5. Função Auxiliar para criar as Árvores em Bloco (Estilo Pinheiros da Imagem)
+function plantarPinheiroTapete(nome, x, y) {
+  tapeteUrbanoInfantil.caixas.push(
+    { nome: nome + ' Tronco', x: x - 0.5, y: y - 0.5, w: 1, h: 1, altura: 6, cor: '#78350f', modelo: 'poste' },
+    { nome: nome + ' Folhas', x: x - 3, y: y - 3, w: 6, h: 6, altura: 14, cor: '#15803d' }
+  );
+}
+
+// Espalhando árvores nos campos verdes do tapete
+const coordenadasPinheiros = [, [50, 140], [180, 150], [195, 170], [180, 210], [45, 15]
+];
+coordenadasPinheiros.forEach((pos, i) => plantarPinheiroTapete('Pinheiro_' + i, pos[0], pos[1]));
+
   // =========================================================================
   // ATENÇÃO: COLOQUE / DECLARE O MODELO DO SEU NOVO MAPA NESTE LOCAL (ANTES DA LISTA)
   // =========================================================================
@@ -518,7 +672,7 @@ const derby = (() => {
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-  const lista = { treino, desvio, fll, labirinto, obr, derby };
+  const lista = { treino, desvio, fll, labirinto, obr, derby, tapeteUrbanoInfantil };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
