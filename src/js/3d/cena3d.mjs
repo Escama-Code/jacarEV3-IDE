@@ -169,7 +169,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100 };
+  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, peers: new Map() };
 
   /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
   const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
@@ -209,6 +209,56 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     S.tipo = tipo; S.rig = ROBOS[tipo](); scene.add(S.rig.grupo);
     if (S.ultimo) aplicarEstado(S.rig, S.ultimo);
   }
+
+  function fantasmaMateriais(grupo) {
+    grupo.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        if (!m) continue;
+        m.transparent = true;
+        m.opacity = 0.45;
+        m.depthWrite = false;
+        if (m.emissiveIntensity != null) m.emissiveIntensity *= 0.5;
+      }
+    });
+  }
+  /** Atualiza robôs fantasmas de outros jogadores (multiplayer). peers: [{alunoId,x,y,th,led,robo3d,nome}] */
+  function setPeers(lista) {
+    const ids = new Set();
+    for (const p of lista || []) {
+      if (!p || !p.alunoId || p.x == null || p.y == null) continue;
+      ids.add(p.alunoId);
+      let entry = S.peers.get(p.alunoId);
+      const tipo = (p.robo3d && ROBOS[p.robo3d]) ? p.robo3d : (S.tipo || 'ev3');
+      if (!entry || entry.tipo !== tipo) {
+        if (entry) {
+          scene.remove(entry.rig.grupo);
+          entry.rig.grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+        }
+        const construtor = ROBOS[tipo] || ROBOS.ev3;
+        const rig = construtor();
+        fantasmaMateriais(rig.grupo);
+        scene.add(rig.grupo);
+        entry = { rig, tipo };
+        S.peers.set(p.alunoId, entry);
+      }
+      aplicarEstado(entry.rig, {
+        x: p.x, y: p.y, th: p.th || 0, z: p.z || 0,
+        pitch: p.pitch || 0, roll: p.roll || 0,
+        encA: 0, encB: 0, encC: 0, encD: 0,
+        led: p.led || 'DESLIGADO', ledAlpha: 0.55, refletida: 50,
+      });
+    }
+    for (const [id, entry] of [...S.peers.entries()]) {
+      if (!ids.has(id)) {
+        scene.remove(entry.rig.grupo);
+        entry.rig.grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+        S.peers.delete(id);
+      }
+    }
+  }
+
   function setModoCamera(modo) {
     if (!MODOS_CAMERA.includes(modo)) return;
     S.modo = modo; controls.enabled = modo === 'livre';
@@ -243,7 +293,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   if (typeof ResizeObserver !== 'undefined' && container.nodeType === 1) new ResizeObserver(() => { if (S.ativo) redimensionar(); }).observe(container);
 
   setCenario(cenario, tapete); setRobo('ev3'); redimensionar();
-  return { renderer, scene, camera, controls, setRobo, setCenario, setModoCamera, aplicar, desenhar, mostrar, redimensionar,
+  return { renderer, scene, camera, controls, setRobo, setPeers, setCenario, setModoCamera, aplicar, desenhar, mostrar, redimensionar,
     get rig() { return S.rig; }, get tipo() { return S.tipo; }, get modo() { return S.modo; } };
 }
 

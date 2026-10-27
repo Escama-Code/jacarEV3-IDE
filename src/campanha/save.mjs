@@ -1,4 +1,4 @@
-const KEY = 'jacar-campanha-save-v1';
+const KEY = 'jacar-campanha-save-v2';
 
 export function carregarSave(campanhaId) {
   try {
@@ -9,9 +9,10 @@ export function carregarSave(campanhaId) {
     campanhaId,
     xp: 0,
     missoes: {
-      'm01-led': { status: 'disponivel', estrelas: 0, tentativas: 0 },
+      'cb01-led': { status: 'disponivel', estrelas: 0, tentativas: 0 },
     },
-    desbloqueios: ['m01-led'],
+    desbloqueios: ['cb01-led'],
+    dicasUsadas: {},
   };
 }
 
