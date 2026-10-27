@@ -15,6 +15,7 @@ import {
   construirRoboCamaleao,
   construirRoboEscorpiao,
   construirRoboCoruja,
+  construirRoboArara,
   aplicarEstado,
 } from './modelos/index.mjs';
 
@@ -29,6 +30,7 @@ const ROBOS = {
   camaleao: construirRoboCamaleao,
   escorpiao: construirRoboEscorpiao,
   coruja: construirRoboCoruja,
+  arara: construirRoboArara,
 };
 
 /** textura do chão = a MESMA imagem que o sensor lê (tapete.canvas / tapete.dados) */

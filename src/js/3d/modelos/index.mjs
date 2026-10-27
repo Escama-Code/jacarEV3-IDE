@@ -17,5 +17,6 @@ export { construirRoboElefante } from './elefante.mjs';
 export { construirRoboCamaleao } from './camaleao.mjs';
 export { construirRoboEscorpiao} from './escorpiao.mjs';
 export { construirRoboCoruja } from './coruja.mjs';
+export { construirRoboArara } from './arara.mjs';
 
 export { aplicarEstado } from './aplicar-estado.mjs';
