@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campanha — Academia jacarev3</title>
+<link rel="stylesheet" href="../src/css/campanha.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background:
+      radial-gradient(ellipse at 20% 10%, #1a3a2a 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, #1a2a4a 0%, transparent 45%),
+      #0d1117;
+    color: #e6edf3;
+  }
+  .lobby-campanha { position: relative; inset: auto; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: transparent; }
+  .erro-load { color: #f85149; padding: 16px; }
+</style>
+</head>
+<body>
+<div id="lobbyCampanha" class="lobby-campanha">
+  <div class="lobby-card">
+    <header class="lobby-header">
+      <div>
+        <p class="lobby-kicker">Modo campanha</p>
+        <h1 id="campTitulo">Academia jacarev3</h1>
+        <p id="campDesc" class="lobby-sub">Escolha o módulo e a missão. A IDE abre em seguida.</p>
+      </div>
+      <div class="lobby-header-actions">
+        <span id="campXp" class="camp-xp">0 XP</span>
+        <button type="button" id="campSandbox" class="camp-btn-sec">Sandbox</button>
+        <button type="button" id="campInicio" class="camp-btn-sec">Menu</button>
+      </div>
+    </header>
+
+    <div id="campViewModulos" class="lobby-view">
+      <p class="camp-hint-mod">Escolha um módulo. O próximo só libera quando você concluir todas as missões do anterior.</p>
+      <div id="campGridModulos" class="camp-grid-modulos"></div>
+    </div>
+
+    <div id="campViewMissoes" class="lobby-view" hidden>
+      <button type="button" id="campVoltarModulos" class="camp-btn-sec camp-voltar">← Módulos</button>
+      <h2 id="campModuloTitulo" class="camp-modulo-titulo"></h2>
+      <div class="lobby-missao-layout">
+        <ul id="campListaMissoes" class="camp-lista"></ul>
+        <div class="camp-detalhe">
+          <div id="campDialogo" class="camp-dialogo"></div>
+          <div id="campObjetivos" class="camp-objetivos"></div>
+          <div class="camp-actions">
+            <button type="button" id="campIniciar" class="principal" disabled>Abrir missão na IDE →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p id="campLoadErr" class="erro-load" hidden></p>
+  </div>
+</div>
+
+<script type="module">
+import * as Campanha from '../src/campanha/index.mjs';
+
+const $ = (id) => document.getElementById(id);
+let temaAtivo = null;
+let missaoSelecionada = null;
+let save = null;
+
+function ensureSave() {
+  if (!save) save = Campanha.carregarSave(Campanha.CAMPANHA.id);
+  return save;
+}
+
+function renderModulos() {
+  const grid = $('campGridModulos');
+  grid.innerHTML = '';
+  const s = ensureSave();
+  $('campXp').textContent = (s.xp || 0) + ' XP';
+  const temas = Campanha.CAMPANHA.temas || [];
+  temas.forEach((tema, idx) => {
+    const liberado = Campanha.temaLiberado(s, tema, temas, Campanha.MISSOES);
+    const completo = Campanha.temaCompleto(s, tema.id, Campanha.MISSOES);
+    const missoes = Campanha.MISSOES.filter((m) => m.temaId === tema.id);
+    let sumStars = 0, maxStars = missoes.length * 5;
+    for (const m of missoes) sumStars += (s.missoes[m.id]?.estrelas || 0);
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'camp-card-modulo' + (liberado ? '' : ' bloqueado') + (completo ? ' completo' : '');
+    card.disabled = !liberado;
+    card.innerHTML =
+      '<div class="camp-card-num">' + (idx + 1) + '</div>' +
+      '<div class="camp-card-body">' +
+        '<div class="camp-card-titulo">' + tema.titulo + '</div>' +
+        '<div class="camp-card-desc">' + (tema.descricao || '') + '</div>' +
+        '<div class="camp-card-meta">' +
+          (liberado ? (completo ? '✓ Concluído · ' : '') + sumStars + '/' + maxStars + ' ★'
+            : '🔒 Conclua o módulo anterior') +
+        '</div></div>';
+    if (liberado) card.onclick = () => abrirModulo(tema.id);
+    grid.appendChild(card);
+  });
+}
+
+function abrirModulo(temaId) {
+  const tema = (Campanha.CAMPANHA.temas || []).find((x) => x.id === temaId);
+  if (!tema) return;
+  temaAtivo = temaId;
+  missaoSelecionada = null;
+  $('campViewModulos').hidden = true;
+  $('campViewMissoes').hidden = false;
+  $('campModuloTitulo').textContent = tema.titulo;
+  $('campIniciar').disabled = true;
+  renderLista();
+}
+
+function renderLista() {
+  const ul = $('campListaMissoes');
+  ul.innerHTML = '';
+  const s = ensureSave();
+  const missoes = Campanha.MISSOES.filter((m) => m.temaId === temaAtivo);
+  const primeira = missoes[0]?.id;
+  for (const m of missoes) {
+    const st = Campanha.statusMissao(s, m.id, primeira);
+    const info = s.missoes[m.id] || {};
+    const n = info.estrelas || 0;
+    const li = document.createElement('li');
+    li.className = 'camp-missao ' + st;
+    li.dataset.id = m.id;
+    li.innerHTML =
+      '<span class="camp-missao-ordem">' + m.ordem + '</span>' +
+      '<span class="camp-missao-titulo">' + m.titulo + '</span>' +
+      '<span class="camp-missao-st">' + (st === 'bloqueada' ? '🔒' : '★'.repeat(n) + '☆'.repeat(5 - n)) + '</span>';
+    if (st !== 'bloqueada') li.onclick = () => selecionar(m.id);
+    ul.appendChild(li);
+  }
+}
+
+function selecionar(id) {
+  const m = Campanha.getMissao(id);
+  if (!m) return;
+  missaoSelecionada = m;
+  document.querySelectorAll('.camp-missao').forEach((el) => {
+    el.classList.toggle('selecionada', el.dataset.id === id);
+  });
+  const intro = (m.narrativa?.intro || []).map((d) =>
+    '<p><strong>' + d.personagem + ':</strong> ' + d.texto + '</p>').join('');
+  $('campDialogo').innerHTML = intro || '<p>Sem introdução.</p>';
+  const objs = (m.objetivos || []).map((o) => {
+    let txt = o.id;
+    if (o.tipo === 'dist_min') txt = 'Andar ≥ ' + o.cm + ' cm';
+    if (o.tipo === 'api_usada') txt = 'Usar: ' + (o.metodos || []).join(', ');
+    if (o.tipo === 'regiao') txt = 'Chegar na região marcada';
+    return '<li>' + txt + '</li>';
+  }).join('');
+  $('campObjetivos').innerHTML = '<h3>Objetivos</h3><ul>' + objs + '</ul>';
+  $('campIniciar').disabled = false;
+}
+
+function irParaIde() {
+  if (!missaoSelecionada) return;
+  const id = missaoSelecionada.id;
+  try {
+    sessionStorage.setItem('jacar-missao-id', id);
+  } catch (_) {}
+  location.href = 'missao.html?id=' + encodeURIComponent(id);
+}
+
+$('campVoltarModulos').onclick = () => {
+  temaAtivo = null;
+  $('campViewMissoes').hidden = true;
+  $('campViewModulos').hidden = false;
+  renderModulos();
+};
+$('campIniciar').onclick = irParaIde;
+$('campInicio').onclick = () => { location.href = '../index.html'; };
+$('campSandbox').onclick = () => { location.href = 'sandbox.html'; };
+
+try {
+  await Campanha.initCampanha();
+  $('campTitulo').textContent = Campanha.CAMPANHA.titulo;
+  $('campDesc').textContent = Campanha.CAMPANHA.descricao || $('campDesc').textContent;
+  renderModulos();
+  console.log('[lobby] missões', Campanha.MISSOES.length);
+} catch (e) {
+  console.error(e);
+  const err = $('campLoadErr');
+  err.hidden = false;
+  err.textContent = 'Não foi possível carregar a campanha (JSON). Use Live Server / Pages. ' + e.message;
+}
+</script>
+</body>
+</html>

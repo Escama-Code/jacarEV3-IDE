@@ -161,7 +161,9 @@
   document.querySelectorAll('.modo-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => {
       const modo = btn.dataset.modo;
-      window.location.href = `public/index.html?modo=${modo}`;
+      if (modo === 'campanha') window.location.href = 'public/campanha.html';
+      else if (modo === 'sandbox') window.location.href = 'public/sandbox.html';
+      else window.location.href = 'public/sandbox.html';
     });
   });
 </script>

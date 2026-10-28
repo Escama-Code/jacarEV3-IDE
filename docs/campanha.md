@@ -1,15 +1,35 @@
-# Campanha — Academia jacarev3
+# Campanha (JSON)
 
-## Fluxo
-1. Tela de **módulos** (temas).
-2. Módulo 2 só libera após **todas** as missões do módulo 1 concluídas.
-3. Dentro do módulo: lista de missões com até **5 estrelas**.
+## Estrutura
 
-## Estrelas (0–5)
-- **0**: não cumpriu objetivos obrigatórios.
-- **1–5**: quanto mais o código se aproxima do **código de referência** da missão, mais estrelas.
-- Objetivos (API, distância, região…) continuam obrigatórios para “passar”.
+```
+src/campanha/
+  pontuacao.mjs     # só similaridade + estrelas (várias respostas)
+  motor.mjs         # objetivos de simulação + orquestra pontuação
+  loader.mjs        # lê dados/*.json
+  index.mjs         # API pública
+  dados/
+    campanha.json   # registro de temas
+    temas/
+      codigos-base.json
+      leis-transito.json
+```
 
-## Temas
-1. Códigos-base (LED, motores, sensor, linha)
-2. Leis de trânsito (sinalizar, parar, zona, percurso completo)
+## Novo tema
+
+1. Crie `src/campanha/dados/temas/meu-tema.json` com `{ "id": "...", "missoes": [ ... ] }`
+2. Registre em `dados/campanha.json` → `temas[]` com `arquivo: "temas/meu-tema.json"`
+
+## Várias respostas certas
+
+Em cada missão use o array `codigosReferencia` (não um único `codigoReferencia`):
+
+```json
+"codigosReferencia": [
+  "solução A...",
+  "solução B com outro estilo...",
+  "solução C..."
+]
+```
+
+O motor usa a **melhor** similaridade entre o código do aluno e qualquer alternativa.

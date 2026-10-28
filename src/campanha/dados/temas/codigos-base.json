@@ -1,0 +1,131 @@
+{
+  "id": "codigos-base",
+  "missoes": [
+    {
+      "id": "cb01-led",
+      "titulo": "Ligar o LED",
+      "ordem": 1,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: acenda o LED verde.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: chame robo.led(...) com a cor certa\n    time.sleep(0.5)\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    time.sleep(0.5)\n",
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led(\"VERDE\")\n    time.sleep(1)\n",
+        "from jacarev3 import RoboEV3\n\nwith RoboEV3('00:16:53:64:F8:B8') as r:\n    r.led('VERDE')\n"
+      ],
+      "dicas": [
+        "Use robo.led('VERDE') dentro do with.",
+        "Cores comuns: VERDE, VERMELHO, LARANJA, DESLIGADO.",
+        "Pode usar aspas simples ou duplas na cor."
+      ],
+      "limites": { "tempoSimMaxS": 10 },
+      "objetivos": [
+        { "id": "usou-led", "tipo": "api_usada", "obrigatorio": true, "metodos": ["led"] }
+      ],
+      "recompensas": { "xp": 40, "desbloqueia": ["cb02-andar"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "Todo programa começa mostrando que o robô está vivo. Acenda o LED verde." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "LED ok. Próximo: movimento." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Não detectei chamada a led(). Confira o código." }]
+      }
+    },
+    {
+      "id": "cb02-andar",
+      "titulo": "Andar e parar",
+      "ordem": 2,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: ande para a frente e pare os motores B e C.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: mover_continuo nos motores B e C\n    time.sleep(1.2)\n    # TODO: parar_motor em B e em C\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    robo.mover_continuo('B', 35)\n    robo.mover_continuo('C', 35)\n    time.sleep(1.2)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n",
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    robo.mover_continuo('B', 40)\n    robo.mover_continuo('C', 40)\n    time.sleep(1)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n",
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as r:\n    r.led('VERDE')\n    for p in ('B', 'C'):\n        r.mover_continuo(p, 30)\n    time.sleep(1.5)\n    for p in ('B', 'C'):\n        r.parar_motor(p)\n"
+      ],
+      "dicas": [
+        "mover_continuo(porta, velocidade) com velocidade entre -100 e 100.",
+        "Depois do time.sleep, use parar_motor('B') e parar_motor('C').",
+        "time.sleep avança o tempo do simulador — sem ele o robô quase não anda."
+      ],
+      "limites": { "tempoSimMaxS": 15 },
+      "objetivos": [
+        { "id": "andou", "tipo": "dist_min", "obrigatorio": true, "cm": 15 },
+        { "id": "parou", "tipo": "api_usada", "obrigatorio": true, "metodos": ["parar_motor"] }
+      ],
+      "recompensas": { "xp": 50, "desbloqueia": ["cb03-sensor"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "Motores B (esquerda) e C (direita). Ande e sempre finalize com parar_motor." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "Movimento controlado. Hora do sensor." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Precisa andar ≥ 15 cm e chamar parar_motor." }]
+      }
+    },
+    {
+      "id": "cb03-sensor",
+      "titulo": "Ler o sensor de cor",
+      "ordem": 3,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missão: leia o sensor de cor (porta 3) e ande um pouco.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n    # TODO: print(luz)\n    # TODO: mover, esperar, parar\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n    print(luz)\n    robo.mover_continuo('B', 25)\n    robo.mover_continuo('C', 25)\n    time.sleep(0.8)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n",
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    valor = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n    robo.mover_continuo('B', 30)\n    robo.mover_continuo('C', 30)\n    time.sleep(1)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n"
+      ],
+      "dicas": [
+        "porta 3 costuma ser o sensor de cor voltado para o chão.",
+        "p.MODO_COR_REFLETIDA devolve um número (0–100 aproximadamente).",
+        "Chame ler_sensor antes de andar — o avaliador exige a API."
+      ],
+      "limites": { "tempoSimMaxS": 15 },
+      "objetivos": [
+        { "id": "sensor", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] },
+        { "id": "andou", "tipo": "dist_min", "obrigatorio": true, "cm": 8 }
+      ],
+      "recompensas": { "xp": 60, "desbloqueia": ["cb04-linha"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "O sensor enxerga a linha. Leia MODO_COR_REFLETIDA na porta 3." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "Leitura ok. Agora junte tudo num seguidor simples." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Faltou ler_sensor ou andar um pouco." }]
+      }
+    },
+    {
+      "id": "cb04-linha",
+      "titulo": "Seguidor de linha (base)",
+      "ordem": 4,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\n\n# Missão: siga a linha até a região leste da pista.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        # TODO: ler o sensor de refletida\n        # TODO: se linha preta (luz baixa), curvar para um lado\n        # TODO: senão, curvar para o outro\n        pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 12)\n            robo.mover_continuo('C', 32)\n        else:\n            robo.mover_continuo('B', 32)\n            robo.mover_continuo('C', 12)\n",
+        "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        v = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if v < 25:\n            robo.mover_continuo('B', 10)\n            robo.mover_continuo('C', 35)\n        else:\n            robo.mover_continuo('B', 35)\n            robo.mover_continuo('C', 10)\n",
+        "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as r:\n    r.led('VERDE')\n    while True:\n        luz = r.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        preto = luz < 30\n        r.mover_continuo('B', 12 if preto else 32)\n        r.mover_continuo('C', 32 if preto else 12)\n"
+      ],
+      "dicas": [
+        "Valores baixos ≈ linha preta; altos ≈ fundo claro.",
+        "Se curvar para o lado errado, inverta as velocidades de B e C.",
+        "O objetivo é chegar na região a leste (x alto) da pista treino."
+      ],
+      "limites": { "tempoSimMaxS": 45 },
+      "objetivos": [
+        { "id": "sensor", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] },
+        { "id": "zona", "tipo": "regiao", "obrigatorio": true, "regiao": { "x": 70, "y": 20, "w": 50, "h": 50 } }
+      ],
+      "recompensas": { "xp": 80, "desbloqueia": ["lt01-sinalizar"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "Tema códigos-base: feche com um seguidor que alcance a marca leste." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "Base concluída! Tema 2: leis de trânsito na pista." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Ajuste o limiar ou as velocidades até cruzar a região leste." }]
+      }
+    }
+  ]
+}

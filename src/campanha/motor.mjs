@@ -1,4 +1,9 @@
+/**
+ * motor.mjs — objetivos de simulação + orquestra a pontuação de código.
+ * A precisão do código fica em pontuacao.mjs.
+ */
 import { carregarSave, gravarSave } from './save.mjs';
+import { pontuarResposta } from './pontuacao.mjs';
 
 export function detectarApis(codigo) {
   const apis = [];
@@ -9,65 +14,7 @@ export function detectarApis(codigo) {
   if (/\.apitar\s*\(/.test(codigo)) apis.push('apitar');
   if (/gamepadPonte/.test(codigo)) apis.push('teleop');
   if (/\btime\.sleep\s*\(/.test(codigo)) apis.push('sleep');
-  if (/\bprint\s*\(/.test(codigo)) apis.push('print');
   return apis;
-}
-
-/** Normaliza código Python para comparação (ignora comentários, espaços, aspas). */
-export function normalizarCodigo(src) {
-  let s = String(src || '');
-  s = s.replace(/#.*$/gm, '');
-  s = s.replace(/"""[\s\S]*?"""/g, '');
-  s = s.replace(/'''[\s\S]*?'''/g, '');
-  s = s.replace(/\r\n/g, '\n');
-  s = s.replace(/[ \t]+/g, ' ');
-  s = s.replace(/\n+/g, '\n');
-  s = s.replace(/['"]/g, '"');
-  s = s.toLowerCase().trim();
-  return s;
-}
-
-/** Tokens significativos para similaridade. */
-export function tokensCodigo(src) {
-  const n = normalizarCodigo(src);
-  const parts = n.split(/[^a-z0-9_\.]+/).filter((t) => t && t.length > 1);
-  return parts;
-}
-
-/**
- * Similaridade 0..1 entre código do aluno e referência.
- * Combina Jaccard de tokens + cobertura de “frases” da referência.
- */
-export function similaridadeCodigo(aluno, referencia) {
-  if (!referencia || !String(referencia).trim()) return 0;
-  const ta = tokensCodigo(aluno);
-  const tr = tokensCodigo(referencia);
-  if (!tr.length) return 0;
-  if (!ta.length) return 0;
-
-  const setA = new Set(ta);
-  const setR = new Set(tr);
-  let inter = 0;
-  for (const t of setR) if (setA.has(t)) inter++;
-  const union = new Set([...setA, ...setR]).size || 1;
-  const jaccard = inter / union;
-  const cobertura = inter / setR.size; // quanto da referência apareceu
-
-  // bigramas de tokens (ordem aproximada)
-  const big = (arr) => {
-    const o = [];
-    for (let i = 0; i < arr.length - 1; i++) o.push(arr[i] + '>' + arr[i + 1]);
-    return o;
-  };
-  const ba = new Set(big(ta));
-  const br = big(tr);
-  let hit = 0;
-  for (const b of br) if (ba.has(b)) hit++;
-  const ordem = br.length ? hit / br.length : 0;
-
-  // média ponderada
-  const score = 0.35 * jaccard + 0.4 * cobertura + 0.25 * ordem;
-  return Math.max(0, Math.min(1, score));
 }
 
 function checarObjetivo(obj, sim, m) {
@@ -89,44 +36,6 @@ function checarObjetivo(obj, sim, m) {
   }
 }
 
-/**
- * Estrelas 0–5:
- * - 0 se objetivos obrigatórios falharem
- * - 1..5 conforme proximidade do código de referência (+ bônus leve de tempo)
- */
-export function calcularEstrelas5(missao, metricas, ok, similaridade) {
-  if (!ok) return 0;
-
-  let estrelas = 1; // passou nos objetivos
-
-  // mapa similaridade → estrelas (base)
-  if (similaridade >= 0.88) estrelas = 5;
-  else if (similaridade >= 0.72) estrelas = 4;
-  else if (similaridade >= 0.52) estrelas = 3;
-  else if (similaridade >= 0.32) estrelas = 2;
-  else estrelas = 1;
-
-  // se não há referência, usa regras de tempo da missão
-  if (!missao.codigoReferencia) {
-    estrelas = 2;
-    const regras = missao.avaliacao?.estrelas || [];
-    for (const regra of regras) {
-      if (regra.quando === 'vitoria') estrelas = Math.max(estrelas, Math.min(5, regra.estrelas || 2));
-      if (regra.quando === 'tempoSim' && metricas.tempoSim <= (regra.maxS ?? 0)) {
-        estrelas = Math.max(estrelas, Math.min(5, regra.estrelas || 3));
-      }
-    }
-  } else {
-    // bônus de tempo: +0 ou +1 se muito rápido (sem passar de 5)
-    const tMax = missao.limites?.tempoSimMaxS;
-    if (tMax && metricas.tempoSim > 0 && metricas.tempoSim <= tMax * 0.35 && estrelas < 5) {
-      if (similaridade >= 0.5) estrelas = Math.min(5, estrelas + 1);
-    }
-  }
-
-  return Math.max(0, Math.min(5, estrelas));
-}
-
 export function avaliar(sim, codigo, missao) {
   const metricas = {
     tempoSim: sim?.t || 0,
@@ -146,19 +55,24 @@ export function avaliar(sim, codigo, missao) {
   const obrig = (missao.objetivos || []).filter((o) => o.obrigatorio !== false);
   const ok = obrig.length === 0 ? false : obrig.every((o) => objetivos[o.id]);
 
-  const similaridade = similaridadeCodigo(codigo || '', missao.codigoReferencia || '');
-  metricas.similaridade = similaridade;
+  const score = pontuarResposta(codigo || '', missao, {
+    objetivosOk: ok,
+    tempoSim: metricas.tempoSim,
+  });
 
-  const estrelas = calcularEstrelas5(missao, metricas, ok, similaridade);
+  metricas.similaridade = score.similaridade;
+  metricas.indiceReferencia = score.indiceReferencia;
+  metricas.totalAlternativas = score.totalAlternativas;
 
   return {
     ok,
-    estrelas,
+    estrelas: score.estrelas,
     objetivos,
     metricas,
     codigo: codigo || '',
-    similaridade,
-    maxEstrelas: 5,
+    similaridade: score.similaridade,
+    maxEstrelas: score.maxEstrelas,
+    indiceReferencia: score.indiceReferencia,
   };
 }
 
@@ -201,14 +115,12 @@ export function statusMissao(save, missaoId, primeiraId) {
   return 'bloqueada';
 }
 
-/** Tema completo = todas as missões do tema com status concluida */
 export function temaCompleto(save, temaId, missoes) {
   const doTema = missoes.filter((m) => m.temaId === temaId);
   if (!doTema.length) return false;
   return doTema.every((m) => (save.missoes[m.id]?.status) === 'concluida');
 }
 
-/** Tema desbloqueado: o primeiro sempre; demais exigem o anterior completo */
 export function temaLiberado(save, tema, temas, missoes) {
   const idx = temas.findIndex((t) => t.id === tema.id);
   if (idx <= 0) return true;

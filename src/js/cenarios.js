@@ -470,8 +470,7 @@ function plantarPinheiroTapete(nome, x, y) {
 }
 
 // Espalhando árvores nos campos verdes do tapete
-const coordenadasPinheiros = [, [50, 140], [180, 150], [195, 170], [180, 210], [45, 15]
-];
+const coordenadasPinheiros = [[50, 140], [180, 150], [195, 170], [180, 210], [45, 15]];
 coordenadasPinheiros.forEach((pos, i) => plantarPinheiroTapete('Pinheiro_' + i, pos[0], pos[1]));
 
   // =========================================================================
@@ -482,11 +481,7 @@ coordenadasPinheiros.forEach((pos, i) => plantarPinheiroTapete('Pinheiro_' + i, 
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-<<<<<<< HEAD
-  const lista = { treino, desvio, fll, labirinto, obr, derby, tapeteUrbanoInfantil };
-=======
-  const lista = { treino, desvio, fll, labirinto, obr };
->>>>>>> e222060127dc0fe5071fd8703ecc1cd279bbe2a9
+  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }

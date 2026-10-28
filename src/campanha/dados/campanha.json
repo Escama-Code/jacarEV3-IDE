@@ -1,0 +1,21 @@
+{
+  "id": "jacarev3-fundamentos",
+  "titulo": "Academia jacarev3",
+  "descricao": "Aprenda a biblioteca e as regras da pista em missões guiadas.",
+  "temas": [
+    {
+      "id": "codigos-base",
+      "titulo": "1 · Códigos-base",
+      "descricao": "LED, motores, sensores e o padrão with RoboEV3.",
+      "cor": "#3b82f6",
+      "arquivo": "temas/codigos-base.json"
+    },
+    {
+      "id": "leis-transito",
+      "titulo": "2 · Leis de trânsito",
+      "descricao": "Parar, sinalizar, respeitar zonas e completar o percurso com segurança.",
+      "cor": "#e3b341",
+      "arquivo": "temas/leis-transito.json"
+    }
+  ]
+}
