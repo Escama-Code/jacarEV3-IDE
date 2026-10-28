@@ -175,7 +175,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, peers: new Map() };
+  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map() };
 
   /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
   const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
@@ -271,10 +271,16 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     if (modo === 'livre') enquadrarLivre();
     if (modo === 'topo') enquadrarCantos(1, 0.0001, new THREE.Vector3(0, 0, -1));
   }
+  function setDistanciaSeguir(d, alt) {
+    if (d != null && isFinite(d)) S.seguirDist = Math.max(8, Math.min(120, +d));
+    if (alt != null && isFinite(alt)) S.seguirAlt = Math.max(5, Math.min(80, +alt));
+    S.snap = true;
+  }
   function atualizarCamera() {
     if (S.modo === 'seguir' && S.ultimo) {                          // câmera de perseguição atrás do robô
       const { x, y, th } = S.ultimo, fx = Math.cos(th), fz = Math.sin(th);
-      const desejada = new THREE.Vector3(x - fx * 30, 20, y - fz * 30);
+      const d = S.seguirDist || 30, h = S.seguirAlt || 20;
+      const desejada = new THREE.Vector3(x - fx * d, h, y - fz * d);
       const alvo = new THREE.Vector3(x + fx * 8, 3, y + fz * 8);
       camera.up.set(0, 1, 0);
       if (S.snap) { camera.position.copy(desejada); S.alvoCam.copy(alvo); S.snap = false; }
@@ -299,8 +305,8 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   if (typeof ResizeObserver !== 'undefined' && container.nodeType === 1) new ResizeObserver(() => { if (S.ativo) redimensionar(); }).observe(container);
 
   setCenario(cenario, tapete); setRobo('ev3'); redimensionar();
-  return { renderer, scene, camera, controls, setRobo, setPeers, setCenario, setModoCamera, aplicar, desenhar, mostrar, redimensionar,
-    get rig() { return S.rig; }, get tipo() { return S.tipo; }, get modo() { return S.modo; } };
+  return { renderer, scene, camera, controls, setRobo, setPeers, setCenario, setModoCamera, setDistanciaSeguir, aplicar, desenhar, mostrar, redimensionar,
+    get rig() { return S.rig; }, get tipo() { return S.tipo; }, get modo() { return S.modo; }, get seguirDist() { return S.seguirDist; } };
 }
 
 

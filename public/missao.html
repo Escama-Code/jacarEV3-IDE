@@ -131,7 +131,25 @@
 </header>
 
 <main>
-  <section class="painel">
+<section class="painel painel-codigo">
+    <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
+    <div class="linha" style="margin-top:0">
+      <select id="exemplo"></select>
+      <label>limite <input id="limite" type="number" value="30" min="1" max="60" step="1" title="Máximo 60 s"> s simulados <span class="info" style="margin:0">(máx. 60s)</span></label>
+    </div>
+    <div id="editor" style="margin-top:8px"></div>
+    <div class="linha">
+      <button id="btnRodar" class="principal" disabled>▶ Rodar script</button>
+      <span class="info" style="margin:0"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+      <label style="margin-left:auto">jacarev3 <input id="versao" type="text" placeholder="última"></label>
+      <span class="info" style="margin:0" id="versaoInst"></span>
+    </div>
+    <div class="termbar"><h2>Terminal</h2><button id="btnLimpar">Limpar Terminal</button></div>
+    <div id="terminal"></div>
+    <div class="info">Sensores: <b>1</b> cor · <b>2</b> toque · <b>3</b> cor · <b>4</b> ultrassônico. Motores: <b>B</b> esquerda, <b>C</b> direita.
+    <code>time.sleep()</code> avança o relógio do simulador (não trava a aba).</div>
+  </section>
+<section class="painel painel-arena">
     <h2>Arena virtual</h2>
     <div class="linha" style="margin:0 0 8px">
       <div class="seg"><button id="btn2d" class="ativo">2D</button><button id="btn3d" disabled title="carregando Three.js…">3D</button></div>
@@ -141,6 +159,11 @@
         <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option><option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option>
         </select>
         <select id="cam3d"><option value="livre">Câmera: livre (arraste)</option><option value="seguir">Câmera: seguir o robô</option><option value="topo">Câmera: vista de topo</option></select>
+        <label id="lblDistCam" title="Distância da câmera ao seguir o robô" style="gap:4px">
+          Dist.
+          <input id="distCam" type="range" min="12" max="90" value="30" style="width:90px;min-width:90px">
+          <span id="distCamVal">30</span>
+        </label>
       </span>
     </div>
     <div id="palco">
@@ -158,25 +181,6 @@
     <h2>Bytes que a jacarev3 gerou</h2>
     <div id="tabela"><table><tbody id="corpo"></tbody></table></div>
     <div class="info" id="contaPacotes"></div>
-  </section>
-
-  <section class="painel">
-    <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
-    <div class="linha" style="margin-top:0">
-      <select id="exemplo"></select>
-      <label>limite <input id="limite" type="number" value="30" min="1" max="300"> s simulados</label>
-    </div>
-    <div id="editor" style="margin-top:8px"></div>
-    <div class="linha">
-      <button id="btnRodar" class="principal" disabled>▶ Rodar script</button>
-      <span class="info" style="margin:0"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
-      <label style="margin-left:auto">jacarev3 <input id="versao" type="text" placeholder="última"></label>
-      <span class="info" style="margin:0" id="versaoInst"></span>
-    </div>
-    <div class="termbar"><h2>Terminal</h2><button id="btnLimpar">Limpar Terminal</button></div>
-    <div id="terminal"></div>
-    <div class="info">Sensores: <b>1</b> cor · <b>2</b> toque · <b>3</b> cor · <b>4</b> ultrassônico. Motores: <b>B</b> esquerda, <b>C</b> direita.
-    <code>time.sleep()</code> avança o relógio do simulador (não trava a aba).</div>
   </section>
 </main>
 
@@ -954,7 +958,7 @@ const Playback = (() => {
     const sel = $('inicio'); sel.innerHTML = '';
     for (const [k, v] of Object.entries(cen.inicios)) sel.add(new Option('início: ' + v.rotulo, k));
     sel.value = cen.inicios[inicio] ? inicio : cen.inicioPadrao;
-    $('palco').style.aspectRatio = cen.w + ' / ' + cen.h;
+    // tamanho do palco é fixo no CSS — não alterar aspectRatio ao trocar mapa
     ESC = Math.min(10, 1000 / Math.max(cen.w, cen.h));
     const cv = $('cv'); cv.width = Math.round(cen.w * ESC); cv.height = Math.round(cen.h * ESC);
     if (vista) {
@@ -1102,7 +1106,19 @@ const Playback = (() => {
   $('btn2d').onclick = () => setModo('2d');
   $('btn3d').onclick = () => setModo('3d');
   $('robo3d').onchange = () => { tipoRobo = $('robo3d').value; if (vista) vista.setRobo(tipoRobo); };
-  $('cam3d').onchange = () => { modoCam = $('cam3d').value; if (vista) vista.setModoCamera(modoCam); };
+  $('cam3d').onchange = () => {
+      modoCam = $('cam3d').value;
+      if (vista) vista.setModoCamera(modoCam);
+      const lbl = $('lblDistCam');
+      if (lbl) lbl.style.opacity = modoCam === 'seguir' ? '1' : '0.45';
+    };
+    if ($('distCam')) {
+      $('distCam').oninput = () => {
+        const v = +$('distCam').value;
+        if ($('distCamVal')) $('distCamVal').textContent = v;
+        if (vista && typeof vista.setDistanciaSeguir === 'function') vista.setDistanciaSeguir(v);
+      };
+    }
   $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); };
   $('inicio').onchange = () => { descartarSimulacao(); desenhar(0); };
 
@@ -1312,7 +1328,7 @@ const GamepadPonte = (() => {
   }
 
   function teleop(limite_s, vel) {
-    limite_s = Number(limite_s) > 0 ? Number(limite_s) : 120;
+    limite_s = Number(limite_s) > 0 ? Math.min(Number(limite_s), 60) : 60;
     vel = Number(vel) > 0 ? Number(vel) : 45;
     teleopStop = false;
     if (teleopRaf) cancelAnimationFrame(teleopRaf);
@@ -1455,7 +1471,14 @@ async function rodar() {
   Terminal.limpar();
   App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
   const codigo = App.editor.getValue();
-  const limite = +$('limite').value || 30;
+  const LIMITE_SIM_MAX = 60;
+  let limite = +$('limite').value || 30;
+  if (!Number.isFinite(limite) || limite < 1) limite = 30;
+  if (limite > LIMITE_SIM_MAX) {
+    limite = LIMITE_SIM_MAX;
+    $('limite').value = LIMITE_SIM_MAX;
+    Terminal.sys('⏱ Limite máximo de simulação: ' + LIMITE_SIM_MAX + ' s');
+  }
   const t0 = performance.now();
   let res = 'erro';
   try {
@@ -1603,6 +1626,15 @@ const MissaoPage = {
     if (App.editor) {
       App.editor.setValue(s.codigoInicial != null ? s.codigoInicial : '# complete a missão\n');
     }
+    // trava limite da simulação (missão e teto global)
+    if ($('limite')) {
+      const maxMissao = (missao.limites && missao.limites.tempoSimMaxS) ? +missao.limites.tempoSimMaxS : 60;
+      const teto = Math.min(60, maxMissao);
+      $('limite').max = String(teto);
+      let v = +$('limite').value || 30;
+      if (v > teto) v = teto;
+      $('limite').value = v;
+    }
     const temas = (window.Campanha && Campanha.CAMPANHA && Campanha.CAMPANHA.temas) || (window.__campanhaMeta && window.__campanhaMeta.temas) || [];
     const tema = temas.find((x) => x.id === missao.temaId);
     if ($('hudModulo')) $('hudModulo').textContent = tema ? tema.titulo : '';
@@ -1720,6 +1752,18 @@ async function iniciar() {
   };
   Terminal.limpar();
   Playback.iniciar();
+  const elLim = $('limite');
+  if (elLim) {
+    elLim.max = String(60);
+    const clampLim = () => {
+      let v = +elLim.value;
+      if (!Number.isFinite(v) || v < 1) v = 1;
+      if (v > 60) v = 60;
+      elLim.value = v;
+    };
+    elLim.addEventListener('change', clampLim);
+    elLim.addEventListener('blur', clampLim);
+  }
   const ti0 = $('telaInicio'); if (ti0) ti0.hidden = true;
   Terminal.sys('🎮 Controle: conecte o pad e aperte um botão (exemplo "Controle (gamepad)")');
 
