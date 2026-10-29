@@ -363,3 +363,50 @@ body.lobby-aberto header {
   cursor: pointer;
 }
 .camp-resultado-float .principal { margin-top: 10px; width: 100%; }
+
+/* Feedback pedagógico + skills */
+.camp-feedback {
+  margin: 10px 0;
+  padding: 10px 12px;
+  background: rgba(248, 81, 73, 0.12);
+  border: 1px solid rgba(248, 81, 73, 0.35);
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
+.camp-feedback ul { margin: 6px 0 0; padding-left: 1.1rem; }
+.camp-feedback .fail-fb { color: #ffb4a8; margin: 4px 0; }
+.camp-skills { margin-top: 8px; font-size: 0.85rem; color: #8b9bab; }
+.skill-tag {
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1f6feb33;
+  border: 1px solid #1f6feb66;
+  color: #79b8ff;
+  font-size: 0.8rem;
+}
+.camp-links { font-size: 0.8rem; color: #8b9bab; margin-top: 6px; }
+.camp-obj-result .ok { color: #3fb950; }
+.camp-obj-result .fail { color: #f85149; }
+
+.camp-skills-map {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+.camp-skills-map .skill-tag.dominada {
+  background: #23863644;
+  border-color: #3fb95088;
+  color: #56d364;
+}
+.camp-skills-map .skill-tag.off {
+  opacity: 0.45;
+}
+.camp-save-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
