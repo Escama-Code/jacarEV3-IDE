@@ -20,6 +20,7 @@ import {
   construirRoboOpala,
   construirRoboCorcel,
   construirRoboCarro,
+  construirRoboOnibus,
   aplicarEstado,
 } from './modelos/index.mjs';
 
@@ -39,6 +40,7 @@ const ROBOS = {
   opala: construirRoboOpala,
   corcel: construirRoboCorcel,
   carro: construirRoboCarro,
+  onibus: construirRoboOnibus
 };
 
 /** textura do chão = a MESMA imagem que o sensor lê (tapete.canvas / tapete.dados) */

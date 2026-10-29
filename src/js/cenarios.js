@@ -468,15 +468,573 @@ tapeteUrbanoInfantil.caixas.push(
   { nome: 'Pinheiro_2_Folhas', x: 212, y: 17, w: 6, h: 6, altura: 14, cor: '#15803d' }
 );
 
-  // =========================================================================
-  // ATENÇÃO: COLOQUE / DECLARE O MODELO DO SEU NOVO MAPA NESTE LOCAL (ANTES DA LISTA)
-  // =========================================================================
+// ---------------------------------------------------------
+// Cenário F — Pista BRT / OBR com rampa e área de resgate
+// Aproximação fiel à imagem, dentro das limitações atuais.
+// ---------------------------------------------------------
+const brt = {
+  id: 'brt',
+  nome: 'Pista BRT (Rampa + Resgate)',
+  w: 240,
+  h: 180,
+  pxPorCm: 4,
 
+  inicioPadrao: 'largadaDireita',
+  inicios: {
+    largadaDireita: { rotulo: 'Largada à direita', x: 218, y: 108, th: Math.PI },
+    resgate: { rotulo: 'Saída da área de resgate', x: 95, y: 96, th: 0 },
+    inferior: { rotulo: 'Trecho inferior', x: 70, y: 145, th: 0 }
+  },
+
+  caixas: [
+    // ---------------------------
+    // Área de resgate (paredes)
+    // ---------------------------
+    { nome: 'Resgate Norte', x: 2, y: 58, w: 88, h: 2, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Oeste', x: 0, y: 60, w: 2, h: 62, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Sul',   x: 2, y: 120, w: 88, h: 2, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Leste 1', x: 88, y: 60, w: 2, h: 26, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Leste 2', x: 88, y: 100, w: 2, h: 22, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+
+    // divisórias próximas da rampa / ponte
+    { nome: 'Divisória Central 1', x: 86, y: 74, w: 14, h: 2, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Divisória Central 2', x: 98, y: 74, w: 2, h: 18, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+
+    // suportes da ponte
+    { nome: 'Pilar Ponte 1', x: 144, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+    { nome: 'Pilar Ponte 2', x: 156, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+    { nome: 'Pilar Ponte 3', x: 168, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+    { nome: 'Pilar Ponte 4', x: 180, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+
+    // suporte inferior da rampa curta
+    { nome: 'Pilar Rampa Curta', x: 155, y: 128, w: 3, h: 3, altura: 7, cor: '#b87333', modelo: 'parede' },
+
+    // obstáculo cilíndrico aproximado como bloco
+    { nome: 'Obstáculo Cilíndrico', x: 54, y: 138, w: 10, h: 10, altura: 14, cor: '#dbc8a5', modelo: 'parede' }
+  ],
+
+  rampas: [
+    // subida principal até a parte alta
+    { nome: 'Rampa Principal', x: 96, y: 14, w: 92, h: 26, altura: 18, subida: 52, dir: '+x', cor: '#ddd6c8' },
+
+    // descida / ligação à esquerda
+    { nome: 'Rampa de Saída', x: 92, y: 38, w: 24, h: 52, altura: 18, subida: 30, dir: '+y', cor: '#ddd6c8' },
+
+    // rampa curta da região central-direita
+    { nome: 'Rampa Secundária', x: 146, y: 116, w: 26, h: 18, altura: 7, subida: 18, dir: '+y', cor: '#ddd6c8' }
+  ],
+
+  desenhar(ctx, c) {
+    // ---------------------------
+    // helpers
+    // ---------------------------
+    const grade = 30;
+
+    function disco(x, y, r, cor = '#e6902e') {
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#8a5a1d';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    }
+
+    function marcadorVerde(x, y, w = 4, h = 2) {
+      ctx.fillStyle = '#1f7a34';
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function fitaInicio() {
+      ctx.strokeStyle = '#111111';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'square';
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([]);
+    }
+
+    // ---------------------------
+    // fundo
+    // ---------------------------
+    ctx.fillStyle = '#f2efe6';
+    ctx.fillRect(0, 0, c.w, c.h);
+
+    // grade do piso
+    ctx.strokeStyle = '#c7c1b4';
+    ctx.lineWidth = 0.45;
+    for (let x = 0; x <= c.w; x += grade) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, c.h);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= c.h; y += grade) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(c.w, y);
+      ctx.stroke();
+    }
+
+    // ---------------------------
+    // área de resgate
+    // ---------------------------
+    ctx.fillStyle = '#efede4';
+    ctx.fillRect(2, 60, 88, 60);
+
+    // triângulos coloridos
+    ctx.fillStyle = '#b3322c';
+    ctx.beginPath();
+    ctx.moveTo(5, 63);
+    ctx.lineTo(18, 63);
+    ctx.lineTo(5, 78);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#992222';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(17, 64);
+    ctx.lineTo(11, 80);
+    ctx.stroke();
+
+    ctx.fillStyle = '#2f8b4b';
+    ctx.beginPath();
+    ctx.moveTo(5, 118);
+    ctx.lineTo(19, 118);
+    ctx.lineTo(5, 111);
+    ctx.closePath();
+    ctx.fill();
+
+    // bolinhas da área de resgate (2D)
+    for (const [x, y, cor] of [
+      [35, 92, '#d9d9d9'],
+      [52, 96, '#d9d9d9'],
+      [60, 83, '#202020']
+    ]) {
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 0.3;
+      ctx.stroke();
+    }
+
+    // ---------------------------
+    // plataformas / rampas (pintura 2D)
+    // ---------------------------
+    ctx.fillStyle = '#ece6d8';
+    ctx.fillRect(96, 14, 92, 26);
+    ctx.fillRect(92, 38, 24, 52);
+    ctx.fillRect(146, 116, 26, 18);
+
+    ctx.strokeStyle = '#b6ae9d';
+    ctx.lineWidth = 0.7;
+    ctx.strokeRect(96, 14, 92, 26);
+    ctx.strokeRect(92, 38, 24, 52);
+    ctx.strokeRect(146, 116, 26, 18);
+
+    // linhas divisórias sobre a rampa/ponte
+    ctx.strokeStyle = '#b8b0a0';
+    ctx.lineWidth = 0.5;
+    for (const x of [126, 156]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 14);
+      ctx.lineTo(x, 40);
+      ctx.stroke();
+    }
+    for (const y of [52, 66]) {
+      ctx.beginPath();
+      ctx.moveTo(92, y);
+      ctx.lineTo(116, y);
+      ctx.stroke();
+    }
+
+    // ---------------------------
+    // fita preta / trajetos
+    // ---------------------------
+    fitaInicio();
+
+    // trecho superior / ponte
+    ctx.beginPath();
+    ctx.moveTo(102, 72);
+    ctx.quadraticCurveTo(104, 60, 112, 48);
+    ctx.lineTo(126, 30);
+    ctx.lineTo(150, 12);
+    ctx.lineTo(172, 12);
+    ctx.quadraticCurveTo(180, 12, 186, 20);
+    ctx.lineTo(194, 28);
+    ctx.lineTo(174, 34);
+    ctx.lineTo(142, 34);
+    ctx.lineTo(118, 50);
+    ctx.quadraticCurveTo(109, 56, 104, 66);
+    ctx.stroke();
+
+    // saída da área de resgate até o centro
+    ctx.beginPath();
+    ctx.moveTo(90, 96);
+    ctx.lineTo(104, 96);
+    ctx.lineTo(104, 88);
+    ctx.lineTo(118, 88);
+    ctx.stroke();
+
+    // curva descendo do centro para a parte inferior
+    ctx.beginPath();
+    ctx.moveTo(116, 88);
+    ctx.quadraticCurveTo(94, 102, 94, 120);
+    ctx.quadraticCurveTo(94, 134, 108, 140);
+    ctx.lineTo(132, 140);
+    ctx.stroke();
+
+    // trecho sinuoso inferior
+    ctx.beginPath();
+    ctx.moveTo(64, 148);
+    ctx.lineTo(82, 148);
+    ctx.bezierCurveTo(90, 148, 92, 138, 100, 138);
+    ctx.bezierCurveTo(108, 138, 110, 148, 118, 148);
+    ctx.bezierCurveTo(126, 148, 128, 138, 136, 138);
+    ctx.bezierCurveTo(144, 138, 146, 148, 154, 148);
+    ctx.stroke();
+
+    // caminho vindo da esquerda para o trecho sinuoso
+    ctx.beginPath();
+    ctx.moveTo(44, 142);
+    ctx.lineTo(44, 160);
+    ctx.lineTo(82, 160);
+    ctx.lineTo(82, 148);
+    ctx.stroke();
+
+    // ligação do sinuoso para o centro
+    ctx.beginPath();
+    ctx.moveTo(154, 148);
+    ctx.quadraticCurveTo(166, 146, 166, 136);
+    ctx.quadraticCurveTo(166, 126, 154, 124);
+    ctx.lineTo(140, 124);
+    ctx.lineTo(132, 140);
+    ctx.stroke();
+
+    // região central direita com cruzamento vermelho
+    ctx.beginPath();
+    ctx.moveTo(138, 108);
+    ctx.lineTo(154, 108);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#b12a2a';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(132, 102);
+    ctx.lineTo(148, 110);
+    ctx.moveTo(148, 102);
+    ctx.lineTo(132, 110);
+    ctx.stroke();
+
+    // trilha zigue-zague do meio
+    fitaInicio();
+    ctx.beginPath();
+    ctx.moveTo(166, 108);
+    ctx.lineTo(166, 114);
+    ctx.lineTo(176, 114);
+    ctx.lineTo(176, 120);
+    ctx.lineTo(170, 120);
+    ctx.lineTo(170, 126);
+    ctx.lineTo(180, 126);
+    ctx.lineTo(180, 132);
+    ctx.lineTo(168, 132);
+    ctx.stroke();
+
+    // lado direito
+    ctx.beginPath();
+    ctx.moveTo(188, 56);
+    ctx.lineTo(214, 56);
+    ctx.lineTo(214, 108);
+    ctx.lineTo(224, 108);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(182, 80);
+    ctx.lineTo(206, 80);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(150, 66);
+    ctx.lineTo(150, 86);
+    ctx.lineTo(170, 86);
+    ctx.stroke();
+
+    // barras finais estilo "T"
+    ctx.beginPath();
+    ctx.moveTo(206, 56);
+    ctx.lineTo(222, 56);
+    ctx.moveTo(218, 52);
+    ctx.lineTo(218, 60);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(216, 108);
+    ctx.lineTo(230, 108);
+    ctx.moveTo(223, 104);
+    ctx.lineTo(223, 112);
+    ctx.stroke();
+
+    // ---------------------------
+    // marcadores
+    // ---------------------------
+    disco(101, 51, 2.2);
+    disco(109, 122, 2.2);
+    disco(184, 132, 2.2);
+
+    marcadorVerde(103, 136, 4, 2);
+    marcadorVerde(150, 73, 4, 2);
+    marcadorVerde(183, 78, 4, 2);
+    marcadorVerde(154, 73, 3, 2);
+
+    // borda externa leve
+    ctx.strokeStyle = '#8f8b80';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(0.8, 0.8, c.w - 1.6, c.h - 1.6);
+  }
+};
+
+const arenaSboticsTiles = [{"x": 2, "y": 0, "z": 0, "rotation": 0, "tipo": "", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 3, "y": 0, "z": 0, "rotation": 3, "tipo": "long-curve", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 4, "y": 0, "z": 0, "rotation": 1, "tipo": "t-intersection", "resgate": false, "rampa": false, "fim": false, "objects": [{"name": "Green Plane", "type": "ObjectPlane", "position": {"x": 0.550000011920929, "y": -0.00499999988824129, "z": -0.550000011920929}, "rotation": {"x": 90, "y": 0, "z": 0}, "scale": {"x": 0.800000011920929, "y": 0.800000011920929, "z": 1}}, {"name": "Green Plane", "type": "ObjectPlane", "position": {"x": -0.550000011920929, "y": -0.00499999988824129, "z": -0.550000011920929}, "rotation": {"x": 90, "y": 0, "z": 0}, "scale": {"x": 0.800000011920929, "y": 0.800000011920929, "z": 1}}]}, {"x": 4, "y": 2, "z": 0, "rotation": 3, "tipo": "half-straight-line", "resgate": false, "rampa": false, "fim": true, "objects": [{"name": "Finish Lane", "type": "ObjectPlane", "position": {"x": 0, "y": 0.00499999988824129, "z": 0}, "rotation": {"x": 90, "y": 0, "z": 0}, "scale": {"x": 10, "y": 1.5, "z": 1}}]}, {"x": 5, "y": 1, "z": 0, "rotation": 3, "tipo": "straight-line", "resgate": false, "rampa": true, "fim": false, "objects": []}, {"x": 6, "y": 1, "z": 0, "rotation": 2, "tipo": "smooth-step-curve", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 2, "y": 0, "z": 1, "rotation": 3, "tipo": "90-curve", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 3, "y": 0, "z": 1, "rotation": 1, "tipo": "intersection", "resgate": false, "rampa": false, "fim": false, "objects": [{"name": "Green Plane", "type": "ObjectPlane", "position": {"x": 0.550000011920929, "y": -0.00499999988824129, "z": -0.550000011920929}, "rotation": {"x": 90, "y": 0, "z": 0}, "scale": {"x": 0.800000011920929, "y": 0.800000011920929, "z": 1}}]}, {"x": 4, "y": 1, "z": 1, "rotation": 3, "tipo": "90-curve", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 5, "y": 1, "z": 1, "rotation": 1, "tipo": "straight-line", "resgate": false, "rampa": false, "fim": false, "objects": [{"name": "Seesaw", "type": "ObjectSeesaw", "position": {"x": 0, "y": 0, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 1, "y": 1, "z": 1}}]}, {"x": 6, "y": 1, "z": 1, "rotation": 1, "tipo": "90-curve", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 2, "y": 0, "z": 2, "rotation": 0, "tipo": "gap", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 3, "y": 0, "z": 2, "rotation": 2, "tipo": "start-line", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 4, "y": 0, "z": 2, "rotation": 2, "tipo": "straight-line", "resgate": false, "rampa": true, "fim": false, "objects": [{"name": "Wall Side Entrance", "type": "ObjectCuboid", "position": {"x": -5, "y": 3.40000009536743, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.699999988079071, "y": 6.69999980926514, "z": 1.20000004768372}}, {"name": "Wall Side Entrance", "type": "ObjectCuboid", "position": {"x": 5, "y": 3.40000009536743, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.699999988079071, "y": 6.69999980926514, "z": 1.20000004768372}}, {"name": "Top Entrance", "type": "ObjectCuboid", "position": {"x": 0, "y": 6.5, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 10, "y": 0.5, "z": 1.20000004768372}}]}, {"x": 5, "y": 1, "z": 2, "rotation": 0, "tipo": "", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 6, "y": 1, "z": 2, "rotation": 0, "tipo": "", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 0, "y": 1, "z": 3, "rotation": 0, "tipo": "", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 1, "y": 1, "z": 3, "rotation": 0, "tipo": "", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 2, "y": 0, "z": 3, "rotation": 0, "tipo": "gap-intersection", "resgate": false, "rampa": true, "fim": false, "objects": []}, {"x": 4, "y": 0, "z": 3, "rotation": 0, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": -4.84999990463257, "y": 1.39999997615814, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}, {"name": "Exit", "type": "ObjectPlane", "position": {"x": 0, "y": 0, "z": -4.65000009536743}, "rotation": {"x": 90, "y": 0, "z": 0}, "scale": {"x": 10, "y": 0.800000011920929, "z": 1}}]}, {"x": 5, "y": 0, "z": 3, "rotation": 1, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": 4.84999990463257, "y": 1.39999997615814, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}]}, {"x": 6, "y": 0, "z": 3, "rotation": 2, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": -4.84999990463257, "y": 1.39999997615814, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}, {"name": "Wall 2", "type": "ObjectCuboid", "position": {"x": 0, "y": 1.39999997615814, "z": 4.84999990463257}, "rotation": {"x": 0, "y": 90, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}, {"name": "Evacuation Point", "type": "ObjectEvacuationPoint", "position": {"x": -2.20000004768372, "y": 0.75, "z": -6}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 1, "y": 1, "z": 1}}]}, {"x": 0, "y": 1, "z": 4, "rotation": 3, "tipo": "90-curve", "resgate": false, "rampa": false, "fim": false, "objects": [{"name": "Box Object", "type": "ObjectBox", "position": {"x": 0, "y": 0, "z": 0}, "rotation": {"x": 0, "y": 90, "z": 0}, "scale": {"x": 1.10000002384186, "y": 1, "z": 0.600000023841858}}]}, {"x": 1, "y": 1, "z": 4, "rotation": 3, "tipo": "straight-line", "resgate": false, "rampa": false, "fim": false, "objects": [{"name": "Speed Bump", "type": "ObjectCylinder", "position": {"x": 0, "y": -0.100000001490116, "z": 2.5}, "rotation": {"x": 0, "y": 3, "z": 90}, "scale": {"x": 0.5, "y": 3.5, "z": 0.5}}, {"name": "Speed Bump Line", "type": "ObjectCylinder", "position": {"x": 0, "y": -0.100000001490116, "z": 2.5}, "rotation": {"x": 0, "y": 0, "z": 90}, "scale": {"x": 0.550000011920929, "y": 0.150000005960464, "z": 0.550000011920929}}, {"name": "Speed Bump", "type": "ObjectCylinder", "position": {"x": 0, "y": -0.100000001490116, "z": -2.5}, "rotation": {"x": 0, "y": -2, "z": 90}, "scale": {"x": 0.5, "y": 3.5, "z": 0.5}}, {"name": "Speed Bump Line", "type": "ObjectCylinder", "position": {"x": 0, "y": -0.100000001490116, "z": -2.5}, "rotation": {"x": 0, "y": 0, "z": 90}, "scale": {"x": 0.550000011920929, "y": 0.150000005960464, "z": 0.550000011920929}}]}, {"x": 2, "y": 1, "z": 4, "rotation": 1, "tipo": "90-curve", "resgate": false, "rampa": false, "fim": false, "objects": [{"name": "Box Object", "type": "ObjectBox", "position": {"x": 0, "y": 0, "z": 0}, "rotation": {"x": 0, "y": 90, "z": 0}, "scale": {"x": 1.10000002384186, "y": 1, "z": 0.600000023841858}}]}, {"x": 4, "y": 0, "z": 4, "rotation": 3, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": 0, "y": 1.39999997615814, "z": 4.84999990463257}, "rotation": {"x": 0, "y": 90, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}]}, {"x": 5, "y": 0, "z": 4, "rotation": 0, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Live Victim", "type": "ObjectLiveVictim", "position": {"x": 0.100000001490116, "y": 3, "z": 0.100000001490116}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 1, "y": 1, "z": 1}}, {"name": "Live Victim", "type": "ObjectLiveVictim", "position": {"x": 0, "y": 2, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 1, "y": 1, "z": 1}}, {"name": "Dead Victim", "type": "ObjectDeadVictim", "position": {"x": 0, "y": 5, "z": -0.100000001490116}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 1, "y": 1, "z": 1}}]}, {"x": 6, "y": 0, "z": 4, "rotation": 0, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": 4.84999990463257, "y": 1.39999997615814, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}]}, {"x": 0, "y": 1, "z": 5, "rotation": 0, "tipo": "duo-simple-curve", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 1, "y": 1, "z": 5, "rotation": 1, "tipo": "straight-line", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 2, "y": 0, "z": 5, "rotation": 3, "tipo": "straight-line", "resgate": false, "rampa": true, "fim": false, "objects": []}, {"x": 3, "y": 0, "z": 5, "rotation": 3, "tipo": "straight-line", "resgate": false, "rampa": false, "fim": false, "objects": []}, {"x": 4, "y": 0, "z": 5, "rotation": 3, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": 4.84999990463257, "y": 1.39999997615814, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}, {"name": "Entrance", "type": "ObjectPlane", "position": {"x": 0, "y": 0, "z": 4.65000009536743}, "rotation": {"x": 90, "y": 0, "z": 0}, "scale": {"x": 10, "y": 0.800000011920929, "z": 1}}]}, {"x": 5, "y": 0, "z": 5, "rotation": 3, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": 4.84999990463257, "y": 1.39999997615814, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}]}, {"x": 6, "y": 0, "z": 5, "rotation": 1, "tipo": "", "resgate": true, "rampa": false, "fim": false, "objects": [{"name": "Wall", "type": "ObjectCuboid", "position": {"x": -4.84999990463257, "y": 1.39999997615814, "z": 0}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}, {"name": "Wall 2", "type": "ObjectCuboid", "position": {"x": 0, "y": 1.39999997615814, "z": 4.84999990463257}, "rotation": {"x": 0, "y": 90, "z": 0}, "scale": {"x": 0.349999994039536, "y": 3, "z": 10}}, {"name": "Evacuation Point", "type": "ObjectEvacuationPoint", "position": {"x": -2.20000004768372, "y": 0.75, "z": -6}, "rotation": {"x": 0, "y": 0, "z": 0}, "scale": {"x": 1, "y": 1, "z": 1}}]}];
+
+  const TAM_TILE_SBOTICS = 30;
+  const TILE_SHIFT_X = 0, TILE_SHIFT_Y = 0;
+
+  function desenharTileSbotics(ctx, t, tamanho, detalhado=true) {
+    const u = tamanho / 10;   // unidade interna do sBotics (tile = 10u)
+    const q = tamanho / 2;
+
+    ctx.save();
+    ctx.translate((t.x + 0.5) * tamanho, (t.z + 0.5) * tamanho);
+    // sBotics: rotation em incrementos de 90° (sentido horário no plano XZ)
+    ctx.rotate((t.rotation || 0) * Math.PI / 2);
+
+    // ---------- fundo do tile ----------
+    if (t.resgate) {
+      ctx.fillStyle = '#e8f5e9';           // verde bem claro – zona de resgate
+    } else if (t.y === 1) {
+      ctx.fillStyle = '#eef3ff';           // nível elevado
+    } else if (t.y === 2) {
+      ctx.fillStyle = '#fff8e1';           // nível mais alto (finish)
+    } else {
+      ctx.fillStyle = '#f5f7fa';           // chão padrão
+    }
+    ctx.fillRect(-q, -q, tamanho, tamanho);
+
+    // grade sutil do piso
+    ctx.strokeStyle = '#d0d5dd';
+    ctx.lineWidth = 0.35;
+    ctx.strokeRect(-q + 0.3, -q + 0.3, tamanho - 0.6, tamanho - 0.6);
+
+    // rampa (sombra alaranjada)
+    if (t.rampa) {
+      ctx.fillStyle = 'rgba(240, 160, 45, 0.22)';
+      ctx.fillRect(-q + 1.5, -q + 1.5, tamanho - 3, tamanho - 3);
+    }
+
+    // ---------- fita preta (linha) ----------
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 1.7;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.setLineDash([]);
+
+    function linha(draw) {
+      ctx.beginPath();
+      draw();
+      ctx.stroke();
+    }
+
+    const type = t.tipo || '';
+
+    if (type === 'straight-line' || type === 'half-straight-line' || type === 'start-line') {
+      linha(() => { ctx.moveTo(0, -q); ctx.lineTo(0, q); });
+    } else if (type === '90-curve') {
+      linha(() => { ctx.moveTo(0, -q); ctx.arc(-q, -q, q, 0, Math.PI / 2); });
+    } else if (type === 'long-curve') {
+      linha(() => { ctx.moveTo(-q, 0); ctx.quadraticCurveTo(0, -q, q, 0); });
+    } else if (type === 'intersection' || type === 'gap-intersection') {
+      linha(() => { ctx.moveTo(0, -q); ctx.lineTo(0, q); });
+      linha(() => { ctx.moveTo(-q, 0); ctx.lineTo(q, 0); });
+    } else if (type === 't-intersection') {
+      linha(() => { ctx.moveTo(-q, 0); ctx.lineTo(q, 0); });
+      linha(() => { ctx.moveTo(0, 0); ctx.lineTo(0, q); });
+    } else if (type === 'gap') {
+      linha(() => { ctx.moveTo(0, -q); ctx.lineTo(0, -q * 0.22); });
+      linha(() => { ctx.moveTo(0, q * 0.22); ctx.lineTo(0, q); });
+    } else if (type === 'duo-simple-curve') {
+      linha(() => { ctx.moveTo(0, -q); ctx.quadraticCurveTo(q * 0.75, -q * 0.15, 0, q); });
+      linha(() => { ctx.moveTo(-q, 0); ctx.quadraticCurveTo(-q * 0.25, -q * 0.55, 0, -q); });
+    } else if (type === 'smooth-step-curve') {
+      linha(() => { ctx.moveTo(0, -q); ctx.bezierCurveTo(q * 0.85, -q * 0.1, -q * 0.85, q * 0.1, 0, q); });
+    }
+
+    // marca de largada / meio-caminho (vermelho)
+    if (type === 'start-line' || type === 'half-straight-line') {
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(-q * 0.72, -q * 0.16, q * 1.44, q * 0.22);
+    }
+
+    // gap visual (buraco branco)
+    if (type.startsWith('gap')) {
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-q * 0.75, -q * 0.16, q * 1.5, q * 0.32);
+      ctx.strokeStyle = '#b0b8c0';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(-q * 0.75, -q * 0.16, q * 1.5, q * 0.32);
+    }
+
+    // ---------- objetos 3D projetados no 2D ----------
+    for (const o of (t.objects || [])) {
+      const name = o.name || '';
+      const pos  = o.position || {};
+      const sc   = o.scale || {};
+      const rot  = o.rotation || {};
+      let x = (pos.x || 0) * u;
+      let y = (pos.z || 0) * u;   // z do sBotics → y do canvas
+
+      // Vítimas
+      if (name.includes('Victim')) {
+        ctx.fillStyle = name.includes('Dead') ? '#5b2c6f' : '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 0.4;
+        ctx.stroke();
+        continue;
+      }
+
+      // Ponto de evacuação (círculo verde/vermelho)
+      if (name.includes('Evacuation')) {
+        const cor = name.toLowerCase().includes('red') || (o.color || '').includes('Red') ? '#c0392b' : '#27ae60';
+        ctx.strokeStyle = cor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(x, y, 5.2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = cor + '33';
+        ctx.fill();
+        continue;
+      }
+
+      // Paredes
+      if (name.includes('Wall') || name.includes('Entrance') && o.type === 'ObjectCuboid') {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(((rot.y || 0) * Math.PI) / 180);
+        const w = Math.max(1.6, (sc.x || 0.35) * u);
+        const h = Math.max(2.2, (sc.z || 10) * u);
+        // laranja nas entradas laterais, cinza nas demais
+        ctx.fillStyle = name.includes('Side Entrance') || name.includes('Top Entrance') ? '#e67e22' : '#7f8c8d';
+        ctx.fillRect(-w / 2, -h / 2, w, h);
+        ctx.restore();
+        continue;
+      }
+
+      // Caixas / obstáculos pretos
+      if (name.includes('Box')) {
+        ctx.fillStyle = '#2c3e50';
+        ctx.fillRect(x - 3.2, y - 3.2, 6.4, 6.4);
+        ctx.strokeStyle = '#1a252f';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(x - 3.2, y - 3.2, 6.4, 6.4);
+        continue;
+      }
+
+      // Speed bump
+      if (name.includes('Speed Bump')) {
+        ctx.fillStyle = name.includes('Line') ? '#1a1a1a' : '#f39c12';
+        ctx.fillRect(x - 3.5, y - 1.1, 7, 2.2);
+        continue;
+      }
+
+      // Gangorra (seesaw)
+      if (name === 'Seesaw') {
+        ctx.fillStyle = '#e67e22';
+        ctx.fillRect(x - 5.5, y - 2.2, 11, 4.4);
+        ctx.strokeStyle = '#d35400';
+        ctx.lineWidth = 0.6;
+        ctx.strokeRect(x - 5.5, y - 2.2, 11, 4.4);
+        continue;
+      }
+
+      // Marcadores verdes (Green Plane) – quadradinhos OBR-style
+      if (name.includes('Green Plane')) {
+        ctx.fillStyle = '#27ae60';
+        const sx = (sc.x || 0.8) * u * 0.55;
+        const sy = (sc.y || 0.8) * u * 0.55;
+        ctx.fillRect(x - sx / 2, y - sy / 2, sx, sy);
+        continue;
+      }
+
+      // Finish / Entrance / Exit planes
+      if (name === 'Finish Lane' || name === 'Entrance' || name === 'Exit' || name === 'Top Entrance') {
+        ctx.fillStyle = name === 'Finish Lane' ? '#c0392b' : '#1abc9c';
+        const w = (sc.x || 10) * u * 0.45;
+        const h = Math.max(1.8, (sc.y || 0.8) * u * 0.6);
+        ctx.fillRect(x - w / 2, y - h / 2, w, h);
+        continue;
+      }
+    }
+
+    ctx.restore();
+
+    // coordenadas do tile (debug)
+    if (detalhado) {
+      ctx.fillStyle = '#5d6d7e';
+      ctx.font = '3.2px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('(' + t.x + ',' + t.z + ')', t.x * tamanho + 1.5, t.z * tamanho + 4.2);
+    }
+  }
+
+
+  // =========================================================================
+  // Cenário G — Arena sBotics (Tiles)
+  // Usa o array arenaSboticsTiles + desenharTileSbotics
+  // =========================================================================
+  const arenaSbotics = {
+    id: 'arenaSbotics',
+    nome: 'Robocup Arena 7 (sBotics)',
+    w: 7 * TAM_TILE_SBOTICS,   // x = 0..6  → 210 cm
+    h: 6 * TAM_TILE_SBOTICS,   // z = 0..5  → 180 cm
+    pxPorCm: 4,
+
+    inicioPadrao: 'partida',
+    inicios: {
+      // Tile start-line em (x=3, z=2)
+      partida: { rotulo: 'Linha de partida', x: 3.5 * TAM_TILE_SBOTICS, y: 2.5 * TAM_TILE_SBOTICS, th: Math.PI },
+      // Entrada da zona de resgate
+      resgate: { rotulo: 'Entrada área de resgate', x: 4.5 * TAM_TILE_SBOTICS, y: 4.8 * TAM_TILE_SBOTICS, th: -Math.PI / 2 },
+      // Perto do finish (nível alto)
+      finish: { rotulo: 'Perto do finish', x: 4.5 * TAM_TILE_SBOTICS, y: 0.5 * TAM_TILE_SBOTICS, th: Math.PI / 2 }
+    },
+
+    caixas: [],
+    rampas: [],
+
+    desenhar(ctx, c) {
+      // fundo neutro
+      ctx.fillStyle = '#f0f4f8';
+      ctx.fillRect(0, 0, c.w, c.h);
+
+      // desenha todos os tiles
+      for (const t of arenaSboticsTiles) {
+        desenharTileSbotics(ctx, t, TAM_TILE_SBOTICS, false);
+      }
+
+      // borda externa leve
+      ctx.strokeStyle = '#8f8b80';
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(0.8, 0.8, c.w - 1.6, c.h - 1.6);
+    }
+  };
 
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil };
+  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, brt, arenaSbotics };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
