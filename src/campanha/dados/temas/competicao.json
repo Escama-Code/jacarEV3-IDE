@@ -1,0 +1,459 @@
+{
+  "id": "competicao",
+  "missoes": [
+    {
+      "id": "cp01-calibrar",
+      "titulo": "Calibrar e sinalizar",
+      "ordem": 1,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: acenda o LED verde e apite uma vez (pronto para a pista).\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: led VERDE + apitar\n    time.sleep(0.4)\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    robo.apitar(880, 200)\n    time.sleep(0.4)\n",
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as r:\n    r.led('VERDE')\n    r.apitar()\n    time.sleep(0.5)\n"
+      ],
+      "dicas": [
+        {
+          "camada": 0,
+          "texto": "Mostre que o robô está pronto: LED verde e um bip.",
+          "custoXp": 0
+        },
+        {
+          "camada": 1,
+          "texto": "robo.led('VERDE') e robo.apitar(frequencia, duracao_ms).",
+          "custoXp": 5
+        }
+      ],
+      "limites": {
+        "tempoSimMaxS": 10
+      },
+      "objetivos": [
+        {
+          "id": "led",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "led"
+          ]
+        },
+        {
+          "id": "bip",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "apitar"
+          ]
+        }
+      ],
+      "feedback": {
+        "led": "Acenda o LED (ex.: VERDE) para sinalizar início.",
+        "bip": "Use apitar() para o sinal sonoro de partida."
+      },
+      "skills": [
+        "led",
+        "competicao"
+      ],
+      "links": {
+        "docs": "competicao.md"
+      },
+      "recompensas": {
+        "xp": 40,
+        "desbloqueia": [
+          "cp02-reto"
+        ]
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Antes de qualquer run: LED e bip. Ritual de competição."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Pronto. Agora ande em linha reta."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Faltou led ou apitar."
+          }
+        ]
+      }
+    },
+    {
+      "id": "cp02-reto",
+      "titulo": "Andar reto com a base",
+      "ordem": 2,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: use a base motriz para avançar e parar.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    # TODO: mover_base ou mover_continuo + parar\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    robo.mover_base(35)\n    time.sleep(1.5)\n    robo.parar_base()\n",
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.mover_continuo('B', 35)\n    robo.mover_continuo('C', 35)\n    time.sleep(1.5)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n"
+      ],
+      "dicas": [
+        {
+          "camada": 0,
+          "texto": "definir_base('B','C') e depois mover_base ou os dois motores juntos.",
+          "custoXp": 0
+        },
+        {
+          "camada": 1,
+          "texto": "mover_base(velocidade) + time.sleep + parar_base().",
+          "custoXp": 5
+        }
+      ],
+      "limites": {
+        "tempoSimMaxS": 20
+      },
+      "objetivos": [
+        {
+          "id": "andou",
+          "tipo": "dist_min",
+          "obrigatorio": true,
+          "cm": 20
+        },
+        {
+          "id": "parou",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "parar_base",
+            "parar_motor"
+          ],
+          "qualquer": true
+        }
+      ],
+      "feedback": {
+        "andou": "Avance pelo menos 20 cm em linha reta.",
+        "parou": "Finalize com parar_base() ou parar_motor em B e C."
+      },
+      "skills": [
+        "motores",
+        "base",
+        "competicao"
+      ],
+      "links": {
+        "docs": "base-motriz.md"
+      },
+      "recompensas": {
+        "xp": 50,
+        "desbloqueia": [
+          "cp03-giro"
+        ]
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Reto e controlado. Sem freio no fim, desconta na OBR."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Bom. Hora do giro preciso."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Distância ou parada incompleta."
+          }
+        ]
+      }
+    },
+    {
+      "id": "cp03-giro",
+      "titulo": "Giro de 90° (giroscópio)",
+      "ordem": 3,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3\n\n# Missão: resetar o giro e girar ~90° (girar_exato ou lógica equivalente).\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    # TODO: resetar_giro + girar_exato(90)\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.resetar_giro(1)\n    robo.girar_exato(90, velocidade=25, porta_giro=1)\n",
+        "from jacarev3 import RoboEV3\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.resetar_giro(1)\n    robo.girar_exato(90)\n"
+      ],
+      "dicas": [
+        {
+          "camada": 0,
+          "texto": "Sempre resetar_giro com o robô parado antes de medir ângulo.",
+          "custoXp": 0
+        },
+        {
+          "camada": 1,
+          "texto": "robo.girar_exato(90, velocidade=25, porta_giro=1)",
+          "custoXp": 5
+        },
+        {
+          "camada": 2,
+          "texto": "Ordem: resetar_giro → girar_exato. O avaliador checa as duas APIs.",
+          "custoXp": 10
+        }
+      ],
+      "limites": {
+        "tempoSimMaxS": 25
+      },
+      "objetivos": [
+        {
+          "id": "reset",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "resetar_giro"
+          ]
+        },
+        {
+          "id": "giro_api",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "girar_exato"
+          ]
+        },
+        {
+          "id": "ordem",
+          "tipo": "ordem_apis",
+          "obrigatorio": true,
+          "metodos": [
+            "resetar_giro",
+            "girar_exato"
+          ]
+        }
+      ],
+      "feedback": {
+        "reset": "Chame resetar_giro(porta) com o robô parado.",
+        "giro_api": "Use girar_exato(graus) para o giro no eixo.",
+        "ordem": "A ordem correta é resetar_giro e depois girar_exato."
+      },
+      "skills": [
+        "giro",
+        "base",
+        "competicao"
+      ],
+      "links": {
+        "docs": "competicao-backends.md"
+      },
+      "recompensas": {
+        "xp": 70,
+        "desbloqueia": [
+          "cp04-linha"
+        ]
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Árbitro",
+            "texto": "90 graus contam ponto. Encoder sozinho escorrega — use o giro."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Giro ok. Agora linha."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Reset + girar_exato, nessa ordem."
+          }
+        ]
+      }
+    },
+    {
+      "id": "cp04-linha",
+      "titulo": "Seguir linha até a marca",
+      "ordem": 4,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\n\n# Missão: siga a linha até a região leste.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        # TODO: ler refletida e curvar\n        pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 12)\n            robo.mover_continuo('C', 32)\n        else:\n            robo.mover_continuo('B', 32)\n            robo.mover_continuo('C', 12)\n"
+      ],
+      "dicas": [
+        {
+          "camada": 0,
+          "texto": "Valores baixos ≈ preto (linha); altos ≈ fundo claro.",
+          "custoXp": 0
+        },
+        {
+          "camada": 1,
+          "texto": "Curve B/C com velocidades diferentes conforme a leitura.",
+          "custoXp": 5
+        }
+      ],
+      "limites": {
+        "tempoSimMaxS": 45
+      },
+      "objetivos": [
+        {
+          "id": "sensor",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "ler_sensor"
+          ]
+        },
+        {
+          "id": "zona",
+          "tipo": "regiao",
+          "obrigatorio": true,
+          "regiao": {
+            "x": 70,
+            "y": 20,
+            "w": 50,
+            "h": 50
+          }
+        }
+      ],
+      "feedback": {
+        "sensor": "Leia o sensor de cor (refletida) em loop.",
+        "zona": "Siga até a região leste do mapa de treino."
+      },
+      "skills": [
+        "seguir_linha",
+        "sensor_cor",
+        "competicao"
+      ],
+      "links": {
+        "docs": "circuito.md",
+        "aula": "aula-03-seguir-linha"
+      },
+      "recompensas": {
+        "xp": 80,
+        "desbloqueia": [
+          "cp05-desvio"
+        ]
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Linha preta é lei. Chegue na marca sem perder o traço."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Linha ok. Último: desvio."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Ajuste limiar ou curvas."
+          }
+        ]
+      }
+    },
+    {
+      "id": "cp05-desvio",
+      "titulo": "Desviar e concluir",
+      "ordem": 5,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missão: leia ultrassom, desvie se perto, e avance.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    # TODO: ler sensor ultrassônico (porta 4) e reagir\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    for _ in range(30):\n        d = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)\n        if d < 20:\n            robo.mover_continuo('B', 30)\n            robo.mover_continuo('C', -10)\n            time.sleep(0.4)\n        else:\n            robo.mover_continuo('B', 30)\n            robo.mover_continuo('C', 30)\n        time.sleep(0.1)\n    robo.parar_base()\n",
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    for _ in range(25):\n        dist = robo.ler_sensor(4, 0)\n        if dist < 25:\n            robo.mover_continuo('B', -20)\n            robo.mover_continuo('C', 25)\n        else:\n            robo.mover_continuo('B', 28)\n            robo.mover_continuo('C', 28)\n        time.sleep(0.15)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n"
+      ],
+      "dicas": [
+        {
+          "camada": 0,
+          "texto": "Ultrassom na porta 4, modo 0 = cm. Se perto, curve ou recue.",
+          "custoXp": 0
+        },
+        {
+          "camada": 1,
+          "texto": "Loop: ler distância → se < 20, girar; senão, seguir em frente.",
+          "custoXp": 5
+        }
+      ],
+      "limites": {
+        "tempoSimMaxS": 40
+      },
+      "objetivos": [
+        {
+          "id": "sensor",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "ler_sensor"
+          ]
+        },
+        {
+          "id": "andou",
+          "tipo": "dist_min",
+          "obrigatorio": true,
+          "cm": 12
+        },
+        {
+          "id": "parou",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "parar_base",
+            "parar_motor"
+          ],
+          "qualquer": true
+        }
+      ],
+      "feedback": {
+        "sensor": "Leia o ultrassônico (ou cor) para decidir o desvio.",
+        "andou": "Mesmo desviando, avance no total (≥ 12 cm).",
+        "parou": "Termine a run parando os motores."
+      },
+      "skills": [
+        "desvio",
+        "ultrassom",
+        "competicao"
+      ],
+      "links": {
+        "docs": "desvio.md"
+      },
+      "recompensas": {
+        "xp": 100,
+        "desbloqueia": []
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Obstáculo na frente: leia, desvie, continue. Como no resgate."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Tema competição concluído. Bora pra pista real!"
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Árbitro",
+            "texto": "Sensor + movimento + parada."
+          }
+        ]
+      }
+    }
+  ]
+}

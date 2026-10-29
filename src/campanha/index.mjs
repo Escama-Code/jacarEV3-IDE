@@ -2,14 +2,25 @@
  * API pública da campanha.
  * Conteúdo = JSON em dados/. Lógica de nota = pontuacao.mjs. Objetivos = motor.mjs.
  */
-export { carregarSave, gravarSave, resetSave } from './save.mjs';
+export {
+  carregarSave,
+  gravarSave,
+  resetSave,
+  exportarSave,
+  importarSave,
+  consumirDica,
+  custoDica,
+} from './save.mjs';
 export {
   avaliar,
   aplicarResultado,
   detectarApis,
+  ordemApisNoCodigo,
+  gerarFeedback,
   statusMissao,
   temaCompleto,
   temaLiberado,
+  resumoSkills,
 } from './motor.mjs';
 export {
   pontuarResposta,
@@ -29,7 +40,21 @@ export let CAMPANHA = {
   descricao: '',
   temas: [],
 };
+
 export let MISSOES = [];
+
+export const SKILLS_CATALOGO = [
+  'led',
+  'motores',
+  'sensor_cor',
+  'ultrassom',
+  'giro',
+  'seguir_linha',
+  'desvio',
+  'base',
+  'teleop',
+  'competicao',
+];
 
 export function getMissao(id) {
   return MISSOES.find((m) => m.id === id) || null;
@@ -41,7 +66,6 @@ export function missoesDoTema(temaId) {
 
 /**
  * Carrega todos os JSON e atualiza CAMPANHA / MISSOES.
- * Chame uma vez no boot (já feito em public/index.html).
  */
 export async function initCampanha() {
   const cat = await carregarCatalogo();

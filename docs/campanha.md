@@ -1,35 +1,95 @@
-# Campanha (JSON)
+# Campanha (JSON + motor pedagógico)
 
 ## Estrutura
 
 ```
 src/campanha/
-  pontuacao.mjs     # só similaridade + estrelas (várias respostas)
-  motor.mjs         # objetivos de simulação + orquestra pontuação
+  pontuacao.mjs     # similaridade + estrelas (várias respostas)
+  motor.mjs         # objetivos de simulação + feedback + skills
   loader.mjs        # lê dados/*.json
+  save.mjs          # localStorage, export/import, dicas em camadas
   index.mjs         # API pública
   dados/
     campanha.json   # registro de temas
     temas/
       codigos-base.json
       leis-transito.json
+      competicao.json
 ```
+
+## Temas atuais
+
+1. **Códigos-base** — LED, motores, sensor, seguidor
+2. **Leis de trânsito** — sinalizar, parar, zonas
+3. **Competição (OBR-like)** — calibrar, reto, giroscópio, linha, desvio
 
 ## Novo tema
 
 1. Crie `src/campanha/dados/temas/meu-tema.json` com `{ "id": "...", "missoes": [ ... ] }`
 2. Registre em `dados/campanha.json` → `temas[]` com `arquivo: "temas/meu-tema.json"`
 
-## Várias respostas certas
+## Campos de uma missão
 
-Em cada missão use o array `codigosReferencia` (não um único `codigoReferencia`):
+| Campo | Função |
+|-------|--------|
+| `codigosReferencia[]` | Várias soluções válidas (melhor similaridade) |
+| `objetivos[]` | Critérios de simulação / API |
+| `feedback{}` | Mensagem por id de objetivo que falhou |
+| `skills[]` | Habilidades ao concluir |
+| `dicas[]` | Camadas: string ou `{ camada, texto, custoXp }` |
+| `links` | `{ docs, aula }` |
+| `recompensas` | `{ xp, desbloqueia[] }` |
+| `narrativa` | intro / sucesso / fracasso |
+
+### Dicas em camadas
 
 ```json
-"codigosReferencia": [
-  "solução A...",
-  "solução B com outro estilo...",
-  "solução C..."
+"dicas": [
+  { "camada": 0, "texto": "Ideia geral (grátis)", "custoXp": 0 },
+  { "camada": 1, "texto": "Qual API usar", "custoXp": 5 },
+  { "camada": 2, "texto": "Trecho quase pronto", "custoXp": 10 }
 ]
 ```
 
-O motor usa a **melhor** similaridade entre o código do aluno e qualquer alternativa.
+### Feedback por objetivo
+
+```json
+"feedback": {
+  "andou": "Andou pouco; precisa de pelo menos 15 cm.",
+  "parou": "Chame parar_motor ou parar_base no final."
+}
+```
+
+## Tipos de objetivo
+
+| tipo | Parâmetros | Significado |
+|------|------------|-------------|
+| `api_usada` | `metodos[]`, `qualquer?` | Todas as APIs (ou qualquer uma se `qualquer: true`) |
+| `api_proibida` | `metodos[]` | Nenhuma dessas APIs |
+| `ordem_apis` | `metodos[]` | Ordem relativa no código |
+| `dist_min` | `cm` | Distância mínima |
+| `regiao` | `regiao: {x,y,w,h}` | Dentro do retângulo |
+| `tempo_sim` | `maxS` | Tempo de simulação |
+| `sem_colisao` | `max` | Máx. colisões |
+| `angulo_final` | `min`, `max` | Heading final |
+| `heading_perto` | `graus`, `tolerancia` | Perto do ângulo alvo |
+| `passou_linha` | `minS` | Tempo sobre a linha |
+| `parou_antes_obstaculo` | `maxCm`, `velMax?` | Perto e parado |
+| `sem_sair_pista` | `bounds?` | Dentro dos limites |
+
+## Skills e save
+
+- Skills incrementam em `save.skills` ao concluir
+- Lobby: mapa de habilidades + **Exportar/Importar progresso**
+- `exportarSave` / `importarSave` em `save.mjs`
+
+## API JS
+
+```js
+await Campanha.initCampanha();
+const r = Campanha.avaliar(sim, codigo, missao);
+// r.feedback[], r.skillsGanhas[], r.ok, r.estrelas
+Campanha.aplicarResultado(save, missao, r);
+Campanha.consumirDica(save, missao);
+Campanha.resumoSkills(save);
+```
