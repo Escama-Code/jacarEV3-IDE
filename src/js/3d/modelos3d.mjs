@@ -10,6 +10,7 @@ export {
   COR_LED,
   construirRoboEV3,
   construirRoboJacare,
+  construirRoboArara,
   construirRoboCapivara,
   construirRoboCaranguejo,
   construirRoboTubarao,
