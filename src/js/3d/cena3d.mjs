@@ -7,6 +7,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {
   construirRoboEV3,
   construirRoboJacare,
+  construirRoboArara,
   construirRoboCapivara,
   construirRoboCaranguejo,
   construirRoboTubarao,
@@ -18,12 +19,14 @@ import {
   construirRoboCarroFusca,
   construirRoboOpala,
   construirRoboCorcel,
+  construirRoboCarro,
   aplicarEstado,
 } from './modelos/index.mjs';
 
 const ROBOS = {
   ev3: construirRoboEV3,
   jacare: construirRoboJacare,
+  arara: construirRoboArara,
   capivara: construirRoboCapivara,
   caranguejo: construirRoboCaranguejo,
   tubarao: construirRoboTubarao,
@@ -35,6 +38,7 @@ const ROBOS = {
   fusca: construirRoboCarroFusca,
   opala: construirRoboOpala,
   corcel: construirRoboCorcel,
+  carro: construirRoboCarro,
 };
 
 /** textura do chão = a MESMA imagem que o sensor lê (tapete.canvas / tapete.dados) */
