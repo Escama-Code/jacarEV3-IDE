@@ -130,6 +130,8 @@
     <div class="linha" style="margin:0 0 8px">
       <div class="seg"><button id="btn2d" class="ativo">2D</button><button id="btn3d" disabled title="carregando Three.js…">3D</button></div>
       <select id="cenario" title="Cenário"></select>
+      <button id="btnCarregarArena" type="button" title="Importar arquivo .sArena do sBotics">📂 Importar .sArena</button>
+      <input id="inputSArena" type="file" accept=".sArena,.sarena,.json" hidden>
       <select id="inicio" title="Posição inicial do robô"></select>
       <span id="opts3d" class="linha" style="margin:0" hidden>
         <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option> <option value="arara">Robô: Arara</option> <option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option> <option value="carro">Robô: Carro</option><option value="onibus">Robô: Onibus</option>
@@ -446,6 +448,17 @@ class SimEV3 {
   _colide(x, y) {
     const r = this.cfg.raio;
     if (x < r || y < r || x > this.cen.w - r || y > this.cen.h - r) return true;
+    if (typeof this.cen.solidoEm === 'function') {
+      // Testa toda a área circular de apoio, não só o centro do veículo.
+      // Impede que metade do robô ultrapasse a borda de uma plataforma.
+      if (!this.cen.solidoEm(x, y)) return true;
+      for (let k = 0; k < 8; k++) {
+        const a = k * Math.PI / 4;
+        if (!this.cen.solidoEm(x + r * Math.cos(a), y + r * Math.sin(a))) return true;
+      }
+    }
+    if (typeof this.cen.podeTransitar === 'function' &&
+        !this.cen.podeTransitar(this.x, this.y, x, y)) return true;
     return this.cen.caixas.some((b) => {
       const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
       return Math.hypot(x - cx, y - cy) < r;
@@ -1085,6 +1098,43 @@ const Playback = (() => {
         if (vista && typeof vista.setDistanciaSeguir === 'function') vista.setDistanciaSeguir(v);
       };
     }
+
+  // Importação assíncrona: registra o mapa antes de permitir SimEV3/Playback.
+  const btnCarregarArena = $('btnCarregarArena');
+  const arquivoSArena = $('inputSArena');
+  btnCarregarArena.onclick = () => arquivoSArena.click();
+  arquivoSArena.onchange = async () => {
+    const arquivo = arquivoSArena.files?.[0];
+    if (!arquivo) return;
+    arquivoSArena.value = ''; // também permite reimportar o mesmo arquivo
+    const textoAnterior = btnCarregarArena.textContent;
+    btnCarregarArena.disabled = true;
+    btnCarregarArena.textContent = 'Importando…';
+    try {
+      const { carregarSArena } = await import('../src/js/arena/index.mjs');
+      const { cenario, tapete } = await carregarSArena(arquivo);
+      Cenarios.registrarCenario(cenario, tapete);
+      let opcao = Array.from($('cenario').options).find(o => o.value === cenario.id);
+      if (!opcao) {
+        opcao = new Option(cenario.nome, cenario.id);
+        $('cenario').add(opcao);
+      } else opcao.textContent = cenario.nome;
+      $('cenario').value = cenario.id;
+      descartarSimulacao();
+      sonda = null;
+      aplicarCenario();
+      desenhar(0);
+      btnCarregarArena.textContent = '📂 Importar .sArena';
+      Terminal.sys(`Arena importada: ${cenario.nome} (${cenario.tilesOriginais.length} tiles)`);
+    } catch (erro) {
+      console.error('[sArena]', erro);
+      btnCarregarArena.textContent = textoAnterior;
+      Terminal.err('Falha ao importar .sArena: ' + (erro?.message || erro));
+      alert('Não foi possível importar o arquivo .sArena:\n' + (erro?.message || erro));
+    } finally {
+      btnCarregarArena.disabled = false;
+    }
+  };
   $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); };
   $('inicio').onchange = () => { descartarSimulacao(); desenhar(0); };
 

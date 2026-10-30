@@ -83,3 +83,13 @@ Projeto do ecossistema **[Escama Code](https://github.com/Escama-Code)**, alinha
 ## Licença
 
 MIT — uso livre em escolas, projetos e pesquisa.
+
+## Arenas sBotics (.sArena) — correção de altura e apoio
+
+Em `public/sandbox.html`, use **Importar .sArena** e em seguida **3D**.
+O renderizador mantém os pisos sobre suportes, com espessura e rampas fechadas,
+e alinha a altura do robô ao mesmo relevo da arena. A simulação continua 2D:
+colisões bloqueiam saída da borda e saltos verticais, mas não simulam gravidade
+3D. Veja `docs/importar-sarena.md`.
+
+Validação local: `node tests/teste-sarena.mjs`.

@@ -1,3 +1,4 @@
+import { construirGrupoSArena } from '../arena/sArenaBuilder3d.mjs';
 // ============================================================
 // cena3d.mjs — Cena Three.js: arena 120×80 cm, luzes, sombras, câmeras.
 // É só o ESPELHO visual do sim.js: a física e o sensor continuam lá.
@@ -136,6 +137,7 @@ function construirRampa(r, cen, mapa) {
 
 /** arena do cenário: mesa, chão (com o tapete), paredes, rampas e blocos — tudo no tamanho cen.w × cen.h */
 export function construirArena(cen, tapete, renderer = null) {
+  if (cen.tilesOriginais) return construirGrupoSArena(cen);
   const g = new THREE.Group(); g.name = 'arena';
   const cx = cen.w / 2, cz = cen.h / 2;
   const mesa = new THREE.Mesh(new THREE.BoxGeometry(cen.w + 60, 3, cen.h + 50), new THREE.MeshStandardMaterial({ color: 0x6d5a48, roughness: 0.9 }));
@@ -209,8 +211,16 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   }
   /** troca o cenário: reconstrói arena/textura e re-enquadra tudo no novo tamanho */
   function setCenario(cen, novoTapete) {
-    if (S.arena) { scene.remove(S.arena); S.arena.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); }); }
+    if (S.arena) {
+      scene.remove(S.arena);
+      S.arena.traverse((o) => {
+        o.geometry?.dispose();
+        const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+        for (const material of mats) { material.map?.dispose(); material.dispose(); }
+      });
+    }
     S.cen = cen; centro.set(cen.w / 2, 0, cen.h / 2);
+    scene.background = new THREE.Color(cen.tilesOriginais ? 0x528fa0 : 0xcfd8e2);
     S.ultimo = null; S.snap = true;                 // não herda a pose do cenário anterior; câmera de perseguição reposiciona sem deslizar
     S.arena = construirArena(cen, novoTapete, renderer); scene.add(S.arena);
     ajustarLuz(); setModoCamera(S.modo);
@@ -255,8 +265,11 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
         entry = { rig, tipo };
         S.peers.set(p.alunoId, entry);
       }
+      const alturaPeer = S.cen?.tilesOriginais
+        ? S.cen.terreno(p.x, p.y, p.th || 0)
+        : { z: p.z || 0, pitch: p.pitch || 0, roll: p.roll || 0 };
       aplicarEstado(entry.rig, {
-        x: p.x, y: p.y, th: p.th || 0, z: p.z || 0,
+        x: p.x, y: p.y, th: p.th || 0, ...alturaPeer,
         pitch: p.pitch || 0, roll: p.roll || 0,
         encA: 0, encB: 0, encC: 0, encD: 0,
         led: p.led || 'DESLIGADO', ledAlpha: 0.55, refletida: 50,
@@ -285,16 +298,25 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   function atualizarCamera() {
     if (S.modo === 'seguir' && S.ultimo) {                          // câmera de perseguição atrás do robô
       const { x, y, th } = S.ultimo, fx = Math.cos(th), fz = Math.sin(th);
+      const altura = S.ultimo.z || 0;
       const d = S.seguirDist || 30, h = S.seguirAlt || 20;
-      const desejada = new THREE.Vector3(x - fx * d, h, y - fz * d);
-      const alvo = new THREE.Vector3(x + fx * 8, 3, y + fz * 8);
+      const desejada = new THREE.Vector3(x - fx * d, altura + h, y - fz * d);
+      const alvo = new THREE.Vector3(x + fx * 8, altura + 3, y + fz * 8);
       camera.up.set(0, 1, 0);
       if (S.snap) { camera.position.copy(desejada); S.alvoCam.copy(alvo); S.snap = false; }
       else { camera.position.lerp(desejada, 0.12); S.alvoCam.lerp(alvo, 0.2); }
       camera.lookAt(S.alvoCam);
     } else if (S.modo === 'livre') controls.update();
   }
-  function aplicar(est) { S.ultimo = est; if (S.rig) aplicarEstado(S.rig, est); }
+  function aplicar(est) {
+    if (!est) return;
+    // A geometria e o robô consultam a MESMA função de altura.
+    // Cobre tanto playback quanto teleop e chamadas diretas da vista 3D.
+    S.ultimo = S.cen?.tilesOriginais
+      ? { ...est, ...S.cen.terreno(est.x, est.y, est.th || 0) }
+      : est;
+    if (S.rig) aplicarEstado(S.rig, S.ultimo);
+  }
   function desenhar() { atualizarCamera(); renderer.render(scene, camera); }
   /** acompanha o tamanho do contêiner (janela única): só reenquadra se o formato mudou */
   function redimensionar() {

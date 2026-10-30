@@ -231,6 +231,7 @@ const Cenarios = (() => {
   }
 
   function terreno(cen, x, y, th) {
+    if (typeof cen.terreno === 'function') return cen.terreno(x, y, th);
     if (!cen.rampas || !cen.rampas.length) return { z: 0, pitch: 0, roll: 0 };
     const c = Math.cos(th), s = Math.sin(th);
     const f = alturaEm(cen, x + 5 * c, y + 5 * s), b = alturaEm(cen, x - 5 * c, y - 5 * s);
@@ -1038,11 +1039,20 @@ const arenaSboticsTiles = [{"x": 2, "y": 0, "z": 0, "rotation": 0, "tipo": "", "
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
+
+  // Usado por arenas importadas em runtime: mesmo canvas para o sensor e o 3D.
+  function registrarCenario(cenario, tapete) {
+    if (!cenario || !cenario.id) throw new Error('Cenário sem identificador');
+    lista[cenario.id] = cenario;
+    if (tapete) cache[cenario.id] = tapete;
+    else delete cache[cenario.id];
+    return cenario;
+  }
   const inicioDe = (cen, chave) => cen.inicios[chave] || cen.inicios[cen.inicioPadrao];
 
   // Mantém tudo dentro do IIFE e retorna o objeto Cenarios
   return { 
-    lista, obterTapete, gerarTapete, lerPixel, lerArea, 
+    lista, registrarCenario, obterTapete, gerarTapete, lerPixel, lerArea, 
     intensidade, classificarCor, NOMES_COR, inicioDe, 
     alturaEm, terreno, usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } 
   };
