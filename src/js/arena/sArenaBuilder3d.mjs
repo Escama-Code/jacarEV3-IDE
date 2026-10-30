@@ -222,15 +222,10 @@ function construirObjeto(obj,esc,cor) {
     case 'ObjectBox': {
       const corpo=cubo(sx,sy,sz,cor);
       g.add(corpo);
-      if (obj.type==='ObjectBox') {
-        const faixa=material('#222222');
-        const r=Math.min(sx,sz)*.07;
-        for(const x of [-1,1])for(const z of [-1,1]){
-          const canto=cubo(r,sy+.04,r,faixa);
-          canto.position.set(x*sx/2,0,z*sz/2);
-          g.add(canto);
-        }
-      }
+      // ObjectBox é uma caixa simples no arquivo da arena. Não criar
+      // quatro hastes decorativas: elas aumentam artificialmente o
+      // obstáculo preto visto no sBotics, sem constarem dos dados.
+      // Dimensões e orientação permanecem as de obj.scale/rotation.
       return g;
     }
     case 'ObjectCylinder': {
@@ -269,12 +264,8 @@ function construirObjeto(obj,esc,cor) {
         material('#ffffff')
       ));
       g.add(corpo);
-      const anel=new THREE.Mesh(
-        new THREE.TorusGeometry(1.02,.10,8,24),
-        material('#16b34a')
-      );
-      anel.rotation.x=Math.PI/2;
-      g.add(anel);
+      // As vítimas da referência são esferas apoiadas no piso. Não
+      // adicionar anéis que não existem como objetos no .sArena.
       return g;
     }
     case 'ObjectDeadVictim': {

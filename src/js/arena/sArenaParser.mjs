@@ -229,28 +229,28 @@ export function desenharArteTile(ctx, tile) {
       break;
     case 'long-circular-curve':
     case 'long-curve':
-      // Alça de chegada: arco de raio constante passando por
-      // (0,-2.2), (0.2,4.6) e (5,0), com saída na borda direita.
-      // A versão Bézier anterior formava uma curvatura assimétrica.
+      // Alça arredondada junto à chegada, sem o "círculo fechado"
+      // com emenda aguda da implementação anterior. As tangentes são
+      // contínuas: vertical na entrada, horizontal no fundo da alça
+      // e horizontal na saída para o ladrilho à direita.
+      // Curva vetorial independente, desenhada também para o sensor.
       desenhar(() => {
-        const cx=1.50619785, cz=1.15864124, raio=3.68091061;
-        const inicio=Math.atan2(-2.2-cz,-cx);
-        const fim=Math.atan2(-cz,5-cx);
         ctx.moveTo(0,-5);
-        ctx.lineTo(0,-2.2);
-        ctx.arc(cx,cz,raio,inicio,fim,true);
+        ctx.lineTo(0,-1.5);
+        ctx.bezierCurveTo(0,1.7, 1,3.2, 2.5,3.2);
+        ctx.bezierCurveTo(4.2,3.2, 4.3,0, 5,0);
       });
       break;
     case 'multi-zig-zag':
-      // Três degraus largos (como no tile do sBotics), não seis
-      // dentinhos estreitos. As pontas continuam em (0,-5) e (0,+5)
-      // para conectar sem lacunas com as tiles vizinhas.
+      // Escada com três degraus uniformes. A última diagonal volta ao
+      // centro da borda para encontrar a reta do ladrilho vizinho.
+      // Coordenadas locais (-5..5): a rotação da imagem é aplicada acima.
       desenhar(() => {
         ctx.moveTo(0, -5);
         for (const [x, z] of [
-          [0, -4.0], [-2.4, -4.0], [-2.4, -1.4],
-          [-1.4, -1.4], [-1.4, 1.3],
-          [-0.4, 1.3], [-0.4, 3.3], [0, 5]
+          [0, -4.5], [-0.9, -4.5], [-0.9, -2.3],
+          [-1.8, -2.3], [-1.8, -0.1],
+          [-2.7, -0.1], [-2.7, 2.1], [0, 5]
         ]) ctx.lineTo(x, z);
       });
       break;

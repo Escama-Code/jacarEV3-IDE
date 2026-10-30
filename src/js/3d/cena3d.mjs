@@ -143,7 +143,12 @@ export function construirArena(cen, tapete, renderer = null) {
   const mesa = new THREE.Mesh(new THREE.BoxGeometry(cen.w + 60, 3, cen.h + 50), new THREE.MeshStandardMaterial({ color: 0x6d5a48, roughness: 0.9 }));
   mesa.position.set(cx, -1.6, cz); mesa.receiveShadow = true; g.add(mesa);
   const mapa = texturaDoTapete(tapete, renderer);
-  const chao = new THREE.Mesh(new THREE.PlaneGeometry(cen.w, cen.h).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: mapa, roughness: 0.9 }));
+  // Cenários de seguidor de linha podem optar por textura sem luz: preto/ branco
+  // permanecem iguais aos pixels realmente usados pelo sensor de refletância.
+  const materialPiso = cen.linhaAltaContraste
+    ? new THREE.MeshBasicMaterial({ map: mapa, color: 0xffffff })
+    : new THREE.MeshStandardMaterial({ map: mapa, roughness: 0.9 });
+  const chao = new THREE.Mesh(new THREE.PlaneGeometry(cen.w, cen.h).rotateX(-Math.PI / 2), materialPiso);
   chao.position.set(cx, 0, cz); chao.receiveShadow = true; chao.name = 'chao'; g.add(chao);
   const parede = new THREE.MeshStandardMaterial({ color: 0x8c96a0, roughness: 0.7 });
   for (const [w, d, x, z] of [[cen.w + 3, 1.5, cx, -0.75], [cen.w + 3, 1.5, cx, cen.h + 0.75], [1.5, cen.h, -0.75, cz], [1.5, cen.h, cen.w + 0.75, cz]]) {
@@ -151,6 +156,22 @@ export function construirArena(cen, tapete, renderer = null) {
   }
   for (const r of cen.rampas || []) g.add(construirRampa(r, cen, mapa));
   for (const b of cen.caixas) g.add(construirBloco(b));
+  // Peças decorativas originais definidas diretamente pelo cenário nativo.
+  // Não entram em cen.caixas: são referências visuais, não colisores.
+  for (const obj of cen.decoracoes3d || []) {
+    if (obj.tipo !== 'esfera') continue;
+    const raio = Number(obj.raio);
+    if (!Number.isFinite(raio) || raio <= 0 || !Number.isFinite(obj.x) || !Number.isFinite(obj.y)) continue;
+    const esfera = new THREE.Mesh(
+      new THREE.SphereGeometry(raio, 24, 16),
+      new THREE.MeshStandardMaterial({ color: obj.cor || '#cccccc', roughness: 0.55 })
+    );
+    esfera.position.set(obj.x, raio, obj.y); // apoiada na superfície de altura 0
+    esfera.name = obj.nome || 'esfera';
+    esfera.castShadow = true;
+    esfera.receiveShadow = true;
+    g.add(esfera);
+  }
   return g;
 }
 

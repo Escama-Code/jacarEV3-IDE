@@ -15,7 +15,62 @@
   /* modo campanha: mapa fixo pela missão, só 2D/3D pode trocar */
   body.modo-campanha #cenario,
   body.modo-campanha #inicio,
+  body.modo-campanha #btnEditorMapa,
   body.modo-campanha #exemplo { display: none; }
+
+/* Editor de mapas autorais — sobreposição independente do palco */
+.map-editor-modal[hidden] { display: none !important; }
+.map-editor-modal {
+  position: fixed; inset: 0; z-index: 8000; display: grid; place-items: center;
+  padding: 12px; background: rgba(10, 18, 28, .85);
+}
+.map-editor-window {
+  background: #172333; color: #eff6ff; width: min(1100px, 98vw);
+  max-height: 96vh; overflow-y: auto; border: 1px solid #62748a;
+  border-radius: 14px; padding: 16px;
+  box-shadow: 0 25px 70px rgba(0,0,0,.55);
+}
+.map-editor-head, .map-editor-tools, .map-editor-actions {
+  display: flex; gap: 9px; align-items: center; flex-wrap: wrap;
+}
+.map-editor-head { justify-content: space-between; margin-bottom: 10px; }
+.map-editor-head h2 { font-size: 19px; margin: 0; }
+.map-editor-tools { margin: 8px 0 12px; }
+.map-editor-window button, .map-editor-window input, .map-editor-window select {
+  font: inherit;
+}
+.map-editor-window button {
+  border: 1px solid #607189; border-radius: 7px; color: #edf4ff;
+  background: #304257; padding: 7px 10px; cursor: pointer;
+}
+.map-editor-window button:disabled { opacity: .4; cursor: not-allowed; }
+.map-editor-window button.ativo, .map-editor-window button.map-primary {
+  background: #0e818a; border-color: #54d5c8; color: white;
+}
+.map-editor-window label { display: inline-flex; align-items: center; gap: 6px; }
+.map-editor-window input[type=text] {
+  background: #0d1928; color: white; padding: 7px;
+  border: 1px solid #607189; border-radius: 7px; width: min(245px, 80vw);
+}
+.map-editor-window select { background: #25374c; color: white; border-radius: 6px; padding: 6px; }
+.map-editor-window input[type=range] { width: 105px; }
+.map-editor-canvas-frame {
+  margin: 8px 0; background: #f4f5ee; border-radius: 9px; overflow: hidden;
+  text-align: center; line-height: 0; max-height: min(60vh, 720px);
+  overflow-y: auto;
+}
+#mapEditorCanvas {
+  max-width: 100%; width: auto; height: auto; display: block; margin: auto;
+  touch-action: none; cursor: crosshair;
+}
+.map-editor-actions { margin-top: 12px; justify-content: flex-end; }
+#mapEditorAviso, #mapEditorStatus { margin: 6px 0; font-size: 13px; }
+#mapEditorAviso { color: #b5eece; }
+.map-editor-hint { color: #bdcde0; font-size: 12px; line-height: 1.45; }
+@media(max-width:650px) {
+  .map-editor-window { padding: 10px; max-height: 98vh; }
+  .map-editor-window button { padding: 6px 8px; }
+}
 </style>
 </head>
 <body>
@@ -111,7 +166,7 @@
     <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
     <div class="linha" style="margin-top:0">
       <select id="exemplo"></select>
-      <label>limite <input id="limite" type="number" value="30" min="1" max="60" step="1" title="Máximo 60 s"> s simulados <span class="info" style="margin:0">(máx. 60s)</span></label>
+      <label>limite <input id="limite" type="number" value="300" min="1" max="300" step="1" title="Máximo 300 s"> s simulados <span class="info" style="margin:0">(máx. 300s)</span></label>
     </div>
     <div id="editor" style="margin-top:8px"></div>
     <div class="linha">
@@ -131,6 +186,7 @@
       <div class="seg"><button id="btn2d" class="ativo">2D</button><button id="btn3d" disabled title="carregando Three.js…">3D</button></div>
       <select id="cenario" title="Cenário"></select>
       <button id="btnCarregarArena" type="button" title="Importar arquivo .sArena do sBotics">📂 Importar .sArena</button>
+      <button id="btnEditorMapa" type="button" title="Desenhar pistas próprias com caneta e mouse">✏️ Editar mapa</button>
       <input id="inputSArena" type="file" accept=".sArena,.sarena,.json" hidden>
       <select id="inicio" title="Posição inicial do robô"></select>
       <span id="opts3d" class="linha" style="margin:0" hidden>
@@ -239,7 +295,7 @@ class _RelogioVirtual:
         if js.ev3Ponte.agora() >= self.limite:
             raise TempoVirtualEsgotado(f"limite de {self.limite:g}s simulados atingido")
 
-def executar(codigo: str, limite_s: float = 30.0) -> str:
+def executar(codigo: str, limite_s: float = 300.0) -> str:
     resultado = 'ok'
     relogio = _RelogioVirtual(limite_s)
     originais = (time.sleep, time.time, time.monotonic, _robo.ConexaoBluetooth)
@@ -302,6 +358,51 @@ def descrever_api() -> str:
     consts = [{'n': n, 'v': v} for n, v in vars(_p).items() if re.match(r'^(MODO|LED|PORTA|INDICE|PARAR|TURN)_', n) and isinstance(v, int)]
     return json.dumps({'versao': _md.version('jacarev3'), 'robo': robo, 'topicos': topicos, 'constantes': consts, 'leds': list(CODIGOS_LED)}, ensure_ascii=False)
 </script>
+
+
+<!-- Editor visual de pistas originais: não depende de arquivos .sArena -->
+<div id="mapEditorModal" class="map-editor-modal" hidden role="dialog" aria-modal="true" aria-label="Editor de mapas autorais">
+  <section class="map-editor-window">
+    <div class="map-editor-head">
+      <h2>✏️ Editor de mapas — JacarEV3</h2>
+      <button id="mapEditorClose" type="button" aria-label="Fechar editor">✕ Fechar</button>
+    </div>
+    <div class="map-editor-tools">
+      <label>Nome <input id="mapEditorNome" type="text" maxlength="70" value="Meu circuito" placeholder="Nome do mapa"></label>
+      <button id="mapEditorBlank" type="button">＋ Novo em branco</button>
+      <button id="mapEditorCopy" type="button">📋 Copiar mapa atual</button>
+      <button id="mapEditorUpload" type="button">📂 Abrir .jmap</button>
+      <input id="mapEditorFile" type="file" accept=".jmap,.json,application/json" hidden>
+    </div>
+    <div class="map-editor-tools">
+      <button data-map-tool="caneta" type="button" class="ativo" aria-pressed="true">✏️ Caneta</button>
+      <button data-map-tool="borracha" type="button" aria-pressed="false">◻ Borracha</button>
+      <button data-map-tool="reta" type="button" aria-pressed="false">╱ Reta</button>
+      <button data-map-tool="inicio" type="button" aria-pressed="false">🤖 Posição inicial</button>
+      <label>Espessura <input id="mapEditorBrush" type="range" min="0.5" max="12" step="0.5" value="3"></label>
+      <span id="mapEditorBrushValor">3 cm</span>
+      <label>Orientação <select id="mapEditorHeading">
+        <option value="-90">↑ Cima</option>
+        <option value="0">→ Direita</option>
+        <option value="90">↓ Baixo</option>
+        <option value="180">← Esquerda</option>
+      </select></label>
+      <button id="mapEditorUndo" type="button">↶ Desfazer</button>
+      <button id="mapEditorRedo" type="button">↷ Refazer</button>
+    </div>
+    <div class="map-editor-canvas-frame">
+      <canvas id="mapEditorCanvas" width="1040" height="720" aria-label="Área de desenho da pista"></canvas>
+    </div>
+    <p id="mapEditorStatus" role="status"></p>
+    <p class="map-editor-hint">Caneta: arraste para desenhar · Borracha: pinta de branco · Reta: arraste para criar um segmento · Posição inicial: clique no mapa. Ao copiar um cenário, suas paredes permanecem como obstáculos. Para apagar totalmente o traçado antigo e criar outro, use “Novo em branco”.</p>
+    <p id="mapEditorAviso" role="status"></p>
+    <div class="map-editor-actions">
+      <button id="mapEditorDownload" type="button">💾 Salvar .jmap</button>
+      <button id="mapEditorCancel" type="button">Cancelar</button>
+      <button id="mapEditorApply" class="map-primary" type="button">✓ Aplicar na IDE</button>
+    </div>
+  </section>
+</div>
 
 <!-- Scripts de dependência externa -->
 <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
@@ -1140,6 +1241,7 @@ const Playback = (() => {
 
   return {
     desenhar, desenharEstado, setModo, estadoEm,
+    prepararEdicao() { if (globalThis.gamepadPonte?.pararTeleop) globalThis.gamepadPonte.pararTeleop(); descartarSimulacao(); sonda = null; sondaChave = ''; setModo('2d'); },
     get vista() { return vista; },
     iniciar() {
       for (const [id, c] of Object.entries(CENARIOS)) $('cenario').add(new Option(c.nome, id));
@@ -1344,7 +1446,9 @@ const GamepadPonte = (() => {
   }
 
   function teleop(limite_s, vel) {
-    limite_s = Number(limite_s) > 0 ? Math.min(Number(limite_s), 60) : 60;
+    limite_s = Number.isFinite(Number(limite_s)) && Number(limite_s) > 0
+      ? Math.min(Number(limite_s), LIMITE_SIM_MAX)
+      : LIMITE_SIM_MAX;
     vel = Number(vel) > 0 ? Number(vel) : 45;
     teleopStop = false;
     if (teleopRaf) cancelAnimationFrame(teleopRaf);
@@ -1421,7 +1525,7 @@ const GamepadPonte = (() => {
 
   function toggleTeleop() {
     if (ativo) pararTeleop();
-    else teleop(120, 45);
+    else teleop(LIMITE_SIM_MAX, 45);
   }
 
   let _passoLast = 0;
@@ -1480,6 +1584,8 @@ async function iniciarPython() {
   Terminal.sys(`jacarev3 v${Api.atual.versao || '0.6.0'} instalada — ${(Api.atual.robo || []).length} métodos no autocomplete.`);
 }
 
+const LIMITE_SIM_MAX = 300;
+
 async function rodar() {
   if (!App.pronto || App.executando) return;
   const btn = $('btnRodar');
@@ -1487,21 +1593,21 @@ async function rodar() {
   Terminal.limpar();
   App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
   const codigo = App.editor.getValue();
-  const LIMITE_SIM_MAX = 60;
-  let limite = +$('limite').value || 30;
-  if (!Number.isFinite(limite) || limite < 1) limite = 30;
-  if (limite > LIMITE_SIM_MAX) {
-    limite = LIMITE_SIM_MAX;
-    $('limite').value = LIMITE_SIM_MAX;
-    Terminal.sys('⏱ Limite máximo de simulação: ' + LIMITE_SIM_MAX + ' s');
+  const teto = Math.min(LIMITE_SIM_MAX, Number($('limite').max) || LIMITE_SIM_MAX);
+  let limite = Number($('limite').value);
+  if (!Number.isFinite(limite) || limite < 1) limite = Math.min(300, teto);
+  if (limite > teto) {
+    limite = teto;
+    Terminal.sys('⏱ Limite máximo de simulação: ' + teto + ' s');
   }
+  $('limite').value = limite;
   const t0 = performance.now();
   let res = 'erro';
   try {
     const mTele = codigo.match(/gamepadPonte\s*\.\s*teleop\s*\(\s*([^)]*)\)/);
     if (mTele) {
       const args = mTele[1].split(',').map((s) => s.trim()).filter(Boolean);
-      const sec = args[0] && !isNaN(+args[0]) ? +args[0] : Math.max(limite, 60);
+      const sec = args[0] && !isNaN(+args[0]) ? +args[0] : limite;
       const vel = args[1] && !isNaN(+args[1]) ? +args[1] : 45;
       Terminal.sys('▶ teleop pelo código (' + sec + 's, vel ' + vel + ') — WASD/setas ou gamepad');
       if (typeof gamepadPonte === 'undefined') throw new Error('gamepadPonte não carregou');
@@ -1906,11 +2012,12 @@ async function iniciar() {
   Playback.iniciar();
   const elLim = $('limite');
   if (elLim) {
-    elLim.max = String(60);
+    elLim.max = String(LIMITE_SIM_MAX);
     const clampLim = () => {
       let v = +elLim.value;
       if (!Number.isFinite(v) || v < 1) v = 1;
-      if (v > 60) v = 60;
+      const teto = Math.min(LIMITE_SIM_MAX, Number(elLim.max) || LIMITE_SIM_MAX);
+      if (v > teto) v = teto;
       elLim.value = v;
     };
     elLim.addEventListener('change', clampLim);
@@ -1937,5 +2044,6 @@ async function iniciar() {
 
 iniciar();
 </script>
+<script src="../src/js/editor/mapaEditor.js"></script>
 </body>
 </html>
