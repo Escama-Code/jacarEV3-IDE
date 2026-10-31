@@ -1,5 +1,14 @@
 {
   "id": "jacarev3-fundamentos",
+<<<<<<< HEAD
+  "titulo": "Academia jacarEV3",
+  "descricao": "Do primeiro LED ao desafio de pista: aprenda a biblioteca e o estilo OBR em missões guiadas.",
+  "temas": [
+    {
+      "id": "codigos-base",
+      "titulo": "1 · Primeiros passos",
+      "descricao": "LED, motores, um sensor e o padrão with RoboEV3.",
+=======
   "titulo": "Academia jacarev3",
   "descricao": "Aprenda a biblioteca e as regras da pista em missões guiadas.",
   "temas": [
@@ -7,15 +16,38 @@
       "id": "codigos-base",
       "titulo": "1 · Códigos-base",
       "descricao": "LED, motores, sensores e o padrão with RoboEV3.",
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "cor": "#3b82f6",
       "arquivo": "temas/codigos-base.json"
     },
     {
+<<<<<<< HEAD
+      "id": "sensores-obr",
+      "titulo": "2 · Sensores OBR",
+      "descricao": "Array de 3 cores (portas 1–3), ultrassom e garra no motor A.",
+      "cor": "#22c55e",
+      "arquivo": "temas/sensores-obr.json"
+    },
+    {
+      "id": "leis-transito",
+      "titulo": "3 · Leis de trânsito",
+      "descricao": "Sinalizar, parar e circular com segurança.",
+      "cor": "#e3b341",
+      "arquivo": "temas/leis-transito.json"
+    },
+    {
+      "id": "competicao",
+      "titulo": "4 · Desafios de pista",
+      "descricao": "Reto, giro, linha e desvio — reúna tudo o que aprendeu.",
+      "cor": "#a855f7",
+      "arquivo": "temas/competicao.json"
+=======
       "id": "leis-transito",
       "titulo": "2 · Leis de trânsito",
       "descricao": "Parar, sinalizar, respeitar zonas e completar o percurso com segurança.",
       "cor": "#e3b341",
       "arquivo": "temas/leis-transito.json"
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     }
   ]
 }

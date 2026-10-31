@@ -90,7 +90,11 @@ function poligono(ctx, points, color) {
  * As dimensões locais da imagem sBotics vão de -5 a +5, em ambas as direções.
  * O mesmo desenho é usado pelo Canvas do sensor e pela textura da malha 3D.
  */
+<<<<<<< HEAD
+export const LARGURA_LINHA_TILE = (20 / 300) * 10; // 20 mm oficiais OBR
+=======
 export const LARGURA_LINHA_TILE = 0.36;
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 // Tamanho em unidades locais (-5..5); o original ocupa quase um ladrilho.
 export const TAMANHO_TRIANGULO_RESGATE = 7.6;
 const RECUO_TRIANGULO = 0.12;

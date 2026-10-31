@@ -4,7 +4,11 @@
     {
       "id": "cp01-calibrar",
       "titulo": "Calibrar e sinalizar",
+<<<<<<< HEAD
+      "ordem": 30,
+=======
       "ordem": 1,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -16,6 +20,14 @@
         "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as r:\n    r.led('VERDE')\n    r.apitar()\n    time.sleep(0.5)\n"
       ],
       "dicas": [
+<<<<<<< HEAD
+        "Mostre que o robô está pronto: LED verde e um bip.",
+        "robo.led('VERDE') e robo.apitar(frequencia, duracao_ms)."
+      ],
+      "limites": {
+        "tempoSimMaxS": 10,
+        "tentativasPorDica": 3
+=======
         {
           "camada": 0,
           "texto": "Mostre que o robô está pronto: LED verde e um bip.",
@@ -29,6 +41,7 @@
       ],
       "limites": {
         "tempoSimMaxS": 10
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       },
       "objetivos": [
         {
@@ -84,12 +97,21 @@
             "texto": "Faltou led ou apitar."
           }
         ]
+<<<<<<< HEAD
+      },
+      "temaId": "competicao"
+=======
       }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     },
     {
       "id": "cp02-reto",
       "titulo": "Andar reto com a base",
+<<<<<<< HEAD
+      "ordem": 31,
+=======
       "ordem": 2,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -101,6 +123,14 @@
         "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.mover_continuo('B', 35)\n    robo.mover_continuo('C', 35)\n    time.sleep(1.5)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n"
       ],
       "dicas": [
+<<<<<<< HEAD
+        "definir_base('B','C') e depois mover_base ou os dois motores juntos.",
+        "mover_base(velocidade) + time.sleep + parar_base()."
+      ],
+      "limites": {
+        "tempoSimMaxS": 20,
+        "tentativasPorDica": 3
+=======
         {
           "camada": 0,
           "texto": "definir_base('B','C') e depois mover_base ou os dois motores juntos.",
@@ -114,6 +144,7 @@
       ],
       "limites": {
         "tempoSimMaxS": 20
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       },
       "objetivos": [
         {
@@ -170,12 +201,21 @@
             "texto": "Distância ou parada incompleta."
           }
         ]
+<<<<<<< HEAD
+      },
+      "temaId": "competicao"
+=======
       }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     },
     {
       "id": "cp03-giro",
       "titulo": "Giro de 90° (giroscópio)",
+<<<<<<< HEAD
+      "ordem": 32,
+=======
       "ordem": 3,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -187,6 +227,15 @@
         "from jacarev3 import RoboEV3\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.resetar_giro(1)\n    robo.girar_exato(90)\n"
       ],
       "dicas": [
+<<<<<<< HEAD
+        "Sempre resetar_giro com o robô parado antes de medir ângulo.",
+        "robo.girar_exato(90, velocidade=25, porta_giro=1)",
+        "Ordem: resetar_giro → girar_exato. O avaliador checa as duas APIs."
+      ],
+      "limites": {
+        "tempoSimMaxS": 25,
+        "tentativasPorDica": 3
+=======
         {
           "camada": 0,
           "texto": "Sempre resetar_giro com o robô parado antes de medir ângulo.",
@@ -205,6 +254,7 @@
       ],
       "limites": {
         "tempoSimMaxS": 25
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       },
       "objetivos": [
         {
@@ -271,12 +321,21 @@
             "texto": "Reset + girar_exato, nessa ordem."
           }
         ]
+<<<<<<< HEAD
+      },
+      "temaId": "competicao"
+=======
       }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     },
     {
       "id": "cp04-linha",
       "titulo": "Seguir linha até a marca",
+<<<<<<< HEAD
+      "ordem": 33,
+=======
       "ordem": 4,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -287,6 +346,14 @@
         "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 12)\n            robo.mover_continuo('C', 32)\n        else:\n            robo.mover_continuo('B', 32)\n            robo.mover_continuo('C', 12)\n"
       ],
       "dicas": [
+<<<<<<< HEAD
+        "Valores baixos ≈ preto (linha); altos ≈ fundo claro.",
+        "Curve B/C com velocidades diferentes conforme a leitura."
+      ],
+      "limites": {
+        "tempoSimMaxS": 45,
+        "tentativasPorDica": 3
+=======
         {
           "camada": 0,
           "texto": "Valores baixos ≈ preto (linha); altos ≈ fundo claro.",
@@ -300,6 +367,7 @@
       ],
       "limites": {
         "tempoSimMaxS": 45
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       },
       "objetivos": [
         {
@@ -360,12 +428,21 @@
             "texto": "Ajuste limiar ou curvas."
           }
         ]
+<<<<<<< HEAD
+      },
+      "temaId": "competicao"
+=======
       }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     },
     {
       "id": "cp05-desvio",
       "titulo": "Desviar e concluir",
+<<<<<<< HEAD
+      "ordem": 34,
+=======
       "ordem": 5,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -377,6 +454,14 @@
         "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    for _ in range(25):\n        dist = robo.ler_sensor(4, 0)\n        if dist < 25:\n            robo.mover_continuo('B', -20)\n            robo.mover_continuo('C', 25)\n        else:\n            robo.mover_continuo('B', 28)\n            robo.mover_continuo('C', 28)\n        time.sleep(0.15)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n"
       ],
       "dicas": [
+<<<<<<< HEAD
+        "Ultrassom na porta 4, modo 0 = cm. Se perto, curve ou recue.",
+        "Loop: ler distância → se < 20, girar; senão, seguir em frente."
+      ],
+      "limites": {
+        "tempoSimMaxS": 40,
+        "tentativasPorDica": 3
+=======
         {
           "camada": 0,
           "texto": "Ultrassom na porta 4, modo 0 = cm. Se perto, curve ou recue.",
@@ -390,6 +475,7 @@
       ],
       "limites": {
         "tempoSimMaxS": 40
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       },
       "objetivos": [
         {
@@ -453,7 +539,12 @@
             "texto": "Sensor + movimento + parada."
           }
         ]
+<<<<<<< HEAD
+      },
+      "temaId": "competicao"
+=======
       }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     }
   ]
 }

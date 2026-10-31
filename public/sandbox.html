@@ -25,6 +25,10 @@
   /* modo campanha: mapa fixo pela missão, só 2D/3D pode trocar */
   body.modo-campanha #cenario,
   body.modo-campanha #inicio,
+<<<<<<< HEAD
+  body.modo-campanha #exemplo { display: none; }
+
+=======
   body.modo-campanha #btnEditorMapa,
   body.modo-campanha #exemplo { display: none; }
 
@@ -229,6 +233,7 @@ body.modo-campanha .painel-arena #cenario {
       flex: none; height: 390px; min-height: 340px; max-height: 390px;
     }
   }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 </style>
 </head>
 <body>
@@ -354,7 +359,14 @@ body.modo-campanha .painel-arena #cenario {
       <div class="seg"><button id="btn2d" class="ativo">2D</button><button id="btn3d" disabled title="carregando Three.js…">3D</button></div>
       <select id="cenario" title="Cenário"></select>
       <button id="btnCarregarArena" type="button" title="Importar arquivo .sArena do sBotics">📂 Importar .sArena</button>
+<<<<<<< HEAD
+      <button id="btnEditorMapasPage" type="button" title="Editor livre (traço e objetos)">✏️ Editor livre</button>
+      <button id="btnEditorBlocos" type="button" title="Construtor modular OBR por ladrilhos 30×30">🧱 Editor por blocos</button>
+      <button id="btnCarregarMapa" type="button" title="Importar .jcrv3map / .jmap">📂 Importar mapa</button>
+      <input id="inputJcrv3map" type="file" accept=".jcrv3map,.jmap,.json,application/json" hidden>
+=======
       <button id="btnEditorMapa" type="button" title="Desenhar pistas próprias com caneta e mouse">✏️ Editar mapa</button>
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       <input id="inputSArena" type="file" accept=".sArena,.sarena,.json" hidden>
     </div>
     <div class="linha arena-posicao" style="margin:0 0 8px">
@@ -546,6 +558,9 @@ def descrever_api() -> str:
 </script>
 
 
+<<<<<<< HEAD
+
+=======
 <!-- Editor visual de pistas originais: não depende de arquivos .sArena -->
 <div id="mapEditorModal" class="map-editor-modal" hidden role="dialog" aria-modal="true" aria-label="Construtor de mapas autorais">
   <section class="map-editor-window">
@@ -711,6 +726,7 @@ def descrever_api() -> str:
     </div>
   </section>
 </div>
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 
 <!-- Scripts de dependência externa -->
 <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
@@ -718,6 +734,11 @@ def descrever_api() -> str:
 
 <!-- 1. Carrega os cenários do arquivo JS externo -->
 <script src="../src/js/cenarios.js?v=cidade-v3"></script>
+<<<<<<< HEAD
+<script src="../src/js/editor/mapaEditorCore.js"></script>
+<script src="../src/js/editor/mapaEditor.js"></script>
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 <script src="../src/js/exemplos/biblioteca.js"></script>
 
 <!-- 2. Cria o alias global obrigatorio para o SimEV3 e Playback -->
@@ -2452,6 +2473,54 @@ async function iniciar() {
   };
   Terminal.limpar();
   Playback.iniciar();
+<<<<<<< HEAD
+
+  (function wireMapasExternos() {
+    const btnPage = document.getElementById('btnEditorMapasPage');
+    if (btnPage) btnPage.onclick = () => { location.href = 'editor-mapas.html'; };
+    const btnBlocos = document.getElementById('btnEditorBlocos');
+    if (btnBlocos) btnBlocos.onclick = () => { location.href = 'editor-mapas-blocos.html'; };
+    const btnLoad = document.getElementById('btnCarregarMapa');
+    const input = document.getElementById('inputJcrv3map');
+    if (btnLoad && input) {
+      btnLoad.onclick = () => input.click();
+      input.onchange = async () => {
+        const f = input.files && input.files[0];
+        input.value = '';
+        if (!f || !window.JacarMapaCore || !window.JacarEditorMapa) return;
+        try {
+          const raw = JSON.parse(await f.text());
+          const d = JacarMapaCore.validar(raw);
+          if (typeof JacarEditorMapa.carregar === 'function' && typeof Playback !== 'undefined') {
+            // Prefer dedicated apply if available
+            await JacarEditorMapa.carregar(d);
+          }
+          // Fallback: use apply via temporary montar if exposed
+          if (window.JacarEditorMapaAplicar) await window.JacarEditorMapaAplicar(d);
+          else if (typeof Terminal !== 'undefined') Terminal.sys('🗺️ Mapa JSON carregado (abra o editor para aplicar se necessário): ' + (d.nome||''));
+        } catch (e) {
+          alert('Falha ao importar mapa: ' + e.message);
+        }
+      };
+    }
+    const aplicarPendente = () => {
+      try {
+        if (new URLSearchParams(location.search).get('mapa') !== '1') return;
+        const raw = sessionStorage.getItem('jacar-mapa-pendente');
+        if (!raw || !window.JacarMapaCore || !window.JacarEditorMapaAplicar) return;
+        sessionStorage.removeItem('jacar-mapa-pendente');
+        const d = JacarMapaCore.validar(JSON.parse(raw));
+        JacarEditorMapaAplicar(d).then(() => {
+          if (typeof Terminal !== 'undefined') Terminal.sys('🗺️ Mapa do editor aplicado: ' + (d.nome || ''));
+        }).catch((e) => console.warn(e));
+      } catch (e) { console.warn(e); }
+    };
+    aplicarPendente();
+    setTimeout(aplicarPendente, 800);
+  })();
+
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   const elLim = $('limite');
   if (elLim) {
     elLim.max = String(LIMITE_SIM_MAX);
@@ -2514,7 +2583,10 @@ async function iniciar() {
 
 iniciar();
 </script>
+<<<<<<< HEAD
+=======
 <script src="../src/js/editor/mapaEditorCore.js"></script>
 <script src="../src/js/editor/mapaEditor.js"></script>
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 </body>
 </html>

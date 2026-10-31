@@ -75,11 +75,17 @@ class SimEV3 {
       cmPorGrau: Math.PI * 5.6 / 360,  // roda de 5,6 cm
       bitola: 12, raio: 7, passo: 0.01,
       latEnvio: 0.005, latResposta: 0.02,   // tempo virtual gasto por pacote (Bluetooth)
-      sensores: { 1: 'cor', 2: 'toque', 3: 'cor', 4: 'ultrassonico' },
+      // Perfil OBR Nacional (Rescue): 3× cor + ultrassônico
+      // Portas: 1=esq · 2=centro · 3=dir · 4=US  |  giro = odometria integrada
+      sensores: { 1: 'cor', 2: 'cor', 3: 'cor', 4: 'ultrassonico' },
       inicio: null,             // null = o início padrão do cenário
       amostragem: 'area',       // 'area' (média 3×3 num quadrado de ±raioSensorCm) | 'pixel' (1 pixel exato)
       raioSensorCm: 0.35,
       modoLuz: 'luminancia',    // 'luminancia' (Rec.709) | 'vermelho' (LED vermelho do sensor real)
+      // Layout físico dos sensores de cor (cm no referencial do robô)
+      sensorCorFrenteCm: 5.5,   // à frente do centro
+      sensorCorEspacamentoCm: 2.0, // distância lateral entre esq/centro/dir
+      perfilRobo: 'obr-nacional',
     }, cfg);
     this.reset(cenario);
   }
@@ -172,6 +178,49 @@ class SimEV3 {
     return { drenado: this.t - t0, ligados };
   }
 
+<<<<<<< HEAD
+  // ---------- sensores (perfil OBR Nacional) ----------
+  // 3 sensores de cor na barra frontal: esq / centro / dir
+  // lateralCm: negativo = esquerda do robô, positivo = direita
+  posSensorCor(x, y, th, lateralCm = 0) {
+    const f = this.cfg.sensorCorFrenteCm ?? 5.5;
+    // frente ao longo de th; lateral perpendicular (esquerda = -sin, +cos em Y)
+    const sx = x + f * Math.cos(th) - lateralCm * Math.sin(th);
+    const sy = y + f * Math.sin(th) + lateralCm * Math.cos(th);
+    return [sx, sy];
+  }
+  lateralDaPorta(porta1a4) {
+    const e = this.cfg.sensorCorEspacamentoCm ?? 2.0;
+    // porta 1 = esquerda, 2 = centro, 3 = direita
+    if (porta1a4 === 1) return -e;
+    if (porta1a4 === 3) return e;
+    return 0;
+  }
+  rgbEm(x, y, th, tempoS = this.t, lateralCm = 0) {
+    _Cen.atualizarTapete?.(this.cen, this.tapete, tempoS);
+    const [sx, sy] = this.posSensorCor(x, y, th, lateralCm);
+    return this.cfg.amostragem === 'pixel'
+      ? _Cen.lerPixel(this.tapete, sx, sy)
+      : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
+  }
+  refletidaEm(x, y, th, tempoS = this.t, lateralCm = 0) {
+    return _Cen.intensidade(this.rgbEm(x, y, th, tempoS, lateralCm), this.cfg.modoLuz);
+  }
+  corEm(x, y, th, tempoS = this.t, lateralCm = 0) {
+    const [r, g, b] = this.rgbEm(x, y, th, tempoS, lateralCm);
+    return _Cen.classificarCor(r, g, b);
+  }
+  refletida() { return this.refletidaEm(this.x, this.y, this.th, this.t, 0); }
+  /** Ângulo integrado (odometria) — substitui giroscópio EV3 no treino OBR. Graus. */
+  giroscopioGraus() {
+    // th em radianos no simulador; 0° alinhado ao eixo +X do mapa
+    let g = (this.th * 180) / Math.PI;
+    // normaliza -180..180 como o sensor EV3 em modo ângulo
+    while (g > 180) g -= 360;
+    while (g < -180) g += 360;
+    return g;
+  }
+=======
   // ---------- sensores ----------
   // Sensor de cor: lê PIXELS do tapete (mesma imagem do 2D/3D), 5,5 cm à frente do centro do robô
   rgbEm(x, y, th, tempoS = this.t) {
@@ -184,6 +233,7 @@ class SimEV3 {
   refletidaEm(x, y, th, tempoS = this.t) { return _Cen.intensidade(this.rgbEm(x, y, th, tempoS), this.cfg.modoLuz); }   // 0-100
   corEm(x, y, th, tempoS = this.t) { const [r, g, b] = this.rgbEm(x, y, th, tempoS); return _Cen.classificarCor(r, g, b); }  // id EV3 0-7
   refletida() { return this.refletidaEm(this.x, this.y, this.th); }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
     let best = 255;
@@ -212,11 +262,22 @@ class SimEV3 {
     return Math.max(0, Math.min(255, best));
   }
   lerSensor(porta, modo) {
-    const tipo = this.cfg.sensores[porta + 1];
-    if (!tipo) return null;                       // porta sem sensor -> EV3 responde erro
-    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : this.corEm(this.x, this.y, this.th);   // 0 refletida · 1 ambiente · 2 cor
-    if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
-    return this.ultrassonico();
+    // porta aqui é 0..3 (índice EV3); cfg.sensores usa 1..4
+    const n = porta + 1;
+    const tipo = this.cfg.sensores[n];
+    if (!tipo) return null;
+    if (tipo === 'cor') {
+      const lat = this.lateralDaPorta(n);
+      if (modo === 0) return this.refletidaEm(this.x, this.y, this.th, this.t, lat); // refletida 0-100
+      if (modo === 1) return 10; // ambiente (fixo no sim)
+      return this.corEm(this.x, this.y, this.th, this.t, lat); // id EV3 0-7
+    }
+    if (tipo === 'toque') {
+      // toque frontal por proximidade (parede/obstáculo muito perto)
+      return this.ultrassonico() < 2.0 ? 1 : 0;
+    }
+    if (tipo === 'giroscopio') return this.giroscopioGraus();
+    return this.ultrassonico(); // cm
   }
 
   // ---------- recebe um pacote Direct Command real ----------

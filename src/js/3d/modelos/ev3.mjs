@@ -13,6 +13,31 @@ import {
 // =====================================================================
 //  ROBÔ 1 — "Estilo LEGO EV3"
 // =====================================================================
+
+function construirGarraLocal(THREE, M, caixa, posicionar) {
+  const grupo = new THREE.Group(); grupo.name = 'garra';
+  const cinza = M(0x5a6066), preto = M(0x1c1e20), amarelo = M(0xe8b923);
+  grupo.add(caixa(3.2, 1.2, 2.0, cinza, 0, 0, 0));
+  grupo.add(caixa(1.4, 0.8, 1.4, preto, 0, 0.9, -0.2));
+  const esq = new THREE.Group(); posicionar(esq, -1.1, -0.2, 0.9);
+  const dir = new THREE.Group(); posicionar(dir, 1.1, -0.2, 0.9);
+  for (const [pai, s] of [[esq, -1], [dir, 1]]) {
+    pai.add(caixa(0.55, 0.7, 3.2, cinza, 0, 0, 1.4));
+    pai.add(caixa(0.7, 0.5, 1.0, amarelo, 0, -0.15, 3.0));
+    pai.add(caixa(0.35, 0.9, 0.5, preto, s * 0.15, -0.35, 3.3));
+  }
+  grupo.add(esq, dir);
+  esq.rotation.y = -0.55; dir.rotation.y = 0.55;
+  return { grupo, esq, dir };
+}
+function aplicarGarraLocal(garra, encA) {
+  if (!garra) return;
+  const f = Math.max(0, Math.min(1, Math.abs(Number(encA) || 0) / 85));
+  const ang = 0.55 - f * 0.47;
+  garra.esq.rotation.y = -ang;
+  garra.dir.rotation.y = ang;
+}
+
 export function construirRoboEV3() {
   const root = new THREE.Group(); root.name = 'ev3';
   const cinzaClaro = M(0xe6e7e8), cinzaMed = M(0x9aa0a6), cinzaEsc = M(0x4b4f54), preto = M(0x1c1e20);
@@ -56,7 +81,13 @@ export function construirRoboEV3() {
   const vigaMat = M(0x2f3236);
   root.add(viga(3.4, vigaMat, 2.4, 4.2, 5.4), viga(3.4, vigaMat, -2.4, 4.2, 5.4));
   root.add(caixa(7.0, 0.8, 0.8, vigaMat, 0, 4.2, 6.9));
-  const cor = sensorCor(0xe6e7e8); posicionar(cor, 0, 2.6, 5.5); root.add(cor);       // lente em y = 1.4 → o sim lê 5,5 cm à frente
+  {
+    const esq = sensorCor(0xe6e7e8); esq.name = 'sensor_cor_esq'; posicionar(esq, -2.0, 2.6, 5.5); root.add(esq);
+    const cen = sensorCor(0xe6e7e8); cen.name = 'sensor_cor_cen'; posicionar(cen, 0, 2.6, 5.5); root.add(cen);
+    const dir = sensorCor(0xe6e7e8); dir.name = 'sensor_cor_dir'; posicionar(dir, 2.0, 2.6, 5.5); root.add(dir);
+  }
+  const garra = construirGarraLocal(THREE, M, caixa, posicionar);
+  posicionar(garra.grupo, 0, 6.8, 7.2); root.add(garra.grupo);
   const ultra = new THREE.Group(); posicionar(ultra, 0, 6.2, 7.0);
   ultra.add(chanfrada(6.2, 3.0, 2.2, 0.3, M(0xeceded)));
   ultra.add(olhoUltra(1.15, 1.6, 0, 1.2), olhoUltra(1.15, -1.6, 0, 1.2));
@@ -72,5 +103,11 @@ export function construirRoboEV3() {
   posicionar(bola, 0, 1.25, -6.2); root.add(bola);
 
   const feixe = criarFeixe(1.4); posicionar(feixe.grupo, 0, 0, 5.5); root.add(feixe.grupo);
-  return { nome: 'ev3', grupo: root, rodaB, rodaC, leds: [ledMat], feixe, lcd, animar(est) { if (lcd) lcd.desenhar(est); } };
+  return {
+    nome: 'ev3', grupo: root, rodaB, rodaC, leds: [ledMat], feixe, lcd, garra,
+    animar(est) {
+      if (lcd) lcd.desenhar(est);
+      aplicarGarraLocal(garra, est.encA);
+    },
+  };
 }

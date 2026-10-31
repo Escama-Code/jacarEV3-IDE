@@ -30,6 +30,10 @@ export {
   normalizarCodigo,
 } from './pontuacao.mjs';
 export { carregarCatalogo } from './loader.mjs';
+<<<<<<< HEAD
+export { Dialogo, falar as dialogoFalar, initDialogo } from './dialogo/dialogo.mjs';
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 
 import { carregarCatalogo } from './loader.mjs';
 

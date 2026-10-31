@@ -632,10 +632,46 @@
       box.hidden=false;
     }catch(e){aviso(e.message,true);}
   }
+<<<<<<< HEAD
+  const PAGINA_DEDICADA = !document.getElementById('btnRodar') && !!document.getElementById('mapEditorCanvas');
+  const STORAGE_KEY = 'jacar-mapa-pendente';
+
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   async function abrir(){
     if(ativo)return;
     try{
       if(document.body.classList.contains('modo-campanha'))throw Error('Editor disponível no Sandbox.');
+<<<<<<< HEAD
+      if(typeof Playback !== 'undefined') Playback.prepararEdicao?.();
+      ativo=true;
+      const modal=$('mapEditorModal');
+      if(modal) modal.hidden=false;
+      if(PAGINA_DEDICADA){
+        await mostrarDocumento(M.criarDocumento());
+      }else{
+        await mostrarDocumento(copiarAtual());
+      }
+    }catch(e){ativo=false;const modal=$('mapEditorModal');if(modal)modal.hidden=true;alert(e.message);}
+  }
+  function fechar(){
+    if(ocupado)return;
+    if(PAGINA_DEDICADA){ location.href='sandbox.html'; return; }
+    ativo=false;pointer=null;preview=null;stagedCurve=null;
+    const modal=$('mapEditorModal'); if(modal) modal.hidden=true;
+  }
+  function enviarParaSandbox(){
+    try{
+      const d=atual();
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+      location.href='sandbox.html?mapa=1';
+    }catch(e){aviso(e.message,true);}
+  }
+  function configurar(){
+    // Sandbox sem UI do editor: só expõe API de importação
+    if (!CANVAS()) return;
+
+=======
       Playback.prepararEdicao?.();
       ativo=true;$('mapEditorModal').hidden=false;
       await mostrarDocumento(copiarAtual());
@@ -643,6 +679,7 @@
   }
   function fechar(){if(ocupado)return;ativo=false;pointer=null;preview=null;stagedCurve=null;$('mapEditorModal').hidden=true;}
   function configurar(){
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     document.querySelectorAll('[data-map-tab]').forEach((tab,indice)=>{
       tab.addEventListener('click',()=>selecionarAba(tab.dataset.mapTab));
       tab.addEventListener('keydown',e=>{
@@ -656,7 +693,12 @@
       });
     });
     selecionarAba('desenho');
+<<<<<<< HEAD
+    if($('btnEditorMapa')) $('btnEditorMapa').addEventListener('click',abrir);
+    if($('mapEditorToIde')) $('mapEditorToIde').addEventListener('click',enviarParaSandbox);
+=======
     $('btnEditorMapa').addEventListener('click',abrir);
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     $('mapEditorClose').addEventListener('click',fechar);
     $('mapEditorCancel').addEventListener('click',fechar);
     $('mapEditorBlank').addEventListener('click',()=>mostrarDocumento(M.criarDocumento(doc?.w,doc?.h)));
@@ -704,6 +746,37 @@
     atualizarControlesSala();
     ferramentaSelecionada('caneta');
   }
+<<<<<<< HEAD
+  document.addEventListener('DOMContentLoaded', async () => {
+    configurar();
+    if (PAGINA_DEDICADA) {
+      ativo = true;
+      try { await mostrarDocumento(M.criarDocumento()); }
+      catch (e) { aviso(e.message, true); }
+    }
+  });
+  async function aplicarDocumentoNoSimulador(d) {
+    const data = M.validar(M.copy(d));
+    await mostrarDocumento(data);
+    aplicar();
+  }
+  window.JacarEditorMapa = { carregar: mostrarDocumento, validar: M.validar };
+  window.JacarEditorMapaAplicar = async (d) => {
+    // usado pelo Sandbox ao receber mapa externo (sem UI do editor)
+    const data = M.validar(M.copy(d));
+    const img = data.basePNG ? await (async () => {
+      const image = new Image();
+      image.src = data.basePNG;
+      if (image.decode) await image.decode();
+      else await new Promise((res, rej) => { image.onload = res; image.onerror = rej; });
+      return image;
+    })() : null;
+    const cen = montarCenario(data, img);
+    return cen;
+  };
+
+=======
   document.addEventListener('DOMContentLoaded',configurar);
   window.JacarEditorMapa={carregar:mostrarDocumento,validar:M.validar};
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 })();

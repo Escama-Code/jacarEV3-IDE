@@ -122,6 +122,44 @@
 </div>
 <div id="campResultado" class="camp-resultado-float" hidden></div>
 
+<<<<<<< HEAD
+
+<style id="camp-missao-panel-css">
+#campPainelMissao {
+  position: fixed; top: 58px; right: 10px; width: min(300px, 34vw); max-height: calc(100vh - 80px);
+  overflow: auto; z-index: 40; background: #161b22ee; border: 1px solid #30363d; border-radius: 12px;
+  padding: 12px 14px; color: #e6edf3; font-size: 13px; box-shadow: 0 8px 28px #0008;
+}
+#campPainelMissao[hidden] { display: none !important; }
+#campPainelMissao h3 { margin: 0 0 8px; font-size: 14px; color: #3ecf8e; }
+#campPainelMissao .obj-li { margin: 4px 0; }
+#campPainelMissao .obj-li.ok { color: #3fb950; }
+#campPainelMissao .obj-li.pend { color: #8b949e; }
+#campPainelMissao .dica-box { background: #0d1117; border-radius: 8px; padding: 8px; margin-top: 8px; border-left: 3px solid #e3b341; }
+#campPainelMissao .ref-box { margin-top: 10px; font-size: 12px; color: #8b949e; }
+#campPainelMissao button { margin-top: 6px; width: 100%; }
+body.modo-campanha main { padding-right: min(320px, 36vw); }
+@media (max-width: 900px) {
+  #campPainelMissao { position: static; width: auto; max-height: none; margin: 8px; }
+  body.modo-campanha main { padding-right: 0; }
+}
+</style>
+<div id="campPainelMissao" hidden>
+  <h3 id="campPainelTitulo">Missão</h3>
+  <p id="campPainelNarrativa" style="color:#8b949e;margin:0 0 8px;font-size:12px"></p>
+  <strong>Objetivos</strong>
+  <div id="campPainelObjs"></div>
+  <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+    <button type="button" id="campBtnDica" class="camp-btn-sec">💡 Pedir dica</button>
+    <button type="button" id="campBtnRef" class="camp-btn-sec" hidden>📖 Ver referência</button>
+  </div>
+  <div id="campPainelDica" class="dica-box" hidden></div>
+  <div id="campPainelRef" class="ref-box" hidden></div>
+  <p style="margin:10px 0 0;font-size:11px;color:#6e7681">A cada 3 falhas sai uma dica. Referência só com 3★ ou mais.</p>
+</div>
+
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 <header>
   <h1>🐊 jacarEV3 IDE</h1>
   <button type="button" id="btnMenuModos" class="btn-menu-modos" title="Trocar modo">Menu</button>
@@ -699,7 +737,14 @@ const Sugestoes = (() => {
 <script type="module">
 import '../src/js/3d/cena3d.mjs';
 import * as Campanha from '../src/campanha/index.mjs';
+<<<<<<< HEAD
+import { Dialogo } from '../src/campanha/dialogo/dialogo.mjs';
 window.Campanha = Campanha;
+window.Dialogo = Dialogo;
+Dialogo.init().catch(console.warn);
+=======
+window.Campanha = Campanha;
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 async function bootCatalogo() {
   try {
     const cat = await Campanha.initCampanha();
@@ -1648,16 +1693,81 @@ const MissaoPage = {
     if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
     if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (info.tentativas || 0);
     if ($('campDica')) $('campDica').onclick = () => this.mostrarDica(false);
+<<<<<<< HEAD
+    const _bd = document.getElementById('campBtnDica');
+    if (_bd) _bd.onclick = () => this.mostrarDica(false);
+    const _br = document.getElementById('campBtnRef');
+    if (_br) _br.onclick = () => this.mostrarReferenciaSePermitido();
+
+    if ($('campReabrirLobby')) $('campReabrirLobby').onclick = () => { location.href = 'campanha.html'; };
+    if ($('btnMenuModos')) $('btnMenuModos').onclick = () => { location.href = '../index.html'; };
+    document.body.classList.add('modo-campanha');
+    Terminal.sys('📖 Missão: ' + missao.titulo);
+    Terminal.sys('💡 A cada 3 falhas sai uma dica automática.');
+    this.atualizarPainelCampanha();
+    if (window.Dialogo) {
+      Dialogo.intro(missao).catch(() => {});
+    }
+
+  },
+
+
+  atualizarPainelCampanha() {
+    const box = document.getElementById('campPainelMissao');
+    if (!box || !this.missaoAtiva) { if (box) box.hidden = true; return; }
+    const m = this.missaoAtiva;
+    box.hidden = false;
+    const tit = document.getElementById('campPainelTitulo');
+    if (tit) tit.textContent = m.titulo || m.id;
+    const nar = document.getElementById('campPainelNarrativa');
+    const intro = m.narrativa && m.narrativa.intro && m.narrativa.intro[0];
+    if (nar) nar.textContent = intro ? intro.texto : '';
+    const objs = document.getElementById('campPainelObjs');
+    if (objs) {
+      objs.innerHTML = (m.objetivos || []).map((o) => {
+        const label = o.id || o.tipo || 'objetivo';
+        return '<div class="obj-li pend">○ ' + label + (o.obrigatorio ? ' · obrigatório' : '') + '</div>';
+      }).join('') || '<div class="obj-li pend">Complete o enunciado</div>';
+    }
+    const save = this.ensureSave();
+    const est = (save.missoes[m.id] && save.missoes[m.id].estrelas) || 0;
+    const btnRef = document.getElementById('campBtnRef');
+    if (btnRef) btnRef.hidden = est < 3;
+  },
+
+  mostrarReferenciaSePermitido() {
+    const m = this.missaoAtiva;
+    if (!m) return;
+    const save = this.ensureSave();
+    const est = (save.missoes[m.id] && save.missoes[m.id].estrelas) || 0;
+    if (est < 3) {
+      Terminal.sys('🔒 Referência liberada a partir de 3 estrelas.');
+      return;
+    }
+    const refs = m.codigosReferencia || [];
+    const ref = document.getElementById('campPainelRef');
+    if (ref) {
+      ref.hidden = false;
+      const code = (refs[0] || '—').replace(/</g, '&lt;');
+      ref.innerHTML = '<strong>Código de referência</strong><pre style="white-space:pre-wrap;font-size:11px;background:#0d1117;padding:8px;border-radius:8px;overflow:auto;max-height:220px">' + code + '</pre>';
+    }
+    if (window.Dialogo) Dialogo.referencia(m).catch(() => {});
+=======
     if ($('campReabrirLobby')) $('campReabrirLobby').onclick = () => { location.href = 'campanha.html'; };
     if ($('btnMenuModos')) $('btnMenuModos').onclick = () => { location.href = '../index.html'; };
     Terminal.sys('📖 Missão: ' + missao.titulo);
     Terminal.sys('💡 A cada 3 falhas sai uma dica automática.');
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   },
 
   mostrarDica(auto) {
     const missao = this.missaoAtiva;
     if (!missao) return;
+<<<<<<< HEAD
+    const dicas = (missao.dicas || []).map((x) => (x && typeof x === 'object' ? (x.texto || x.hint || '') : String(x || ''))).filter(Boolean);
+=======
     const dicas = missao.dicas || [];
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     if (!dicas.length) { Terminal.sys('Sem dicas nesta missão.'); return; }
     const save = this.ensureSave();
     if (!save.dicasUsadas) save.dicasUsadas = {};
@@ -1665,7 +1775,17 @@ const MissaoPage = {
     const idx = Math.min(n, dicas.length - 1);
     save.dicasUsadas[missao.id] = Math.min(n + 1, dicas.length);
     Campanha.gravarSave(save);
+<<<<<<< HEAD
+    const texto = dicas[idx];
+    Terminal.sys((auto ? '💡 Dica automática (' : '💡 Dica (') + (idx + 1) + '/' + dicas.length + '): ' + texto);
+    const pd = document.getElementById('campPainelDica');
+    if (pd) { pd.hidden = false; pd.textContent = '(' + (idx + 1) + '/' + dicas.length + ') ' + texto; }
+    if (window.Dialogo) {
+      Dialogo.dica(missao, '(' + (idx + 1) + '/' + dicas.length + ') ' + texto).catch(() => {});
+    }
+=======
     Terminal.sys((auto ? '💡 Dica automática (' : '💡 Dica (') + (idx + 1) + '/' + dicas.length + '): ' + dicas[idx]);
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   },
 
   avaliarTentativa(sim, codigo) {
@@ -1686,6 +1806,13 @@ const MissaoPage = {
     const n = this.save.missoes[mid]?.estrelas || 0;
     if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
     if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (this.save.missoes[mid]?.tentativas || 0);
+<<<<<<< HEAD
+    this.atualizarPainelCampanha();
+    const btnRef = document.getElementById('campBtnRef');
+    if (btnRef) btnRef.hidden = (this.save.missoes[mid]?.estrelas || 0) < 3;
+
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     return r;
   },
 
@@ -1694,6 +1821,12 @@ const MissaoPage = {
     if (!box) return;
     box.hidden = false;
     const missao = this.missaoAtiva;
+<<<<<<< HEAD
+    if (window.Dialogo && missao) {
+      (r.ok ? Dialogo.sucesso(missao) : Dialogo.fracasso(missao)).catch(() => {});
+    }
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     const falas = r.ok ? (missao.narrativa?.sucesso || []) : (missao.narrativa?.fracasso || []);
     const fala = falas.map((d) => '<p><strong>' + d.personagem + ':</strong> ' + d.texto + '</p>').join('');
     const n = Math.min(5, r.estrelas || 0);

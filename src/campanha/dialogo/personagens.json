@@ -1,0 +1,23 @@
+{
+  "instrutor": {
+    "id": "instrutor",
+    "nome": "Instrutor",
+    "emoji": "🐊",
+    "cor": "#3ecf8e",
+    "titulo": "Mentor jacarEV3"
+  },
+  "assistente": {
+    "id": "assistente",
+    "nome": "Luz",
+    "emoji": "💡",
+    "cor": "#e3b341",
+    "titulo": "Dicas"
+  },
+  "arbitro": {
+    "id": "arbitro",
+    "nome": "Árbitro",
+    "emoji": "🏁",
+    "cor": "#58a6ff",
+    "titulo": "Avaliação"
+  }
+}

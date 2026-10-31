@@ -20,5 +20,12 @@ export function aplicarEstado(rig, est) {
   rig.feixe.matMancha.color.setRGB(0.08 + 0.87 * k, 0.08 + 0.87 * k, 0.08 + 0.87 * k);   // cor da superfície lida
   rig.feixe.matCone.color.setRGB(1, 0.16 + 0.2 * k, 0.1 + 0.15 * k);
   rig.feixe.matCone.opacity = 0.22 + 0.4 * k;
+  if (rig.garra && rig.garra.esq) {
+    const f = Math.max(0, Math.min(1, Math.abs(Number(est.encA) || 0) / 85));
+    const ang = 0.55 - f * 0.47;
+    rig.garra.esq.rotation.y = -ang;
+    rig.garra.dir.rotation.y = ang;
+  }
   if (rig.animar) rig.animar(est);
 }
+
