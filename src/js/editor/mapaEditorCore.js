@@ -14,7 +14,7 @@
   });
   function criarDocumento(w=260,h=180) {
     return { formato:'jacarev3-mapa', versao:2, nome:'Meu circuito', w, h, pxPorCm:5,
-      basePNG:'', tracos:[], caixas:[], rampas:[], decoracoes3d:[], areas:[], salas:[],
+      basePNG:'', sobreposicaoPNG:'', legadoRaster:false, borrachasBase:[], sinalUrbano:null, tracos:[], caixas:[], rampas:[], decoracoes3d:[], areas:[], salas:[],
       perfil:'livre', nivel:1, inicio:{ x:28, y:h-25, th:-Math.PI/2 } };
   }
   function migrar(data) {
@@ -23,6 +23,7 @@
     const d = copy(data);
     d.versao=2;
     d.areas ||= []; d.salas ||= [];
+    d.sobreposicaoPNG ||= ''; d.legadoRaster ||= false; d.borrachasBase ||= []; d.sinalUrbano ||= null;
     d.salas = d.salas.map(normalizarSala);
     d.perfil ||= 'livre'; d.nivel ||= 1;
     d.caixas ||= []; d.rampas ||= []; d.decoracoes3d ||= []; d.tracos ||= [];
@@ -88,9 +89,25 @@
   function validar(d) {
     if (!d || d.formato!=='jacarev3-mapa' || d.versao!==2) throw Error('Formato inválido');
     if (typeof d.nome!=='string'||!d.nome.trim()||d.nome.length>70) throw Error('Nome inválido');
-    num(d.w,40,360,'largura');num(d.h,40,240,'altura');num(d.pxPorCm,2,6,'resolução');
+    num(d.w,40,480,'largura');num(d.h,40,600,'altura');num(d.pxPorCm,2,6,'resolução');
     if(d.w*d.h*d.pxPorCm**2>3000000)throw Error('Resolução do mapa muito grande');
     if (typeof d.basePNG!=='string'||(d.basePNG!==''&&(!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(d.basePNG)||d.basePNG.length>3000000))) throw Error('Imagem base inválida');
+    if(typeof d.sobreposicaoPNG!=='string'||(d.sobreposicaoPNG!==''&&(!/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(d.sobreposicaoPNG)||d.sobreposicaoPNG.length>3000000))) throw Error('Sobreposição inválida');
+    if(typeof d.legadoRaster!=='boolean'||!Array.isArray(d.borrachasBase)||d.borrachasBase.length>1000) throw Error('Restaurações da linha inválidas');
+    for(const b of d.borrachasBase) {num(b.espessura,.5,20,'espessura da borracha');pontos(d,b.pontos);}
+    if(d.sinalUrbano!==null) {
+      if(!d.sinalUrbano || !Array.isArray(d.sinalUrbano.semaforos) || d.sinalUrbano.semaforos.length>12) throw Error('Semáforos inválidos');
+      for(const b of d.sinalUrbano.semaforos){
+        num(b.x,0,d.w,'sinal x');num(b.y,0,d.h,'sinal y');num(b.w,.1,d.w,'sinal largura');num(b.h,.1,d.h,'sinal altura');
+        if(b.x+b.w>d.w||b.y+b.h>d.h)throw Error('Sinal fora do mapa');
+      }
+      if(!Array.isArray(d.sinalUrbano.ciclo)||d.sinalUrbano.ciclo.length<1||d.sinalUrbano.ciclo.length>12)
+        throw Error('Ciclo do semáforo inválido');
+      for(const fase of d.sinalUrbano.ciclo){
+        if(!['VERMELHO','AMARELO','VERDE'].includes(fase.estado))throw Error('Estado do semáforo inválido');
+        num(fase.duracao,.1,300,'duração do semáforo');
+      }
+    }
     if (!['livre','regional','nacional'].includes(d.perfil)||![1,2].includes(d.nivel))throw Error('Perfil inválido');
     if(!Array.isArray(d.tracos)||d.tracos.length>1500)throw Error('Traços inválidos');
     for(const t of d.tracos) {
@@ -104,7 +121,23 @@
     if (!Array.isArray(d.caixas)||d.caixas.length>200)throw Error('Obstáculos inválidos');
     for(const b of d.caixas) { num(b.x,0,d.w,'caixa x');num(b.y,0,d.h,'caixa y');num(b.w,.1,d.w,'caixa largura');num(b.h,.1,d.h,'caixa profundidade');if(b.x+b.w>d.w+.01||b.y+b.h>d.h+.01)throw Error('Obstáculo fora do mapa');if(b.altura!==undefined)num(b.altura,.1,60,'caixa altura'); }
     if(!Array.isArray(d.rampas)||d.rampas.length>30)throw Error('Rampas inválidas');
-    for(const r of d.rampas) {num(r.x,0,d.w,'rampa x');num(r.y,0,d.h,'rampa y');num(r.w,1,d.w,'rampa w');num(r.h,1,d.h,'rampa h');num(r.altura,.1,40,'rampa altura');num(r.subida,1,r.w,'rampa subida');if(!['+x','-x'].includes(r.dir))throw Error('Direção da rampa inválida');}
+    for (const r of d.rampas) {
+      num(r.x,0,d.w,'rampa x');
+      num(r.y,0,d.h,'rampa y');
+      num(r.w,1,d.w,'rampa largura');
+      num(r.h,1,d.h,'rampa comprimento');
+      num(r.altura,.1,40,'rampa altura');
+      if (!['+x','-x','+y','-y'].includes(r.dir)) {
+        throw Error('Direção da rampa inválida');
+      }
+      // A subida acontece ao longo do eixo indicado, não necessariamente em X.
+      // Ex.: uma rampa 24 x 52 cm orientada em +Y pode ter subida de 30 cm.
+      const eixo = r.dir.endsWith('x') ? r.w : r.h;
+      num(r.subida,1,eixo,'rampa subida');
+      if (r.x+r.w>d.w+0.01 || r.y+r.h>d.h+0.01) {
+        throw Error('Rampa fora do mapa');
+      }
+    }
     if(!Array.isArray(d.decoracoes3d)||d.decoracoes3d.length>120)throw Error('Objetos inválidos');
     for(const o of d.decoracoes3d){if(o.tipo!=='esfera')throw Error('Tipo de objeto inválido');num(o.x,0,d.w,'esfera x');num(o.y,0,d.h,'esfera y');num(o.raio,.1,10,'raio');}
     if(!Array.isArray(d.areas)||d.areas.length>120)throw Error('Áreas inválidas');

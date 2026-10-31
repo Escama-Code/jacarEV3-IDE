@@ -12,9 +12,10 @@
   const TOOLS = new Set(['caneta','borracha','reta','curva','circulo','retangulo','parede','caixa','rampa','esfera','verde','vermelho','sala','editarSala','mover','excluir','inicio']);
   const LINE_TOOLS = new Set(['caneta','reta','curva','circulo','retangulo']);
   const DRAG_TOOLS = new Set(['caneta','borracha','reta','circulo','retangulo','parede','caixa','rampa']);
-  let doc, baseImage=null, preview=null, stagedCurve=null, pointer=null, historico=[], futuro=[];
+  let doc, baseImage=null, overlayImage=null, preview=null, stagedCurve=null, pointer=null, historico=[], futuro=[];
   let ferramenta='caneta', ativo=false, ocupado=false, moving=null;
   let selectedRoom=null, draftRotation=0;
+  let repairedCache={key:null,image:null,canvas:null};
   const deep=M.copy;
   const CANVAS=()=> $('mapEditorCanvas');
   const aviso = (msg,erro=false)=>{const n=$('mapEditorAviso');n.textContent=msg;n.style.color=erro?'#ff9e9e':'';};
@@ -40,7 +41,7 @@
     if(!$('mapEditorSnap').checked)return p;
     return M.snapPonto(p,doc.tracos,Number($('mapEditorSnapDist').value)||3);
   }
-  function estado(){return deep({tracos:doc.tracos,caixas:doc.caixas,rampas:doc.rampas,decoracoes3d:doc.decoracoes3d,areas:doc.areas,salas:doc.salas,inicio:doc.inicio});}
+  function estado(){return deep({borrachasBase:doc.borrachasBase,tracos:doc.tracos,caixas:doc.caixas,rampas:doc.rampas,decoracoes3d:doc.decoracoes3d,areas:doc.areas,salas:doc.salas,inicio:doc.inicio});}
   function gravar(){historico.push(estado());if(historico.length>70)historico.shift();futuro=[];}
   function desfazer(de,para){
     if(!de.length)return;
@@ -50,9 +51,9 @@
     if(selectedRoom!==null)preencherControlesSala(doc.salas[selectedRoom]);
     renderizar();
   }
-  async function carregarImagem(d){
-    if(!d.basePNG)return null;
-    const img=new Image();img.decoding='async';img.src=d.basePNG;
+  async function carregarImagem(src){
+    if(!src)return null;
+    const img=new Image();img.decoding='async';img.src=src;
     try{
       if(img.decode)await img.decode();
       else await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;});
@@ -60,19 +61,94 @@
     return img;
   }
   function pincel(){return Number($('mapEditorBrush').value);}
-  function pintarBase(ctx,d,img,tracos=d.tracos){
+
+  // Em mapas legados sem trilha vetorial: restaura APENAS pixels muito escuros
+  // tocados pela borracha, usando a cor circundante do mapa original.
+  // As faixas brancas, áreas coloridas e outros pixels claros NÃO são alterados.
+  function fundoRestaurado(d,img) {
+    if(!img || !d.legadoRaster || !d.borrachasBase?.length) return img;
+    const key=JSON.stringify(d.borrachasBase);
+    if(repairedCache.image===img&&repairedCache.key===key)return repairedCache.canvas;
+    const w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;
+    const fonte=novoCanvas(w,h),fc=fonte.getContext('2d',{willReadFrequently:true});
+    fc.drawImage(img,0,0,w,h);
+    const original=fc.getImageData(0,0,w,h),result=new ImageData(new Uint8ClampedArray(original.data),w,h);
+    const mascara=novoCanvas(w,h),mc=mascara.getContext('2d',{willReadFrequently:true});
+    mc.setTransform(w/d.w,0,0,h/d.h,0,0);
+    for(const stroke of d.borrachasBase) M.tracar(mc,{...stroke,tipo:'caneta'});
+    const mask=mc.getImageData(0,0,w,h).data,src=original.data,out=result.data;
+    const k=w/d.w, radius=Math.max(3,Math.ceil(k*1.4)),maxRadius=Math.max(radius+3,Math.ceil(k*5));
+    const dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]];
+    for(let i=0;i<w*h;i++){
+      const q=i*4;
+      if(mask[q+3]===0)continue;
+      const r=src[q],g=src[q+1],b=src[q+2];
+      if(r>58||g>58||b>58)continue; // Nunca remover branco, faixas ou pintura.
+      const x=i%w,y=Math.floor(i/w),candidatos=[];
+      for(const [dx,dy] of dirs){
+        for(let step=radius;step<=maxRadius;step+=2){
+          const xx=x+dx*step,yy=y+dy*step;
+          if(xx<0||xx>=w||yy<0||yy>=h)break;
+          const j=(yy*w+xx)*4;
+          if(src[j]>75||src[j+1]>75||src[j+2]>75){
+            candidatos.push([src[j],src[j+1],src[j+2]]);break;
+          }
+        }
+      }
+      if(!candidatos.length)continue;
+      // A cor predominante entre os vizinhos mantém o asfalto/grama
+      // mesmo perto de faixas de pedestres.
+      const grupos=new Map();
+      for(const c of candidatos){
+        const key=c.map(v=>Math.round(v/24)).join(',');
+        const group=grupos.get(key)||{n:0,rs:0,gs:0,bs:0};
+        group.n++;group.rs+=c[0];group.gs+=c[1];group.bs+=c[2];grupos.set(key,group);
+      }
+      const top=[...grupos.values()].sort((a,b)=>b.n-a.n)[0];
+      out[q]=Math.round(top.rs/top.n);out[q+1]=Math.round(top.gs/top.n);out[q+2]=Math.round(top.bs/top.n);
+    }
+    const canvas=novoCanvas(w,h);canvas.getContext('2d').putImageData(result,0,0);
+    repairedCache={key,image:img,canvas};
+    return canvas;
+  }
+
+  function pintarSinalUrbano(ctx,d,estado='VERMELHO') {
+    if(!d.sinalUrbano)return;
+    const cor={VERMELHO:'#ef4444',VERDE:'#22c55e',AMARELO:'#facc15'}[estado]||'#ef4444';
+    ctx.save();ctx.fillStyle=cor;
+    for(const b of d.sinalUrbano.semaforos)ctx.fillRect(b.x,b.y,b.w,b.h);
+    ctx.restore();
+  }
+
+  function pintarBase(ctx,d,img,tracos=d.tracos,overlay=overlayImage,estado='VERMELHO'){
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,d.w,d.h);
-    if(img)ctx.drawImage(img,0,0,d.w,d.h);
+    if(img)ctx.drawImage(fundoRestaurado(d,img),0,0,d.w,d.h);
     const dasSalas=M.elementosDasSalas(d.salas);
     M.pintarAreas(ctx,[...d.areas,...dasSalas.areas]);
-    // Offscreen separado: a borracha usa destination-out somente nessa camada.
+    // Camada independente: borracha nunca remove as faixas do mapa original.
     M.pintarTracosSeparados(ctx,d,tracos,novoCanvas);
+    if(overlay)ctx.drawImage(overlay,0,0,d.w,d.h);
+    pintarSinalUrbano(ctx,d,estado);
   }
   function pintarObjetos(ctx,d){
     const retangulo=(x,y,w,h,cor)=>{ctx.fillStyle=cor;ctx.fillRect(x,y,w,h);ctx.strokeStyle='#27333d';ctx.lineWidth=.35;ctx.strokeRect(x,y,w,h);};
-    for(const r of d.rampas){ctx.save();retangulo(r.x,r.y,r.w,r.h,'rgba(132,153,169,.3)');ctx.strokeStyle='#8699a7';ctx.setLineDash([2,2]);
-      for(let i=3;i<r.w;i+=5){ctx.beginPath();ctx.moveTo(r.x+i,r.y);ctx.lineTo(r.x+i,r.y+r.h);ctx.stroke();}
-      ctx.restore();}
+    for(const r of d.rampas){
+      ctx.save();
+      retangulo(r.x,r.y,r.w,r.h,'rgba(132,153,169,.3)');
+      ctx.strokeStyle='#8699a7';
+      ctx.setLineDash([2,2]);
+      // Marcas transversais à direção da subida, inclusive nas rampas +Y/-Y.
+      if ((r.dir||'+x').endsWith('y')) {
+        for(let i=3;i<r.h;i+=5){
+          ctx.beginPath();ctx.moveTo(r.x,r.y+i);ctx.lineTo(r.x+r.w,r.y+i);ctx.stroke();
+        }
+      } else {
+        for(let i=3;i<r.w;i+=5){
+          ctx.beginPath();ctx.moveTo(r.x+i,r.y);ctx.lineTo(r.x+i,r.y+r.h);ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
     for(const b of [...d.caixas,...M.caixasDasSalas(d.salas)])retangulo(b.x,b.y,b.w,b.h,b.tipoEditor==='parede'||b.nome==='Parede da sala'?'#9da9ae':b.cor||'#aa906a');
     const esferas=[...d.decoracoes3d,...M.elementosDasSalas(d.salas).objetos];
     for(const o of esferas){ctx.beginPath();ctx.arc(o.x,o.y,o.raio,0,Math.PI*2);ctx.fillStyle=o.cor||'#d1d5d8';ctx.fill();ctx.strokeStyle='#3a454f';ctx.lineWidth=.25;ctx.stroke();}
@@ -82,6 +158,15 @@
     ctx.lineWidth=.7;ctx.beginPath();ctx.moveTo(5,0);ctx.lineTo(-4,-3.5);ctx.lineTo(-4,3.5);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
   }
   function pintarPreview(ctx){
+    if(preview?.traco?.tipo==='borracha' && doc?.legadoRaster) {
+      // Indica a área de recuperação do fundo enquanto a borracha é arrastada.
+      ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+      ctx.strokeStyle='rgba(234,139,20,.65)';
+      ctx.lineWidth=preview.traco.espessura;ctx.beginPath();
+      const ps=preview.traco.pontos;
+      ctx.moveTo(...ps[0]);for(const q of ps.slice(1))ctx.lineTo(...q);
+      ctx.stroke();ctx.restore();
+    }
     if(preview){
       if(preview.traco&&!['caneta','borracha'].includes(preview.traco.tipo)){M.tracar(ctx,preview.traco);}
       if(preview.caixa) {const b=preview.caixa;ctx.save();ctx.fillStyle='rgba(67,161,211,.35)';ctx.fillRect(b.x,b.y,b.w,b.h);ctx.restore();}
@@ -331,7 +416,11 @@
       if(t.tipo==='caneta')t.pontos[t.pontos.length-1]=pontas(t.pontos[t.pontos.length-1]);
     } else t.pontos=[preview.start,LINE_TOOLS.has(ferramenta)?pontas(last):last];
     gravar();
-    if(LINE_TOOLS.has(ferramenta)||ferramenta==='borracha')doc.tracos.push(t);
+    if(LINE_TOOLS.has(ferramenta)||ferramenta==='borracha'){
+      doc.tracos.push(t);
+      if(ferramenta==='borracha'&&doc.legadoRaster)
+        doc.borrachasBase.push({espessura:t.espessura,pontos:deep(t.pontos)});
+    }
     else if(ferramenta==='parede'||ferramenta==='caixa'){
       const b=retanguloPontos(preview.start,last);
       if(ferramenta==='parede'){
@@ -398,15 +487,19 @@
     renderizar();
   }
   async function mostrarDocumento(input){
-    const d=M.migrar(input),img=await carregarImagem(d);
-    doc=d;baseImage=img;preview=null;stagedCurve=null;pointer=null;historico=[];futuro=[];
+    const d=M.migrar(input);
+    const [img,overlay]=await Promise.all([carregarImagem(d.basePNG),carregarImagem(d.sobreposicaoPNG)]);
+    doc=d;baseImage=img;overlayImage=overlay;repairedCache={key:null,image:null,canvas:null};
+    preview=null;stagedCurve=null;pointer=null;historico=[];futuro=[];
     selectedRoom=null;draftRotation=0;
     preencherControlesSala({x:0,y:0,w:90,h:90,entrada:27});
     $('mapEditorNome').value=d.nome;$('mapEditorPerfil').value=d.perfil;$('mapEditorNivel').value=String(d.nivel);
     const degrees=Math.round(d.inicio.th*180/Math.PI);
     $('mapEditorHeading').value=['-90','0','90','180'].includes(String(degrees))?String(degrees):'-90';
     renderizar();
-    aviso(d.basePNG?'Mapa copiado: o fundo original é uma imagem fixa. Borracha remove somente linhas criadas no editor.':'Mapa editável aberto. Caneta e objetos ficam em camadas independentes.');
+    aviso(d.legadoRaster
+      ? 'Mapa antigo: borracha restaura apenas pixels pretos próximos do traço. Faixas brancas permanecem protegidas.'
+      : 'Mapa editável: a borracha remove a trilha, preservando chão, faixas de pedestres e objetos.');
   }
   function atual(){
     if(!doc)throw Error('Nenhum mapa aberto');
@@ -418,12 +511,40 @@
     if(!cen)throw Error('Nenhum cenário selecionado.');
     if(cen.editorDocumento)return deep(cen.editorDocumento);
     if(cen.tilesOriginais)throw Error('Use um cenário nativo ou comece em branco.');
-    const base=Cenarios.obterTapete(id).canvas;
-    const c=novoCanvas(base.width,base.height);
-    c.getContext('2d').drawImage(base,0,0);
     const d=M.criarDocumento(cen.w,cen.h);
-    d.nome=cen.nome+' (editado)';d.basePNG=c.toDataURL('image/png');
-    d.caixas=deep(cen.caixas||[]);d.rampas=deep(cen.rampas||[]);d.decoracoes3d=deep(cen.decoracoes3d||[]);
+    // Cenários antigos podem usar 8–10 px/cm, acima do limite do .jmap.
+    // Reamostramos somente a cópia, sem alterar a simulação original.
+    d.pxPorCm=Math.max(2,Math.min(6,cen.pxPorCm||3,
+      Math.floor(Math.sqrt(3000000/(cen.w*cen.h))*100)/100));
+    d.nome=cen.nome+' (editado)';
+    const k=d.pxPorCm;
+    const base=novoCanvas(Math.round(cen.w*k),Math.round(cen.h*k));
+    const ctx=base.getContext('2d');
+    ctx.save();ctx.scale(k,k);
+    if(Array.isArray(cen.linhasEditor) && cen.linhasEditor.length){
+      // Linha nativa separada do asfalto, para que possa ser apagada.
+      cen.desenhar(ctx,cen,{
+        omitirLinha:true,omitirFaixas:true,omitirSemaforos:true,omitirCaixas:true
+      });
+      d.tracos=deep(cen.linhasEditor);
+      if(typeof cen.pintarFaixasPedestres==='function'){
+        const sobreposicao=novoCanvas(base.width,base.height),g=sobreposicao.getContext('2d');
+        g.save();g.scale(k,k);cen.pintarFaixasPedestres(g);g.restore();
+        d.sobreposicaoPNG=sobreposicao.toDataURL('image/png');
+      }
+      if(cen.semaforos && cen.cicloSemaforo){
+        d.sinalUrbano={semaforos:deep(cen.semaforos),ciclo:deep(cen.cicloSemaforo)};
+      }
+    }else{
+      // Para outras pistas antigas, restauração de traços pretos por cor.
+      cen.desenhar(ctx,cen);
+      d.legadoRaster=true;
+    }
+    ctx.restore();
+    d.basePNG=base.toDataURL('image/png');
+    d.caixas=deep(cen.caixas||[]);
+    d.rampas=deep(cen.rampas||[]);
+    d.decoracoes3d=deep(cen.decoracoes3d||[]);
     const ini=Cenarios.inicioDe(cen,cen.inicioPadrao);
     d.inicio={x:ini.x,y:ini.y,th:ini.th};
     return d;
@@ -435,13 +556,30 @@
       let i=2;while(Cenarios.lista[`${idBase}-${i}`])i++;id=`${idBase}-${i}`;
     }
     const snapshot=deep({...d,id}),gerados=M.elementosDasSalas(d.salas);
+    const overlay=overlayImage;
     const cen={id,nome:d.nome,w:d.w,h:d.h,pxPorCm:d.pxPorCm,inicioPadrao:'padrao',
       inicios:{padrao:{rotulo:'Início do editor',...d.inicio}},linhaAltaContraste:true,
       caixas:[...deep(d.caixas),...M.caixasDasSalas(d.salas)],
       rampas:deep(d.rampas),decoracoes3d:[...deep(d.decoracoes3d),...gerados.objetos],
       editorDocumento:snapshot,
-      desenhar(ctx){pintarBase(ctx,snapshot,img);}
+      desenhar(ctx) {
+        pintarBase(ctx,snapshot,img,snapshot.tracos,overlay,this.semaforoEstado||'VERMELHO');
+      }
     };
+    if(snapshot.sinalUrbano) {
+      cen.semaforos=deep(snapshot.sinalUrbano.semaforos);
+      cen.cicloSemaforo=deep(snapshot.sinalUrbano.ciclo);
+      cen.semaforoEstado='VERMELHO';
+      cen.estadoSemaforoEm=function(t=0) {
+        const total=this.cicloSemaforo.reduce((sum,f)=>sum+f.duracao,0);
+        let restante=((t%total)+total)%total;
+        for(const fase of this.cicloSemaforo) {
+          if(restante<fase.duracao)return fase.estado;
+          restante-=fase.duracao;
+        }
+        return 'VERMELHO';
+      };
+    }
     Cenarios.registrarCenario(cen);
     let opt=Array.from($('cenario').options).find(o=>o.value===id);
     if(!opt){opt=new Option(cen.nome,id);$('cenario').add(opt);}else opt.textContent=cen.nome;

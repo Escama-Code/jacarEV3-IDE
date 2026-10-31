@@ -396,7 +396,22 @@ const tapeteUrbanoInfantil = {
     return 'VERMELHO';
   },
 
-  desenhar(ctx, self) {
+  // O editor pode retirar SOMENTE o traçado preto, sem alterar as faixas.
+  linhasEditor: [
+    { tipo: 'caneta', espessura: 2, pontos: [[30,330],[210,330],[210,120],[130,120],[130,40],[40,40],[40,220]] },
+    { tipo: 'circulo', espessura: 2, pontos: [[35,220],[95,280]] },
+    { tipo: 'reta', espessura: 2, pontos: [[65,280],[65,330]] }
+  ],
+  pintarFaixasPedestres(ctx) {
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    for (let x=145; x<=165; x+=5) ctx.fillRect(x,321,2.5,18);
+    for (let x=50; x<=70; x+=5) ctx.fillRect(x,31,2.5,18);
+    for (let y=110; y<=130; y+=5) ctx.fillRect(31,y,18,2.5);
+    ctx.restore();
+  },
+
+  desenhar(ctx, self, opcoes = {}) {
     // 1. Fundo do Tapete (Grama Verde Claro)
     ctx.fillStyle = '#87a922';
     ctx.fillRect(0, 0, self.w, self.h);
@@ -439,44 +454,32 @@ const tapeteUrbanoInfantil = {
     ctx.lineTo(65, 330);
     ctx.stroke();
 
-    // 3. LINHAS PRETAS GUIA PARA O SEGUIDOR DE LINHA
-    ctx.strokeStyle = '#000000'; 
-    ctx.lineWidth = 2; 
+    // 3. Traçado preto. Pode ser omitido pelo editor para virar linha editável.
+    // Removemos as antigas linhas brancas finas, que eram pintadas sobre o preto.
+    if (!opcoes.omitirLinha) {
+      ctx.save();
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(30, 330); ctx.lineTo(210, 330);
+      ctx.lineTo(210, 120); ctx.lineTo(130, 120);
+      ctx.lineTo(130, 40); ctx.lineTo(40, 40); ctx.lineTo(40, 220);
+      ctx.stroke();
 
-    // Linha Guia Principal Integrada
-    ctx.beginPath();
-    ctx.moveTo(30, 330); ctx.lineTo(210, 330);
-    ctx.lineTo(210, 120); ctx.lineTo(130, 120);
-    ctx.lineTo(130, 40);  ctx.lineTo(40, 40);
-    ctx.lineTo(40, 220);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(65, 250, 30, 0, 2 * Math.PI);
+      ctx.stroke();
 
-    // Linha Guia Continua da Rotatória
-    ctx.beginPath();
-    ctx.arc(65, 250, 30, 0, 2 * Math.PI);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(65, 280); ctx.lineTo(65, 330);
+      ctx.stroke();
+      ctx.restore();
+    }
 
-    // Linha Guia de Interligação Inferior
-    ctx.beginPath();
-    ctx.moveTo(65, 280);
-    ctx.lineTo(65, 330);
-    ctx.stroke();
-
-    // 4. SINALIZAÇÃO HORIZONTAL (Efeito Visual)
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 0.6;
-    ctx.setLineDash([]); 
-    ctx.beginPath();
-    ctx.moveTo(35, 330); ctx.lineTo(205, 330);
-    ctx.moveTo(210, 325); ctx.lineTo(210, 125);
-    ctx.moveTo(45, 40);   ctx.lineTo(125, 40);
-    ctx.stroke();
-
-    // Faixas de Pedestres
-    ctx.fillStyle = '#ffffff';
-    for (let x = 145; x <= 165; x += 5) ctx.fillRect(x, 321, 2.5, 18); // Hospital
-    for (let x = 50; x <= 70; x += 5) ctx.fillRect(x, 31, 2.5, 18);   // Escola
-    for (let y = 110; y <= 130; y += 5) ctx.fillRect(31, y, 18, 2.5);  // Bosque
+    // 4. Faixas reais: nunca são apagadas pelo editor de linhas.
+    if (!opcoes.omitirFaixas) self.pintarFaixasPedestres(ctx);
 
     // A faixa semafórica é parte do piso, não um obstáculo.
     // Cores reconhecidas pelo sensor EV3: vermelho=5, verde=3, amarelo=4.
@@ -485,13 +488,15 @@ const tapeteUrbanoInfantil = {
     const coresSemaforo = {
       VERMELHO: '#ef4444', VERDE: '#22c55e', AMARELO: '#facc15'
     };
-    ctx.save();
-    ctx.fillStyle = coresSemaforo[self.semaforoEstado] || coresSemaforo.VERMELHO;
-    for (const { x, y, w, h } of self.semaforos) ctx.fillRect(x, y, w, h);
-    ctx.restore();
+    if (!opcoes.omitirSemaforos) {
+      ctx.save();
+      ctx.fillStyle = coresSemaforo[self.semaforoEstado] || coresSemaforo.VERMELHO;
+      for (const { x, y, w, h } of self.semaforos) ctx.fillRect(x, y, w, h);
+      ctx.restore();
+    }
 
-    // 5. RENDERIZAÇÃO DAS CAIXAS 3D (Prédios fora do caminho)
-    for (const caixa of self.caixas) {
+    // 5. Objetos urbanos (omitidos na camada-base do editor).
+    if (!opcoes.omitirCaixas) for (const caixa of self.caixas) {
       ctx.fillStyle = caixa.cor || '#475569';
       ctx.fillRect(caixa.x, caixa.y, caixa.w, caixa.h);
     }
@@ -511,14 +516,14 @@ tapeteUrbanoInfantil.caixas.push(
   { nome: 'Prédio do Hospital', x: 105, y: 275, w: 30, h: 35, altura: 20, cor: '#f8fafc', modelo: 'parede' },
   { nome: 'Detalhe Cruz do Hospital', x: 118, y: 273, w: 4, h: 4, altura: 22, cor: '#ef4444', modelo: 'torre' },
   
-  { nome: 'Estação de Bombeiros', x: 10, y: 10, w: 18, h: 18, altura: 18, cor: '#dc2626', modelo: 'parede' },
+  { nome: 'Estação de Bombeiros', x: 4, y: 5, w: 16, h: 16, altura: 18, cor: '#dc2626', modelo: 'parede' },
   { nome: 'Escola Municipal', x: 70, y: 118, w: 30, h: 22, altura: 16, cor: '#a855f7', modelo: 'parede' },
 
   // Veículos Decorativos nos acostamentos
   { nome: 'Carrinho de Polícia Retido', x: 222, y: 200, w: 8, h: 14, altura: 6, cor: '#172554', modelo: 'conteiner' },
   { nome: 'Sorveteiro Móvel Comercial', x: 12, y: 210, w: 12, h: 8, altura: 9, cor: '#f472b6', modelo: 'conteiner' },
   { nome: 'Ônibus Escolar Estacionado', x: 145, y: 75, w: 8, h: 18, altura: 8, cor: '#eab308', modelo: 'conteiner' },
-  { nome: 'Carro Vermelho Estacionado', x: 145, y: 312, w: 7, h: 12, altura: 5, cor: '#b91c1c', modelo: 'conteiner' },
+  { nome: 'Carro Vermelho Estacionado', x: 154, y: 296, w: 7, h: 12, altura: 5, cor: '#b91c1c', modelo: 'conteiner' },
 
   // Árvores estáticas
   { nome: 'Pinheiro_1_Tronco', x: 20, y: 220, w: 1, h: 1, altura: 6, cor: '#78350f', modelo: 'poste' },

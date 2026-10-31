@@ -135,6 +135,45 @@
   color:white;border:1px solid #607189;border-radius:6px;padding:6px;}
 .map-editor-room-options .map-editor-tools {margin:2px 0;}
 #mapEditorRoomSecondOptions[hidden]{display:none;}
+
+
+/* Ajustes do Sandbox: o Canvas 2D preserva a proporção do mapa.
+   A câmera 3D continua ocupando o palco inteiro e acompanha o ResizeObserver. */
+body.modo-sandbox #palco,
+body.modo-campanha #palco {
+  height: clamp(340px, 32vw, 460px);
+  min-height: 0;
+  max-height: none;
+  background: #cfd8e2;
+}
+body.modo-sandbox #palco > #cv,
+body.modo-campanha #palco > #cv {
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+body.modo-sandbox .painel-arena #cenario,
+body.modo-campanha .painel-arena #cenario {
+  flex: 1 1 220px;
+  min-width: 170px;
+  max-width: 100%;
+}
+.arena-posicao #inicio { flex: 0 1 275px; min-width: 180px; max-width: 100%; }
+.arena-posicao #opts3d { flex: 1 1 300px; }
+@media (max-width: 1100px) {
+  body.modo-sandbox #palco,
+  body.modo-campanha #palco { height: clamp(300px, 60vw, 460px); }
+}
+  /* Seleção compacta dos programas por categoria. */
+  .biblioteca-filtro {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; min-width: 0;
+  }
+  .biblioteca-filtro select { min-width: 100px; max-width: 100%; }
+  .biblioteca-programa { flex: 1 1 230px; }
+  .biblioteca-programa select { flex: 1; width: 100%; }
+  body.modo-campanha .biblioteca-filtro,
+  body.modo-campanha #descricaoExemplo { display: none !important; }
 </style>
 </head>
 <body>
@@ -229,9 +268,15 @@
 <section class="painel painel-codigo">
     <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
     <div class="linha" style="margin-top:0">
-      <select id="exemplo"></select>
-      <label>limite <input id="limite" type="number" value="300" min="1" max="300" step="1" title="Máximo 300 s"> s simulados <span class="info" style="margin:0">(máx. 300s)</span></label>
+      <label class="biblioteca-filtro">Categoria
+        <select id="categoriaExemplo" aria-label="Categoria de exemplos" disabled></select>
+      </label>
+      <label class="biblioteca-filtro biblioteca-programa">Programa
+        <select id="exemplo" aria-label="Programa de exemplo" disabled></select>
+      </label>
+      <label title="Esse valor é o máximo permitido, não o tempo obrigatório de execução.">limite máximo <input id="limite" type="number" value="300" min="1" max="300" step="1" title="O programa pode terminar antes de 300 s"> s <span class="info" style="margin:0">(o programa pode terminar antes)</span></label>
     </div>
+    <div id="descricaoExemplo" class="info" aria-live="polite" style="margin:3px 0 7px">Carregando biblioteca de exemplos…</div>
     <div id="editor" style="margin-top:8px"></div>
     <div class="linha">
       <button id="btnRodar" class="principal" disabled>▶ Rodar script</button>
@@ -252,6 +297,8 @@
       <button id="btnCarregarArena" type="button" title="Importar arquivo .sArena do sBotics">📂 Importar .sArena</button>
       <button id="btnEditorMapa" type="button" title="Desenhar pistas próprias com caneta e mouse">✏️ Editar mapa</button>
       <input id="inputSArena" type="file" accept=".sArena,.sarena,.json" hidden>
+    </div>
+    <div class="linha arena-posicao" style="margin:0 0 8px">
       <select id="inicio" title="Posição inicial do robô"></select>
       <span id="opts3d" class="linha" style="margin:0" hidden>
         <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option> <option value="arara">Robô: Arara</option> <option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option> <option value="carro">Robô: Carro</option><option value="onibus">Robô: Onibus</option>
@@ -601,6 +648,7 @@ def descrever_api() -> str:
 
 <!-- 1. Carrega os cenários do arquivo JS externo -->
 <script src="../src/js/cenarios.js?v=semaforo-urbano-v3"></script>
+<script src="../src/js/exemplos/biblioteca.js"></script>
 
 <!-- 2. Cria o alias global obrigatorio para o SimEV3 e Playback -->
 <script>
@@ -1095,189 +1143,13 @@ const Ide = (() => {
 // =====================================================================
 // Exemplos
 // =====================================================================
-const EXEMPLOS = {
-  semaforo_urbano: { nome: 'Trânsito — parar no vermelho (Tapete Urbano)', cenario: 'tapeteUrbanoInfantil', inicio: 'rotatoria', codigo:
-`"""Teste educativo do semáforo no Tapete Urbano Ilustrativo.
+// Os programas Python ficam em src/exemplos/*.py e são carregados sob demanda.
+const bibliotecaExemplos = JacarBibliotecaExemplos.criar({
+  categorias: document.getElementById('categoriaExemplo'),
+  exemplos: document.getElementById('exemplo'),
+  descricao: document.getElementById('descricaoExemplo'),
+});
 
-Na IDE:
-- Cenário: Tapete Urbano Ilustrativo
-- Início: Início na Estrada de Baixo (Sul)
-- Sensor de cor: porta 3, modo COR
-- Motores: B (esquerda), C (direita)
-O robô segue reto até a marca colorida, para no vermelho/amarelo
-e atravessa quando o sinal fica verde.
-"""
-import time
-from jacarev3 import RoboEV3, protocolo as p
-
-NOMES = {1: "preto", 3: "verde", 4: "amarelo", 5: "vermelho", 6: "branco"}
-VEL = 20
-
-with RoboEV3("00:16:53:64:F8:B8") as robo:
-    andando = False
-    chegou_ao_sinal = False
-    cor_anterior = None
-
-    for _ in range(220):  # no máximo ~22 segundos simulados de observação
-        cor = int(robo.ler_sensor(3, p.MODO_COR_COR))
-
-        if cor != cor_anterior:
-            print("Sensor de cor:", NOMES.get(cor, str(cor)))
-            cor_anterior = cor
-
-        if cor in (5, 4):  # vermelho ou amarelo: parar
-            chegou_ao_sinal = True
-            if andando:
-                robo.parar_motor("B")
-                robo.parar_motor("C")
-                andando = False
-                print("PARE: aguarde o verde.")
-
-        elif cor == 3:  # verde: avançar
-            chegou_ao_sinal = True
-            if not andando:
-                robo.mover_continuo("B", VEL)
-                robo.mover_continuo("C", VEL)
-                andando = True
-                print("VERDE: pode passar.")
-
-        elif chegou_ao_sinal:  # saiu da faixa colorida
-            print("Travessia concluída.")
-            break
-
-        elif not andando:  # aproximação pela linha preta
-            robo.mover_continuo("B", VEL)
-            robo.mover_continuo("C", VEL)
-            andando = True
-
-        time.sleep(0.10)
-
-    robo.parar_motor("B")
-    robo.parar_motor("C")
-    print("Teste finalizado.")\n` },
-  linha: { nome: 'Seguidor de linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3, protocolo as p
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('VERDE')
-    while True:
-        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
-        if luz < 30:
-            robo.mover_continuo('B', 10)
-            robo.mover_continuo('C', 35)
-        else:
-            robo.mover_continuo('B', 35)
-            robo.mover_continuo('C', 10)
-` },
-  gamepad: { nome: 'Controle / teclado — teleop pelo código', cenario: 'treino', inicio: 'padrao', codigo:
-`"""Teleop pelo código da IDE (Rodar script).
-
-WASD/setas = andar | Espaço = parar | E = apitar | Q/R = LED | Esc = sair
-Gamepad: stick/D-pad | B = parar | A = apitar | X/Y = LED | Start = sair
-
-O await gamepadPonte.teleop(segundos, velocidade) inicia o modo ao vivo.
-"""
-from js import gamepadPonte
-
-print("Teleop 90s pelo código — mexa WASD ou o controle")
-await gamepadPonte.teleop(90, 45)
-print("fim do teleop")
-` },
-  fll_linha: { nome: 'Seguidor de linha — tapete FLL (acha a linha e segue a borda)', cenario: 'fll', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3, protocolo as p
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('VERDE')
-    robo.mover_continuo('B', 25)
-    robo.mover_continuo('C', 25)
-    while robo.ler_sensor(3, p.MODO_COR_REFLETIDA) > 30:
-        pass
-    while True:
-        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
-        if luz < 30:
-            robo.mover_continuo('B', 32)
-            robo.mover_continuo('C', 8)
-        else:
-            robo.mover_continuo('B', 8)
-            robo.mover_continuo('C', 32)
-` },
-  cores: { nome: 'Ler cores (modo COR) — tapete FLL', cenario: 'fll', inicio: 'padrao', codigo:
-`import time
-from jacarev3 import RoboEV3, protocolo as p
-
-NOMES = {0: 'sem cor', 1: 'preto', 2: 'azul', 3: 'verde', 4: 'amarelo', 5: 'vermelho', 6: 'branco', 7: 'marrom'}
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    anterior = None
-    robo.mover_continuo('B', 20)
-    robo.mover_continuo('C', 20)
-    for _ in range(120):
-        cor = int(robo.ler_sensor(3, p.MODO_COR_COR))
-        if cor != anterior:
-            print('cor:', NOMES.get(cor, cor))
-            anterior = cor
-        time.sleep(0.05)
-    robo.parar_motor('B')
-    robo.parar_motor('C')
-` },
-  topico: { nome: 'Pronto da lib: circuito.seguir_linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3
-from jacarev3.topicos import circuito
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    circuito.seguir_linha(robo, porta_sensor=3, limiar=35, velocidade=30, duracao_s=20)
-` },
-  desvio: { nome: 'Desvio clássico (recua, gira, segue) — paredes', cenario: 'desvio', inicio: 'centro', codigo:
-`import time
-from jacarev3 import RoboEV3, protocolo as p
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('VERDE')
-    while True:
-        d = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)
-        if d < 15:
-            robo.apitar(frequencia=880, duracao_ms=150)
-            robo.mover_base(velocidade=-30, direcao=0, duracao_ms=600)
-            time.sleep(0.7)
-            while robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM) < 30:
-                robo.mover_base(velocidade=25, direcao=200, duracao_ms=200)
-                time.sleep(0.25)
-        else:
-            robo.mover_base(velocidade=40, direcao=0, duracao_ms=300)
-            time.sleep(0.1)
-` },
-  rampa: { nome: 'Subir a rampa — tapete FLL (use a vista 3D)', cenario: 'fll', inicio: 'rampa', codigo:
-`import time
-from jacarev3 import RoboEV3
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('AMBAR')
-    robo.mover_base(velocidade=40, direcao=0, duracao_ms=2000)
-    time.sleep(2.2)
-    robo.apitar()
-    print('em cima da rampa!')
-` },
-  basico: { nome: 'Teste dos comandos (bytes de cada método)', cenario: 'treino', inicio: 'padrao', codigo:
-`import time
-from jacarev3 import RoboEV3
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.apitar()
-    robo.led('VERDE')
-    robo.girar_motor('B', velocidade=40, duracao_ms=1000)
-    robo.mover_base(velocidade=30, direcao=0, duracao_ms=500)
-    time.sleep(1)
-    robo.girar_motor_graus('C', 360, 50)
-    print('encoder C =', robo.ler_graus_motor('C'), 'graus')
-    print('luz refletida porta 3 =', robo.ler_sensor(3, 0))
-` },
-  erro: { nome: 'Erro de propósito (veja o Traceback em vermelho)', cenario: 'treino', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('ROXO')
-` },
-};
 
 // =====================================================================
 // Playback
@@ -1963,6 +1835,9 @@ async function rodar() {
     const ms = (performance.now() - t0).toFixed(0);
     $('resumo').textContent = `${(s.t||0).toFixed(1)} s simulados em ${ms} ms · ${(s.pacotes||[]).length} pacotes · ${(s.dist||0).toFixed(0)} cm andados`;
     Terminal.sys(res === 'erro' ? '✖ terminou com erro' : `✔ fim (${res}): ${(s.pacotes||[]).length} pacotes, ${(s.t||0).toFixed(1)} s`);
+    if (res === 'ok' && s.t < limite - 0.05) {
+      Terminal.sys(`ℹ O código terminou normalmente após ${s.t.toFixed(1)} s. O limite de ${limite} s é um teto, não uma duração obrigatória.`);
+    }
     if ((s.frames || []).length > 1) Playback.carregar(s);
     if (window.CampanhaUI && CampanhaUI.missaoAtiva && res !== 'erro') {
       CampanhaUI.avaliarTentativa(s, codigo);
@@ -1970,7 +1845,16 @@ async function rodar() {
   }
 }
 
-function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); Playback.escolher(EXEMPLOS[k].cenario, EXEMPLOS[k].inicio); }
+// O catálogo externo informa código, cenário e posição de largada de cada programa.
+function aplicarExemplo(exemplo, codigo) {
+  if (!App.editor) return;
+  App.editor.setValue(codigo);
+  if (CENARIOS[exemplo.cenario]) {
+    Playback.escolher(exemplo.cenario, exemplo.inicio);
+  } else {
+    Terminal.err('Cenário não encontrado para este exemplo: ' + exemplo.cenario);
+  }
+}
 
 // =====================================================================
 // CampanhaUI
@@ -2316,8 +2200,6 @@ const CampanhaUI = {
 window.CampanhaUI = CampanhaUI;
 
 async function iniciar() {
-  for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
-  $('exemplo').value = 'linha'; // mantém a mesma seleção inicial do Sandbox
   $('btnLimpar').onclick = () => Terminal.limpar();
   $('btnRodar').onclick = rodar;
   const btnT = $('btnTeleop');
@@ -2348,13 +2230,33 @@ async function iniciar() {
   if (window.Vista3D) Playback.habilitar3D();
   setTimeout(() => { if (!window.Vista3D) { $('btn3d').title = 'Three.js não carregou (CDN bloqueado?)'; $('btn3d').textContent = '3D ✕'; } }, 20000);
   const _modoUrl = new URLSearchParams(location.search).get('modo');
+  // Carrega a biblioteca em paralelo à inicialização do Python.
+  const preparoPython = iniciarPython().catch((e) => {
+    status('falhou: ' + e.message, 'erro');
+    Terminal.err(String(e));
+  });
+  let codigoInicial = '# Selecione um programa na biblioteca de exemplos.\n';
+  try {
+    const inicial = await bibliotecaExemplos.iniciar();
+    codigoInicial = inicial.codigo;
+  } catch (erro) {
+    Terminal.err('Biblioteca de exemplos indisponível: ' + erro.message +
+      '. Verifique src/exemplos/exemplos.json e execute pelo servidor HTTP.');
+  }
+
   const [ed] = await Promise.all([
-    Ide.criar($('editor'), EXEMPLOS.linha.codigo),
-    iniciarPython().catch((e) => { status('falhou: ' + e.message, 'erro'); Terminal.err(String(e)); }),
+    Ide.criar($('editor'), codigoInicial),
+    preparoPython,
   ]);
   App.editor = ed;
   ed.aoRodar(rodar);
-  $('exemplo').onchange = () => carregarExemplo($('exemplo').value);
+
+  if (bibliotecaExemplos.catalogo) {
+    bibliotecaExemplos.ativar(
+      (exemplo, codigo) => aplicarExemplo(exemplo, codigo),
+      (erro) => Terminal.err('Erro ao carregar exemplo: ' + erro.message)
+    );
+  }
   if (ed.aviso) Terminal.sys('⚠ ' + ed.aviso);
   if (App.executarPy) { App.pronto = true; $('btnRodar').disabled = false; status('pronto — jacarev3 real carregada' + (ed.tipo === 'monaco' ? ' · Monaco ativo' : ''), 'ok'); }
 }

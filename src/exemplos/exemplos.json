@@ -1,0 +1,179 @@
+{
+  "versao": 1,
+  "categoriaInicial": "linha",
+  "exemploInicial": "linha",
+  "categorias": [
+    {
+      "id": "inicio",
+      "nome": "Primeiros passos",
+      "descricao": "Conexão, motores e movimentos."
+    },
+    {
+      "id": "sensores",
+      "nome": "Sensores",
+      "descricao": "Cor, luminosidade e distância."
+    },
+    {
+      "id": "linha",
+      "nome": "Seguidor de linha",
+      "descricao": "Do básico às rotinas da biblioteca."
+    },
+    {
+      "id": "transito",
+      "nome": "Educação no trânsito",
+      "descricao": "Semáforo, linhas e faixas de pedestres."
+    },
+    {
+      "id": "desafios",
+      "nome": "Desafios e obstáculos",
+      "descricao": "Rampas e desvio de obstáculos."
+    },
+    {
+      "id": "ferramentas",
+      "nome": "Ferramentas e diagnóstico",
+      "descricao": "Teleop e tratamento de erros."
+    }
+  ],
+  "exemplos": [
+    {
+      "id": "semaforo_urbano",
+      "nome": "Trânsito — parar no vermelho (Tapete Urbano)",
+      "descricao": "Reconhece a cor do semáforo e para na faixa vermelha.",
+      "categoria": "transito",
+      "dificuldade": "Intermediário",
+      "cenario": "tapeteUrbanoInfantil",
+      "inicio": "rotatoria",
+      "arquivo": "transito/semaforo-basico.py"
+    },
+    {
+      "id": "semaforo_observar",
+      "nome": "Trânsito — observar semáforo por 295 s",
+      "descricao": "Observa as cores do semáforo durante 295 segundos simulados.",
+      "categoria": "transito",
+      "dificuldade": "Intermediário",
+      "cenario": "tapeteUrbanoInfantil",
+      "inicio": "rotatoria",
+      "arquivo": "transito/observar-semaforo-295s.py"
+    },
+    {
+      "id": "linha",
+      "nome": "Seguidor de linha — treino",
+      "descricao": "Seguidor simples para começar no cenário de treino.",
+      "categoria": "linha",
+      "dificuldade": "Iniciante",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "seguidor-linha/treino.py"
+    },
+    {
+      "id": "gamepad",
+      "nome": "Controle / teclado — teleop pelo código",
+      "descricao": "Exemplo de teleop com teclado ou controle conectado.",
+      "categoria": "ferramentas",
+      "dificuldade": "Intermediário",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "ferramentas/teleop-por-codigo.py"
+    },
+    {
+      "id": "fll_linha",
+      "nome": "Seguidor de linha — tapete FLL (acha a linha e segue a borda)",
+      "descricao": "Segue a borda de uma linha no tapete FLL.",
+      "categoria": "linha",
+      "dificuldade": "Intermediário",
+      "cenario": "fll",
+      "inicio": "padrao",
+      "arquivo": "seguidor-linha/tapete-fll.py"
+    },
+    {
+      "id": "cores",
+      "nome": "Ler cores (modo COR) — tapete FLL",
+      "descricao": "Mostra as cores reconhecidas pelo sensor no tapete FLL.",
+      "categoria": "sensores",
+      "dificuldade": "Iniciante",
+      "cenario": "fll",
+      "inicio": "padrao",
+      "arquivo": "sensores/identificar-cores.py"
+    },
+    {
+      "id": "topico",
+      "nome": "Pronto da lib: circuito.seguir_linha — treino",
+      "descricao": "Exemplo da rotina circuito.seguir_linha da biblioteca jacarev3.",
+      "categoria": "linha",
+      "dificuldade": "Intermediário",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "seguidor-linha/topico-circuito.py"
+    },
+    {
+      "id": "desvio",
+      "nome": "Desvio clássico (recua, gira, segue) — paredes",
+      "descricao": "Usa o ultrassônico para evitar obstáculos.",
+      "categoria": "desafios",
+      "dificuldade": "Intermediário",
+      "cenario": "desvio",
+      "inicio": "centro",
+      "arquivo": "desafios/desviar-obstaculos.py"
+    },
+    {
+      "id": "rampa",
+      "nome": "Subir a rampa — tapete FLL (use a vista 3D)",
+      "descricao": "Treina a subida de rampa em 3D.",
+      "categoria": "desafios",
+      "dificuldade": "Intermediário",
+      "cenario": "fll",
+      "inicio": "rampa",
+      "arquivo": "desafios/subir-rampa.py"
+    },
+    {
+      "id": "basico",
+      "nome": "Teste dos comandos (bytes de cada método)",
+      "descricao": "Experimenta diferentes comandos do robô, motores e sensor de luz.",
+      "categoria": "inicio",
+      "dificuldade": "Iniciante",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "iniciantes/teste-comandos.py"
+    },
+    {
+      "id": "erro",
+      "nome": "Erro de propósito (veja o Traceback em vermelho)",
+      "descricao": "Produz um erro intencional para ensinar a ler o Traceback.",
+      "categoria": "ferramentas",
+      "dificuldade": "Iniciante",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "ferramentas/erro-de-proposito.py"
+    },
+    {
+      "id": "primeiros_movimentos",
+      "nome": "Primeiros movimentos com motores",
+      "descricao": "Faz o robô andar, parar e inverter a direção usando mover_continuo.",
+      "categoria": "inicio",
+      "dificuldade": "Iniciante",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "iniciantes/primeiros-movimentos.py"
+    },
+    {
+      "id": "leitura_sensores",
+      "nome": "Ler cor, luz e distância",
+      "descricao": "Imprime os valores dos sensores da porta 3 (cor) e 4 (distância).",
+      "categoria": "sensores",
+      "dificuldade": "Iniciante",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "sensores/leitura-basica.py"
+    },
+    {
+      "id": "seguidor_urbano_completo",
+      "nome": "Seguidor urbano — linha + semáforo + faixas + curvas",
+      "descricao": "Programa testado pelo grupo: segue linha, respeita semáforo, atravessa faixas e recupera curvas sem recuar.",
+      "categoria": "transito",
+      "dificuldade": "Avançado",
+      "cenario": "tapeteUrbanoInfantil",
+      "inicio": "rotatoria",
+      "arquivo": "transito/seguidor-urbano-completo.py"
+    }
+  ]
+}
