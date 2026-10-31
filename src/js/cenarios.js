@@ -533,6 +533,155 @@ tapeteUrbanoInfantil.caixas.push(
 );
 
 // ---------------------------------------------------------
+// Cidade Educativa — apresentação de trânsito e cidadania
+// Reaproveita EXATAMENTE as vias, linhas, travessias e semáforos
+// do Tapete Urbano: qualquer pintura nova é feita fora do trajeto.
+// Assim, o mesmo programa Python funciona nos dois cenários.
+// ---------------------------------------------------------
+const cidadeEducativa = {
+  ...tapeteUrbanoInfantil,
+  id: 'cidadeEducativa',
+  nome: 'Cidade Educativa — Trânsito e Cidadania',
+  inicios: Object.fromEntries(Object.entries(tapeteUrbanoInfantil.inicios).map(
+    ([id, inicio]) => [id, { ...inicio }]
+  )),
+  semaforos: tapeteUrbanoInfantil.semaforos.map(s => ({ ...s })),
+  cicloSemaforo: tapeteUrbanoInfantil.cicloSemaforo.map(f => ({ ...f })),
+  linhasEditor: tapeteUrbanoInfantil.linhasEditor.map(l => ({
+    ...l, pontos: l.pontos.map(p => [...p])
+  })),
+  // Os prédios usam geometria autoral em Three.js. Nenhum GLB de terceiros.
+  // As pegadas ficam longe da linha/sensores e também são colisores reais.
+  caixas: [
+    { nome: 'Escola Municipal', x: 77, y: 148, w: 44, h: 32, altura: 19, cor: '#f2b84b', modelo: 'cidadeEscola' },
+    { nome: 'Hospital Municipal', x: 112, y: 279, w: 31, h: 28, altura: 20, cor: '#e7eef5', modelo: 'cidadeHospital' },
+    { nome: 'Biblioteca do Bairro', x: 80, y: 79, w: 31, h: 26, altura: 14, cor: '#6b96c8', modelo: 'cidadeBiblioteca' },
+    { nome: 'Mercado Local', x: 156, y: 65, w: 40, h: 25, altura: 14, cor: '#e7a060', modelo: 'cidadeMercado' },
+    { nome: 'Casa Azul', x: 158, y: 150, w: 28, h: 23, altura: 12, cor: '#91c6e2', modelo: 'cidadeCasa' },
+    { nome: 'Casa Coral', x: 158, y: 188, w: 28, h: 23, altura: 12, cor: '#e7a2a2', modelo: 'cidadeCasa' },
+    { nome: 'Posto de Bombeiros', x: 10, y: 9, w: 16, h: 19, altura: 13, cor: '#d75c55', modelo: 'cidadeBombeiro' },
+    { nome: 'Árvore da Praça 1', x: 120, y: 227, w: 7, h: 7, altura: 15, cor: '#438662', modelo: 'cidadeArvore' },
+    { nome: 'Árvore da Praça 2', x: 154, y: 230, w: 7, h: 7, altura: 16, cor: '#438662', modelo: 'cidadeArvore' },
+    { nome: 'Árvore da Praça 3', x: 136, y: 250, w: 7, h: 7, altura: 14, cor: '#438662', modelo: 'cidadeArvore' },
+    { nome: 'Ponto de Ônibus', x: 153, y: 91, w: 15, h: 6, altura: 7, cor: '#2c6878', modelo: 'cidadeAbrigo' }
+  ],
+  rampas: [],
+  semaforoEstado: 'VERMELHO',
+
+  // Dicas fora da textura do piso: renderizadas no painel da interface
+  // no momento em que o robô passa perto de cada lugar.
+  pontosEducativos: [
+    { x: 102, y: 330, raio: 19, titulo: 'Saída com atenção', mensagem: 'Antes de circular, observe as condições da via e respeite a sinalização.' },
+    { x: 136, y: 330, raio: 15, titulo: 'Semáforo', mensagem: 'No vermelho, pare. No verde, siga apenas quando houver segurança.' },
+    { x: 157, y: 330, raio: 14, titulo: 'Faixa de pedestres', mensagem: 'O motorista deve respeitar a travessia e dar prioridade aos pedestres nas condições previstas em lei.' },
+    { x: 208, y: 196, raio: 24, titulo: 'Área residencial', mensagem: 'Reduza a velocidade e tenha atenção especial a quem circula a pé ou de bicicleta.' },
+    { x: 206, y: 125, raio: 22, titulo: 'Transporte coletivo', mensagem: 'O transporte coletivo amplia a mobilidade e pode reduzir o número de veículos individuais.' },
+    { x: 128, y: 43, raio: 19, titulo: 'Segunda travessia', mensagem: 'Mesmo com o sinal aberto, motoristas devem observar o cruzamento.' },
+    { x: 60, y: 42, raio: 22, titulo: 'Convivência no trânsito', mensagem: 'Pedestres, ciclistas e motoristas compartilham o espaço público.' },
+    { x: 41, y: 129, raio: 23, titulo: 'Próximo à escola', mensagem: 'Em áreas escolares, cuidado redobrado com crianças e travessias.' },
+    { x: 64, y: 252, raio: 22, titulo: 'Rotatória', mensagem: 'Nas rotatórias, observe a preferência de quem já está circulando, salvo sinalização em contrário.' }
+  ],
+
+  desenhar(ctx, self, opcoes = {}) {
+    // Preserva integralmente os pixels do tapete original nas vias.
+    // As novas formas ficam somente nos lotes internos, longe do robô.
+    tapeteUrbanoInfantil.desenhar(ctx, self, { ...opcoes, omitirCaixas: true });
+    if (opcoes.omitirCaixas) return;
+
+    ctx.save();
+
+    function lote(x, y, w, h, cor = '#d9e7cf') {
+      ctx.fillStyle = '#8baf8a';
+      ctx.fillRect(x - 1.2, y - 1.2, w + 2.4, h + 2.4);
+      ctx.fillStyle = cor;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 0.65;
+      ctx.strokeRect(x + 1.1, y + 1.1, w - 2.2, h - 2.2);
+    }
+
+    // Os lotes são recuos das ruas, não obstruem as faixas nem a linha preta.
+    lote(69, 133, 63, 60, '#e5ddc8');      // Campus escolar
+    lote(103, 267, 54, 50, '#e2e8f0');     // Hospital
+    lote(73, 70, 46, 44, '#dce6f1');       // Biblioteca
+    lote(148, 55, 58, 48, '#e6dfd4');     // Mercado
+    lote(150, 139, 46, 43, '#f0e6d8');    // Moradias
+    lote(150, 183, 46, 39, '#f0e6d8');
+    lote(106, 216, 66, 48, '#9acb83');    // Parque
+    lote(6, 5, 23, 25, '#f1ddd8');        // Bombeiros
+
+    // Quadras e praças com elementos menores que um cartaz
+    ctx.strokeStyle = '#e0eedc';
+    ctx.lineWidth = 0.8;
+    for (const [x1,y1,x2,y2] of [
+      [110, 222, 167, 222], [111, 260, 165, 260],
+      [112, 221, 112, 258], [167, 222, 167, 258],
+      [113, 240, 163, 240]
+    ]) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+
+    function arvore2d(x, y, r = 4) {
+      ctx.fillStyle = '#305b41';
+      ctx.beginPath(); ctx.arc(x + 0.6, y + 0.8, r + 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#4d9861';
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#87bd72';
+      ctx.beginPath(); ctx.arc(x - r/3, y - r/3, r*0.5, 0, Math.PI*2); ctx.fill();
+    }
+    for (const [x,y] of [[111, 231], [127, 231], [139, 231], [157, 234], [139, 253], [163, 252],
+                         [65, 177], [144, 152], [145, 211], [114, 108], [191, 100]]) {
+      arvore2d(x, y, 3.2);
+    }
+
+    // Telhados e identidade visual dos edifícios vistos por cima (2D).
+    // No 3D os mesmos lotes são representados por geometrias nativas.
+    for (const b of self.caixas) {
+      if (b.modelo === 'cidadeArvore') continue;
+      ctx.fillStyle = '#506273';
+      ctx.globalAlpha = 0.12;
+      ctx.fillRect(b.x + 1.4, b.y + 1.5, b.w, b.h);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = b.cor;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(b.x + 2, b.y + 2, b.w - 4, 2.2);
+      ctx.strokeStyle = '#51647a';
+      ctx.lineWidth = 0.6;
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+    }
+
+    function nomeLocal(texto, x, y, w, cor = '#17364c') {
+      ctx.fillStyle = cor;
+      ctx.fillRect(x, y, w, 10);
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 4.1px system-ui, sans-serif';
+      ctx.fillText(texto, x + w / 2, y + 5.1, w - 3);
+    }
+    nomeLocal('ESCOLA', 81, 183, 36, '#925419');
+    nomeLocal('HOSPITAL', 111, 309, 35, '#b84450');
+    nomeLocal('BIBLIOTECA', 79, 108, 34, '#315e83');
+    nomeLocal('MERCADO', 159, 53, 34, '#995a33');
+    nomeLocal('PRAÇA CENTRAL', 122, 262, 36, '#32724b');
+    nomeLocal('MORADIAS', 154, 216, 38, '#7f5365');
+    nomeLocal('ÔNIBUS', 153, 99, 30, '#285f73');
+
+    // Escola, hospital e parque têm seus próprios símbolos simples.
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    ctx.fillText('+', 127.5, 290.5);
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.fillText('E', 99, 162);
+    ctx.font = 'bold 8px system-ui, sans-serif';
+    ctx.fillText('P', 139, 240);
+
+    // Não duplicamos as mensagens sobre o piso. Elas surgem no painel didático.
+    ctx.restore();
+  }
+};
+
+// ---------------------------------------------------------
 // Cenário F — Pista BRT / OBR com rampa e área de resgate
 // Aproximação fiel à imagem, dentro das limitações atuais.
 // ---------------------------------------------------------
@@ -994,7 +1143,7 @@ const brt = {
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, brt, circuitoAurora };
+  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, cidadeEducativa, brt, circuitoAurora };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }

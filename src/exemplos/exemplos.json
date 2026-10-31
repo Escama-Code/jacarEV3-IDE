@@ -174,6 +174,16 @@
       "cenario": "tapeteUrbanoInfantil",
       "inicio": "rotatoria",
       "arquivo": "transito/seguidor-urbano-completo.py"
+    },
+    {
+      "id": "cidade_educativa_demo",
+      "nome": "Cidade Educativa — demonstração (linha + trânsito)",
+      "descricao": "Demonstra a cidade educacional: respeita semáforos, cruza faixas e recupera curvas. Use o cenário Cidade Educativa.",
+      "categoria": "transito",
+      "dificuldade": "Avançado",
+      "cenario": "cidadeEducativa",
+      "inicio": "rotatoria",
+      "arquivo": "transito/seguidor-urbano-completo.py"
     }
   ]
 }

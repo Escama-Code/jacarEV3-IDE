@@ -174,6 +174,18 @@ body.modo-campanha .painel-arena #cenario {
   .biblioteca-programa select { flex: 1; width: 100%; }
   body.modo-campanha .biblioteca-filtro,
   body.modo-campanha #descricaoExemplo { display: none !important; }
+/* Dicas da Cidade Educativa ficam FORA do piso: não interferem no sensor de cor. */
+.dica-cidade {
+  display:flex; align-items:center; gap:12px;
+  margin:8px 0 4px; padding:9px 12px;
+  background:linear-gradient(110deg,#12394b,#1d3944);
+  border:1px solid #3b7181; border-left:4px solid #56c7a9;
+  border-radius:9px; color:#eefbf5; font-size:12px; line-height:1.4;
+}
+.dica-cidade[hidden] { display:none !important; }
+.dica-cidade-icone { font-size:23px; }
+.dica-cidade-texto { display:flex; flex-direction:column; gap:2px; }
+.dica-cidade-texto strong { font-size:13px; color:#baf1d6; }
 </style>
 </head>
 <body>
@@ -319,6 +331,10 @@ body.modo-campanha .painel-arena #cenario {
     <div id="palco">
       <canvas id="cv" class="vista" width="1000" height="667"></canvas>
       <div id="cv3d" class="vista" hidden></div>
+    </div>
+    <div id="dicaCidade" class="dica-cidade" hidden aria-live="off">
+      <span class="dica-cidade-icone" aria-hidden="true">🏙️</span>
+      <div class="dica-cidade-texto"><strong id="dicaCidadeTitulo"></strong><span id="dicaCidadeMensagem"></span></div>
     </div>
     <div class="linha">
       <button id="btnPlay" disabled>▶ Reproduzir</button>
@@ -647,7 +663,7 @@ def descrever_api() -> str:
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 
 <!-- 1. Carrega os cenários do arquivo JS externo -->
-<script src="../src/js/cenarios.js?v=semaforo-urbano-v3"></script>
+<script src="../src/js/cenarios.js?v=cidade-v2"></script>
 <script src="../src/js/exemplos/biblioteca.js"></script>
 
 <!-- 2. Cria o alias global obrigatorio para o SimEV3 e Playback -->
@@ -1031,7 +1047,7 @@ const Sugestoes = (() => {
 </script>
 
 <script type="module">
-import '../src/js/3d/cena3d.mjs?v=semaforo-urbano-v3';
+import '../src/js/3d/cena3d.mjs?v=cidade-v2';
 import * as Campanha from '../src/campanha/index.mjs';
 window.Campanha = Campanha;
 // Sandbox: campanha opcional (não bloqueia)
@@ -1050,17 +1066,40 @@ const $ = (id) => document.getElementById(id);
 // =====================================================================
 const Terminal = (() => {
   const el = $('terminal');
+  let captura = null;
   const linha = (texto, cls) => {
-    const d = document.createElement('div'); d.className = cls; d.textContent = texto;
-    el.appendChild(d); el.scrollTop = el.scrollHeight;
+    const d = document.createElement('div');
+    d.className = cls;
+    d.textContent = texto;
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
   };
   const limparVazio = () => { const v = el.querySelector('.vazio'); if (v) v.remove(); };
   const classeErro = (l) => (/^\s+/.test(l) ? 'quadro' : 'err');
+
+  function registrar(texto, classe) {
+    const linhas = String(texto).split('\n');
+    for (const l of linhas) {
+      const cls = typeof classe === 'function' ? classe(l) : classe;
+      if (captura) {
+        // A jacarev3 executa no relógio virtual; anotamos a hora de cada print.
+        const instante = App.sim && Number.isFinite(App.sim.t) ? App.sim.t : 0;
+        captura.push({ t: instante, texto: l, classe: cls });
+      } else {
+        limparVazio(); linha(l, cls);
+      }
+    }
+  }
   return {
-    out(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, l.startsWith('[simulador]') ? 'sys' : 'out')); },
-    err(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, classeErro(l))); },
-    sys(t) { limparVazio(); linha(t, 'sys'); },
+    out(t) { registrar(t, l => l.startsWith('[simulador]') ? 'sys' : 'out'); },
+    err(t) { registrar(t, classeErro); },
+    sys(t) { registrar(t, 'sys'); },
     limpar() { el.innerHTML = ''; linha('terminal limpo', 'vazio'); },
+    reiniciarVisor() { el.innerHTML = ''; },
+    iniciarCaptura() { captura = []; },
+    finalizarCaptura() { const mensagens = captura || []; captura = null; return mensagens; },
+    exibirMensagem(m) { limparVazio(); linha(m.texto, m.classe); },
+    exibirMensagens(mensagens) { mensagens.forEach(m => { limparVazio(); linha(m.texto, m.classe); }); }
   };
 })();
 
@@ -1157,6 +1196,7 @@ const bibliotecaExemplos = JacarBibliotecaExemplos.criar({
 const Playback = (() => {
   const COR_LED = { VERDE: '#2ecc40', VERMELHO: '#ff4136', AMBAR: '#ff9f1a', DESLIGADO: '#555' };
   let sim = null, tocando = false, t = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, audio = null;
+  let mensagensTerminal = [], idxTerminal = 0, ultimoTerminalT = -1, sincronizarPrints = false;
   let modo = '2d', vista = null, tipoRobo = 'ev3', modoCam = 'livre', sonda = null, sondaChave = '';
   let cenId = '', cen = null, tapete = null, ESC = 8;
   let inicioRelogioUrbano = performance.now();
@@ -1202,6 +1242,8 @@ const Playback = (() => {
     // Sem isso, o semáforo parava de animar depois da primeira execução.
     if (typeof App !== 'undefined' && !App.executando) App.sim = null;
     $('corpo').innerHTML = ''; $('contaPacotes').textContent = ''; logIdx = 0; ultimoT = 0; evIdx = 0;
+    mensagensTerminal = []; idxTerminal = 0; ultimoTerminalT = -1; sincronizarPrints = false;
+    const dica = $('dicaCidade'); if (dica) dica.hidden = true;
     $('resumo').textContent = 'Rode um script pra ver o robô.';
   }
 
@@ -1286,10 +1328,27 @@ const Playback = (() => {
     desenhar(t);
   }
 
+  function atualizarDicaCidade(est) {
+    const painel = $('dicaCidade');
+    if (!painel) return;
+    if (cen?.id !== 'cidadeEducativa') { painel.hidden = true; return; }
+    const pontos = cen.pontosEducativos || [];
+    let escolhido = null, distancia2 = Infinity;
+    for (const p of pontos) {
+      const dx = est.x - p.x, dy = est.y - p.y, d2 = dx*dx + dy*dy;
+      if (d2 < p.raio*p.raio && d2 < distancia2) { escolhido = p; distancia2 = d2; }
+    }
+    if (!escolhido) { painel.hidden = true; return; }
+    $('dicaCidadeTitulo').textContent = escolhido.titulo;
+    $('dicaCidadeMensagem').textContent = escolhido.mensagem;
+    painel.hidden = false;
+  }
+
   function desenhar(tt) {
     const tempoS = sim ? tt : (performance.now() - inicioRelogioUrbano) / 1000;
     atualizarSemaforoVisual(tempoS);
     const est = estadoEm(tt, tempoS);
+    atualizarDicaCidade(est);
     if (modo === '3d' && vista) {
       vista.aplicar(est);
     } else desenhar2D(est);
@@ -1298,6 +1357,7 @@ const Playback = (() => {
   function desenharEstado(est) {
     if (!est) return;
     atualizarSemaforoVisual(est.t || 0);
+    atualizarDicaCidade(est);
     if (modo === '3d' && vista) {
       vista.aplicar(est);
     } else desenhar2D(est);
@@ -1312,6 +1372,20 @@ const Playback = (() => {
     $('tabela').scrollTop = 1e9; $('contaPacotes').textContent = `${logIdx} de ${P.length} pacotes (↩ = EV3 devolve resposta)`;
   }
 
+  function sincronizarTerminal(tt) {
+    if (!sincronizarPrints) return;
+    // O usuário pode voltar no slider ou reiniciar a reprodução.
+    // Nesse caso reconstruímos as linhas até o tempo escolhido.
+    if (tt < ultimoTerminalT - 1e-6) {
+      Terminal.reiniciarVisor();
+      idxTerminal = 0;
+    }
+    ultimoTerminalT = tt;
+    while (idxTerminal < mensagensTerminal.length && mensagensTerminal[idxTerminal].t <= tt + 1e-6) {
+      Terminal.exibirMensagem(mensagensTerminal[idxTerminal++]);
+    }
+  }
+
   function sons(tt) {
     if (!tocando || !$('som').checked || !audio) return;
     const E = sim.eventos;
@@ -1320,7 +1394,7 @@ const Playback = (() => {
         o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + e.ms / 1000); } }
   }
 
-  function atualizar() { $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0; desenhar(t); sincronizarLog(t); sons(t); }
+  function atualizar() { $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0; desenhar(t); sincronizarLog(t); sincronizarTerminal(t); sons(t); }
 
   function loop(agora) {
     if (!tocando || !sim) return;
@@ -1435,8 +1509,17 @@ const Playback = (() => {
       descartarSimulacao(); $('cenario').value = id; aplicarCenario(inicio); desenhar(0);
     },
     habilitar3D() { const b = $('btn3d'); b.disabled = false; b.title = 'Vista 3D (Three.js)'; },
-    carregar(s) { sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0; $('corpo').innerHTML = '';
-      $('slider').disabled = $('btnPlay').disabled = false; tocar(true); },
+    carregar(s, mensagens = null) {
+      sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0;
+      sincronizarPrints = Array.isArray(mensagens);
+      mensagensTerminal = sincronizarPrints ? mensagens.slice().sort((a, b) => a.t - b.t) : [];
+      idxTerminal = 0; ultimoTerminalT = -1;
+      $('corpo').innerHTML = '';
+      if (sincronizarPrints) Terminal.reiniciarVisor();
+      $('slider').disabled = $('btnPlay').disabled = false;
+      atualizar(); // Exibe imediatamente apenas mensagens no t=0.
+      tocar(true);
+    },
   };
 })();
 
@@ -1790,6 +1873,12 @@ async function rodar() {
   $('limite').value = limite;
   const t0 = performance.now();
   let res = 'erro';
+  // Execução Python comum calcula os frames antes da reprodução visual.
+  // Capturamos as mensagens para mostrá-las com os mesmos timestamps do robô.
+  const codigoAssincrono = /gamepadPonte\s*\.\s*teleop\s*\(/.test(codigo)
+    || /\bawait\b/.test(codigo)
+    || /gamepadPonte\s*\.\s*passo/.test(codigo);
+  if (!codigoAssincrono) Terminal.iniciarCaptura();
   try {
     const mTele = codigo.match(/gamepadPonte\s*\.\s*teleop\s*\(\s*([^)]*)\)/);
     if (mTele) {
@@ -1838,10 +1927,16 @@ async function rodar() {
     if (res === 'ok' && s.t < limite - 0.05) {
       Terminal.sys(`ℹ O código terminou normalmente após ${s.t.toFixed(1)} s. O limite de ${limite} s é um teto, não uma duração obrigatória.`);
     }
-    if ((s.frames || []).length > 1) Playback.carregar(s);
     if (window.CampanhaUI && CampanhaUI.missaoAtiva && res !== 'erro') {
       CampanhaUI.avaliarTentativa(s, codigo);
     }
+  }
+  const mensagensCapturadas = Terminal.finalizarCaptura();
+  if (s && res !== 'erro' && (s.frames || []).length > 1) {
+    Playback.carregar(s, codigoAssincrono ? null : mensagensCapturadas);
+  } else {
+    // Se o Python falhar antes de gerar movimento, o erro não pode ficar oculto.
+    Terminal.exibirMensagens(mensagensCapturadas);
   }
 }
 
