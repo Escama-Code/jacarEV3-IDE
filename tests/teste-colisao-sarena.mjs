@@ -22,7 +22,11 @@ const ambiente = {
   require: () => Cenarios,
   console,
 };
+<<<<<<< HEAD
 vm.runInNewContext(readFileSync(join(raiz, '../src/js/sim.js'), 'utf8'), ambiente);
+=======
+vm.runInNewContext(readFileSync(join(raiz, '../src/js/core/sim.js'), 'utf8'), ambiente);
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 const { SimEV3 } = ambiente.module.exports;
 const sim = new SimEV3('sarena');
 

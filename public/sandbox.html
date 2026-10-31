@@ -25,8 +25,215 @@
   /* modo campanha: mapa fixo pela missão, só 2D/3D pode trocar */
   body.modo-campanha #cenario,
   body.modo-campanha #inicio,
+<<<<<<< HEAD
   body.modo-campanha #exemplo { display: none; }
 
+=======
+  body.modo-campanha #btnEditorMapa,
+  body.modo-campanha #exemplo { display: none; }
+
+/* Editor de mapas autorais — sobreposição independente do palco */
+.map-editor-modal[hidden] { display: none !important; }
+.map-editor-modal {
+  position: fixed; inset: 0; z-index: 8000; display: grid; place-items: center;
+  padding: 12px; background: rgba(10, 18, 28, .85);
+}
+.map-editor-window {
+  background: #172333; color: #eff6ff; width: min(1100px, 98vw);
+  max-height: 96vh; overflow-y: auto; border: 1px solid #62748a;
+  border-radius: 14px; padding: 16px;
+  box-shadow: 0 25px 70px rgba(0,0,0,.55);
+}
+.map-editor-head, .map-editor-tools, .map-editor-actions {
+  display: flex; gap: 9px; align-items: center; flex-wrap: wrap;
+}
+.map-editor-head { justify-content: space-between; margin-bottom: 10px; }
+.map-editor-head h2 { font-size: 19px; margin: 0; }
+.map-editor-tools { margin: 8px 0 12px; }
+.map-editor-window button, .map-editor-window input, .map-editor-window select {
+  font: inherit;
+}
+.map-editor-window button {
+  border: 1px solid #607189; border-radius: 7px; color: #edf4ff;
+  background: #304257; padding: 7px 10px; cursor: pointer;
+}
+.map-editor-window button:disabled { opacity: .4; cursor: not-allowed; }
+.map-editor-window button.ativo, .map-editor-window button.map-primary {
+  background: #0e818a; border-color: #54d5c8; color: white;
+}
+.map-editor-window label { display: inline-flex; align-items: center; gap: 6px; }
+.map-editor-window input[type=text] {
+  background: #0d1928; color: white; padding: 7px;
+  border: 1px solid #607189; border-radius: 7px; width: min(245px, 80vw);
+}
+.map-editor-window select { background: #25374c; color: white; border-radius: 6px; padding: 6px; }
+.map-editor-window input[type=range] { width: 105px; }
+.map-editor-canvas-frame {
+  margin: 8px 0; background: #f4f5ee; border-radius: 9px; overflow: hidden;
+  text-align: center; line-height: 0; max-height: min(60vh, 720px);
+  overflow-y: auto;
+}
+#mapEditorCanvas {
+  max-width: 100%; width: auto; height: auto; display: block; margin: auto;
+  touch-action: none; cursor: crosshair;
+}
+.map-editor-actions { margin-top: 12px; justify-content: flex-end; }
+#mapEditorAviso, #mapEditorStatus { margin: 6px 0; font-size: 13px; }
+#mapEditorAviso { color: #b5eece; }
+.map-editor-hint { color: #bdcde0; font-size: 12px; line-height: 1.45; }
+.map-editor-group-label { color: #9ad7de; font-size: 12px; }
+.map-editor-link { color: #8fdfe6; font-size: 12px; }
+.map-editor-validacao { border: 1px solid #627789; padding: 8px 14px; border-radius: 8px; background: #203045; max-height: 150px; overflow-y: auto; font-size: 13px; }
+.map-rule-aviso { color: #ffd77b; } .map-rule-ok { color: #92ecc8; } .map-rule-info { color: #bdccdd; }
+.map-editor-tools label:has(input[type=checkbox]) { font-size: 12px; }
+@media(max-width:650px) {
+  .map-editor-window { padding: 10px; max-height: 98vh; }
+  .map-editor-window button { padding: 6px 8px; }
+}
+/* Barra compacta por categorias: uma única seção de ferramentas fica visível. */
+.map-editor-identity {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:10px; margin:0 0 10px;
+}
+.map-editor-current {
+  border:1px solid #467e84; border-radius:999px; background:#193740;
+  color:#a4f2e5; font-size:12px; font-weight:600; padding:6px 12px;
+}
+.map-editor-nav {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  flex-wrap:wrap; padding-bottom:8px;
+}
+.map-editor-tabs {display:flex; gap:5px; flex-wrap:wrap; align-items:center;}
+.map-editor-window .map-editor-tabs [role="tab"] {
+  border-color:transparent; background:transparent; color:#bac8db;
+  border-radius:7px; padding:8px 12px;
+}
+.map-editor-window .map-editor-tabs [role="tab"][aria-selected="true"] {
+  background:#0d646d; border-color:#31c4c0; color:white;
+}
+.map-editor-window .map-editor-tabs [role="tab"]:focus-visible,
+.map-editor-window button:focus-visible,
+.map-editor-window a:focus-visible {
+  outline:2px solid #9ce8ed; outline-offset:2px;
+}
+.map-editor-history {display:flex;gap:5px;}
+.map-editor-panels {
+  border:1px solid #3c526b; background:#1d2c3e; border-radius:10px;
+  padding:9px 12px; margin-bottom:9px; min-height:46px;
+}
+.map-editor-panel[hidden], .map-editor-suboptions[hidden] {display:none !important;}
+.map-editor-panel .map-editor-tools {margin:3px 0;gap:7px;}
+.map-editor-panel .map-editor-suboptions {margin-top:9px;padding-top:8px;border-top:1px solid #40536b;}
+.map-editor-panel-help {font-size:12px;color:#bac8dc;line-height:1.35;margin:5px 0 0;}
+@media(max-width:650px){
+  .map-editor-window .map-editor-tabs [role="tab"] {padding:7px 8px;}
+  .map-editor-nav {align-items:stretch;}
+  .map-editor-history {width:100%;justify-content:flex-end;}
+  .map-editor-panels {padding:8px;}
+}
+
+.map-editor-room-options {display:grid;gap:7px;}
+.map-editor-room-title {display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.map-editor-room-title span {color:#b8d8e6;font-size:12px;flex:1;}
+.map-editor-room-options input[type=number] {width:72px;box-sizing:border-box;background:#25374c;
+  color:white;border:1px solid #607189;border-radius:6px;padding:6px;}
+.map-editor-room-options .map-editor-tools {margin:2px 0;}
+#mapEditorRoomSecondOptions[hidden]{display:none;}
+
+
+/* Ajustes do Sandbox: o Canvas 2D preserva a proporção do mapa.
+   A câmera 3D continua ocupando o palco inteiro e acompanha o ResizeObserver. */
+body.modo-sandbox #palco,
+body.modo-campanha #palco {
+  height: clamp(340px, 32vw, 460px);
+  min-height: 0;
+  max-height: none;
+  background: #cfd8e2;
+}
+body.modo-sandbox #palco > #cv,
+body.modo-campanha #palco > #cv {
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+body.modo-sandbox .painel-arena #cenario,
+body.modo-campanha .painel-arena #cenario {
+  flex: 1 1 220px;
+  min-width: 170px;
+  max-width: 100%;
+}
+.arena-posicao #inicio { flex: 0 1 275px; min-width: 180px; max-width: 100%; }
+.arena-posicao #opts3d { flex: 1 1 300px; }
+@media (max-width: 1100px) {
+  body.modo-sandbox #palco,
+  body.modo-campanha #palco { height: clamp(300px, 60vw, 460px); }
+}
+  /* Seleção compacta dos programas por categoria. */
+  .biblioteca-filtro {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; min-width: 0;
+  }
+  .biblioteca-filtro select { min-width: 100px; max-width: 100%; }
+  .biblioteca-programa { flex: 1 1 230px; }
+  .biblioteca-programa select { flex: 1; width: 100%; }
+  body.modo-campanha .biblioteca-filtro,
+  body.modo-campanha #descricaoExemplo { display: none !important; }
+/* Dicas da Cidade Educativa ficam FORA do piso: não interferem no sensor de cor. */
+.dica-cidade {
+  display:flex; align-items:center; gap:12px;
+  margin:8px 0 4px; padding:9px 12px;
+  background:linear-gradient(110deg,#12394b,#1d3944);
+  border:1px solid #3b7181; border-left:4px solid #56c7a9;
+  border-radius:9px; color:#eefbf5; font-size:12px; line-height:1.4;
+}
+.dica-cidade[hidden] { display:none !important; }
+.dica-cidade-icone { font-size:23px; }
+.dica-cidade-texto { display:flex; flex-direction:column; gap:2px; }
+.dica-cidade-texto strong { font-size:13px; color:#baf1d6; }
+.dica-cidade-lei { font-size:11px; color:#a4e2f3; margin-top:3px; font-weight:600; }
+.dica-cidade-fonte { font-size:11px; color:#b9eeff; text-decoration:underline; text-underline-offset:2px; }
+.dica-cidade-texto { min-width:0; }
+
+  /* Sandbox: painéis equilibrados em telas largas, sem trocar altura do palco
+     quando o usuário seleciona mapas/programas. */
+  body.modo-sandbox:not(.modo-campanha) main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  body.modo-sandbox:not(.modo-campanha) main > .painel {
+    min-width: 0;
+  }
+  body.modo-sandbox:not(.modo-campanha) main > .painel-codigo {
+    display: flex;
+    flex-direction: column;
+  }
+  body.modo-sandbox:not(.modo-campanha) .painel-codigo #editor {
+    flex: 1 1 390px;
+    height: auto;
+    min-height: 340px;
+    max-height: none;
+  }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo {
+    margin: 3px 0 6px;
+    gap: 6px 12px;
+    align-items: center;
+  }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo .info { margin: 0; }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo #descricaoExemplo { flex: 1 1 250px; }
+  body.modo-sandbox:not(.modo-campanha) #mapaExemploAviso { color: #b7d9dc; }
+  body.modo-sandbox:not(.modo-campanha) #btnMapaExemplo { font-size: 11px; padding: 3px 8px; }
+  .relogio-sim {
+    color: #b9e8eb; background: #17323a; border: 1px solid #3b6873;
+    border-radius: 5px; font: 12px/1.5 ui-monospace, monospace;
+    padding: 4px 7px; white-space: nowrap;
+  }
+  @media(max-width:1100px) {
+    body.modo-sandbox:not(.modo-campanha) main { grid-template-columns: 1fr; }
+    body.modo-sandbox:not(.modo-campanha) .painel-codigo #editor {
+      flex: none; height: 390px; min-height: 340px; max-height: 390px;
+    }
+  }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 </style>
 </head>
 <body>
@@ -152,10 +359,14 @@
       <div class="seg"><button id="btn2d" class="ativo">2D</button><button id="btn3d" disabled title="carregando Three.js…">3D</button></div>
       <select id="cenario" title="Cenário"></select>
       <button id="btnCarregarArena" type="button" title="Importar arquivo .sArena do sBotics">📂 Importar .sArena</button>
+<<<<<<< HEAD
       <button id="btnEditorMapasPage" type="button" title="Editor livre (traço e objetos)">✏️ Editor livre</button>
       <button id="btnEditorBlocos" type="button" title="Construtor modular OBR por ladrilhos 30×30">🧱 Editor por blocos</button>
       <button id="btnCarregarMapa" type="button" title="Importar .jcrv3map / .jmap">📂 Importar mapa</button>
       <input id="inputJcrv3map" type="file" accept=".jcrv3map,.jmap,.json,application/json" hidden>
+=======
+      <button id="btnEditorMapa" type="button" title="Desenhar pistas próprias com caneta e mouse">✏️ Editar mapa</button>
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       <input id="inputSArena" type="file" accept=".sArena,.sarena,.json" hidden>
     </div>
     <div class="linha arena-posicao" style="margin:0 0 8px">
@@ -347,7 +558,175 @@ def descrever_api() -> str:
 </script>
 
 
+<<<<<<< HEAD
 
+=======
+<!-- Editor visual de pistas originais: não depende de arquivos .sArena -->
+<div id="mapEditorModal" class="map-editor-modal" hidden role="dialog" aria-modal="true" aria-label="Construtor de mapas autorais">
+  <section class="map-editor-window">
+    <div class="map-editor-head">
+      <h2>🧩 Construtor de Mapas — JacarEV3 v2</h2>
+      <button id="mapEditorClose" type="button">✕ Fechar</button>
+    </div>
+<div class="map-editor-identity">
+  <label for="mapEditorNome">Nome <input id="mapEditorNome" type="text" maxlength="70" value="Meu circuito"></label>
+  <span class="map-editor-current" id="mapEditorCurrentTool" role="status" aria-live="polite">✏️ Caneta selecionada</span>
+</div>
+<div class="map-editor-nav">
+  <div class="map-editor-tabs" role="tablist" aria-label="Grupos de ferramentas do mapa">
+    <button type="button" role="tab" id="mapEditorTabDesenho" data-map-tab="desenho" aria-controls="mapEditorPanelDesenho" aria-selected="true" tabindex="0">✏️ Desenho</button>
+    <button type="button" role="tab" id="mapEditorTabObjetos" data-map-tab="objetos" aria-controls="mapEditorPanelObjetos" aria-selected="false" tabindex="-1">🧱 Objetos</button>
+    <button type="button" role="tab" id="mapEditorTabAjustes" data-map-tab="ajustes" aria-controls="mapEditorPanelAjustes" aria-selected="false" tabindex="-1">⚙️ Ajustes</button>
+    <button type="button" role="tab" id="mapEditorTabOBR" data-map-tab="obr" aria-controls="mapEditorPanelOBR" aria-selected="false" tabindex="-1">🏆 OBR</button>
+    <button type="button" role="tab" id="mapEditorTabArquivo" data-map-tab="arquivo" aria-controls="mapEditorPanelArquivo" aria-selected="false" tabindex="-1">📁 Arquivo</button>
+  </div>
+  <div class="map-editor-history" aria-label="Histórico de edição">
+    <button id="mapEditorUndo" type="button" title="Desfazer (Ctrl+Z)">↶ Desfazer</button>
+    <button id="mapEditorRedo" type="button" title="Refazer (Ctrl+Shift+Z)">↷ Refazer</button>
+  </div>
+</div>
+<div class="map-editor-panels">
+  <section role="tabpanel" id="mapEditorPanelDesenho" aria-labelledby="mapEditorTabDesenho" data-map-panel="desenho" class="map-editor-panel">
+    <div class="map-editor-tools" aria-label="Ferramentas de linha">
+      <button data-map-tool="caneta" type="button" class="ativo">✏️ Caneta</button>
+      <button data-map-tool="borracha" type="button">◻ Borracha</button>
+      <button data-map-tool="reta" type="button">╱ Reta</button>
+      <button data-map-tool="curva" type="button">⌒ Curva</button>
+      <button data-map-tool="circulo" type="button">◯ Elipse</button>
+      <button data-map-tool="retangulo" type="button">▢ Retângulo</button>
+      <label for="mapEditorBrush">Espessura <input id="mapEditorBrush" type="range" min="0.5" max="12" step="0.5" value="3"></label>
+      <output id="mapEditorBrushValor" for="mapEditorBrush">3 cm</output>
+    </div>
+    <div class="map-editor-tools map-editor-suboptions">
+      <label><input type="checkbox" id="mapEditorSmooth" checked> Suavizar mão livre</label>
+      <label><input type="checkbox" id="mapEditorRecognize"> Reconhecer retas</label>
+      <label><input type="checkbox" id="mapEditorSnap" checked> Conectar pontas próximas</label>
+    </div>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelObjetos" aria-labelledby="mapEditorTabObjetos" data-map-panel="objetos" class="map-editor-panel" hidden>
+    <div class="map-editor-tools" aria-label="Ferramentas de construção">
+      <button data-map-tool="parede" type="button">▥ Parede</button>
+      <button data-map-tool="caixa" type="button">▣ Obstáculo</button>
+      <button data-map-tool="rampa" type="button">▱ Rampa</button>
+      <button data-map-tool="esfera" type="button">● Esfera</button>
+      <button data-map-tool="verde" type="button">🟩 Área verde</button>
+      <button data-map-tool="vermelho" type="button">🟥 Área vermelha</button>
+      <button data-map-tool="sala" type="button">⌂ Criar sala</button>
+      <button data-map-tool="editarSala" type="button">✥ Selecionar sala</button>
+      <button data-map-tool="mover" type="button">✋ Mover</button>
+      <button data-map-tool="excluir" type="button">🗑 Remover</button>
+      <button data-map-tool="inicio" type="button">🤖 Largada</button>
+    </div>
+    <div class="map-editor-room-options map-editor-suboptions" data-map-options="sala" hidden>
+      <div class="map-editor-room-title">
+        <strong>Configurar sala de resgate</strong>
+        <span id="mapEditorRoomSelection" role="status">Nova sala: defina as medidas e clique no mapa.</span>
+        <button id="mapEditorRoomNew" type="button" title="Parar de editar a sala selecionada">＋ Nova sala</button>
+      </div>
+      <div class="map-editor-tools">
+        <label for="mapEditorRoomWidth">Largura (cm)
+          <input id="mapEditorRoomWidth" type="number" min="35" max="180" step="1" value="90">
+        </label>
+        <label for="mapEditorRoomHeight">Altura (cm)
+          <input id="mapEditorRoomHeight" type="number" min="35" max="180" step="1" value="90">
+        </label>
+        <label for="mapEditorRoomRotation">Orientação
+          <select id="mapEditorRoomRotation">
+            <option value="0">0°</option><option value="1">90°</option>
+            <option value="2">180°</option><option value="3">270°</option>
+          </select>
+        </label>
+        <button id="mapEditorRoomTurn" type="button" title="Girar a sala 90 graus">⟳ Girar 90°</button>
+      </div>
+      <div class="map-editor-tools">
+        <label for="mapEditorRoomSide">Entrada 1 — parede
+          <select id="mapEditorRoomSide">
+            <option value="esquerda">Esquerda</option>
+            <option value="cima">Superior</option>
+            <option value="direita">Direita</option>
+            <option value="baixo">Inferior</option>
+          </select>
+        </label>
+        <label for="mapEditorEntrance">Largura (cm)
+          <input id="mapEditorEntrance" type="number" min="10" max="70" step="1" value="27">
+        </label>
+      </div>
+      <div class="map-editor-tools">
+        <label><input id="mapEditorRoomSecond" type="checkbox"> Adicionar segunda entrada</label>
+      </div>
+      <div id="mapEditorRoomSecondOptions" class="map-editor-tools" hidden>
+        <label for="mapEditorRoomSecondSide">Entrada 2 — parede
+          <select id="mapEditorRoomSecondSide">
+            <option value="direita">Direita</option><option value="cima">Superior</option>
+            <option value="baixo">Inferior</option><option value="esquerda">Esquerda</option>
+          </select>
+        </label>
+        <label for="mapEditorRoomSecondWidth">Largura (cm)
+          <input id="mapEditorRoomSecondWidth" type="number" min="10" max="70" step="1" value="27">
+        </label>
+      </div>
+      <p class="map-editor-panel-help">Para editar uma sala já desenhada, use <b>Selecionar sala</b> e clique nela. A rotação gira também as entradas e os cantos coloridos. O Modo OBR avisa sobre medidas fora da referência.</p>
+    </div>
+    <div class="map-editor-tools map-editor-suboptions" data-map-options="area" hidden>
+      <label for="mapEditorTriCorner">Canto da área <select id="mapEditorTriCorner">
+        <option value="tr">Superior direito</option><option value="tl">Superior esquerdo</option>
+        <option value="br">Inferior direito</option><option value="bl">Inferior esquerdo</option>
+      </select></label>
+    </div>
+    <div class="map-editor-tools map-editor-suboptions" data-map-options="inicio" hidden>
+      <label for="mapEditorHeading">Direção do robô <select id="mapEditorHeading">
+        <option value="-90">↑</option><option value="0">→</option><option value="90">↓</option><option value="180">←</option>
+      </select></label>
+    </div>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelAjustes" aria-labelledby="mapEditorTabAjustes" data-map-panel="ajustes" class="map-editor-panel" hidden>
+    <div class="map-editor-tools">
+      <label><input type="checkbox" id="mapEditorGrid" checked> Mostrar grade 30 cm</label>
+      <label><input type="checkbox" id="mapEditorSnapGrid"> Ajustar à grade 5 cm</label>
+      <label for="mapEditorSnapDist">Distância de conexão <select id="mapEditorSnapDist">
+        <option value="2">2 cm</option><option value="3" selected>3 cm</option><option value="5">5 cm</option>
+      </select></label>
+    </div>
+    <p class="map-editor-panel-help">Conexão e suavização podem ser ativadas ou desativadas na aba Desenho. A grade serve de referência e não aparece no mapa final.</p>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelOBR" aria-labelledby="mapEditorTabOBR" data-map-panel="obr" class="map-editor-panel" hidden>
+    <div class="map-editor-tools">
+      <label for="mapEditorPerfil">Referência de treino <select id="mapEditorPerfil" aria-label="Perfil de regras">
+        <option value="livre">Modo Livre</option>
+        <option value="regional">OBR 2026 — Regional/Estadual</option>
+        <option value="nacional">OBR 2026 — Nacional</option>
+      </select></label>
+      <label for="mapEditorNivel">Nível <select id="mapEditorNivel"><option value="1">Nível 1</option><option value="2">Nível 2</option></select></label>
+      <button id="mapEditorCheck" type="button">✓ Verificar medidas</button>
+      <a href="https://obr.robocup.org.br/documentos-e-manuais/" target="_blank" rel="noopener noreferrer" class="map-editor-link">Manuais oficiais</a>
+    </div>
+    <p class="map-editor-panel-help">Verificações parciais para treino; não certificam uma arena oficial.</p>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelArquivo" aria-labelledby="mapEditorTabArquivo" data-map-panel="arquivo" class="map-editor-panel" hidden>
+    <div class="map-editor-tools">
+      <button id="mapEditorBlank" type="button">＋ Em branco</button>
+      <button id="mapEditorCopy" type="button">📋 Copiar cenário atual</button>
+      <button id="mapEditorUpload" type="button">📂 Abrir .jmap</button>
+      <input id="mapEditorFile" type="file" accept=".jmap,.json,application/json" hidden>
+    </div>
+    <p class="map-editor-panel-help">Para salvar seu trabalho use “Salvar .jmap” abaixo do mapa; você poderá editá-lo depois.</p>
+  </section>
+</div>
+    <div class="map-editor-canvas-frame">
+      <canvas id="mapEditorCanvas" width="1040" height="720" aria-label="Área de desenho da arena"></canvas>
+    </div>
+    <p id="mapEditorStatus" role="status"></p>
+    <p class="map-editor-hint">Caneta/borracha: arraste. Curva: clique no início, no controle de curvatura e no fim (Esc cancela). Parede/caixa/rampa: arraste. Sala: configure as medidas e clique para criar; Selecionar sala: clique numa sala para editar suas dimensões, rotação e entradas. Esfera e áreas: clique. Mover: arraste o objeto. Remover: clique sobre ele. A borracha apaga somente a camada de linhas novas, preservando a pintura original.</p>
+    <div id="mapEditorValidacao" class="map-editor-validacao" hidden aria-live="polite"></div>
+    <p id="mapEditorAviso" role="status"></p>
+    <div class="map-editor-actions">
+      <button id="mapEditorDownload" type="button">💾 Salvar .jmap</button>
+      <button id="mapEditorCancel" type="button">Cancelar</button>
+      <button id="mapEditorApply" class="map-primary" type="button">✓ Aplicar na IDE</button>
+    </div>
+  </section>
+</div>
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 
 <!-- Scripts de dependência externa -->
 <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
@@ -355,8 +734,11 @@ def descrever_api() -> str:
 
 <!-- 1. Carrega os cenários do arquivo JS externo -->
 <script src="../src/js/cenarios.js?v=cidade-v3"></script>
+<<<<<<< HEAD
 <script src="../src/js/editor/mapaEditorCore.js"></script>
 <script src="../src/js/editor/mapaEditor.js"></script>
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 <script src="../src/js/exemplos/biblioteca.js"></script>
 
 <!-- 2. Cria o alias global obrigatorio para o SimEV3 e Playback -->
@@ -2091,6 +2473,7 @@ async function iniciar() {
   };
   Terminal.limpar();
   Playback.iniciar();
+<<<<<<< HEAD
 
   (function wireMapasExternos() {
     const btnPage = document.getElementById('btnEditorMapasPage');
@@ -2136,6 +2519,8 @@ async function iniciar() {
     setTimeout(aplicarPendente, 800);
   })();
 
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   const elLim = $('limite');
   if (elLim) {
     elLim.max = String(LIMITE_SIM_MAX);
@@ -2198,5 +2583,10 @@ async function iniciar() {
 
 iniciar();
 </script>
+<<<<<<< HEAD
+=======
+<script src="../src/js/editor/mapaEditorCore.js"></script>
+<script src="../src/js/editor/mapaEditor.js"></script>
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 </body>
 </html>

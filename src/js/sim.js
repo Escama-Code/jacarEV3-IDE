@@ -178,6 +178,7 @@ class SimEV3 {
     return { drenado: this.t - t0, ligados };
   }
 
+<<<<<<< HEAD
   // ---------- sensores (perfil OBR Nacional) ----------
   // 3 sensores de cor na barra frontal: esq / centro / dir
   // lateralCm: negativo = esquerda do robô, positivo = direita
@@ -219,6 +220,20 @@ class SimEV3 {
     while (g < -180) g += 360;
     return g;
   }
+=======
+  // ---------- sensores ----------
+  // Sensor de cor: lê PIXELS do tapete (mesma imagem do 2D/3D), 5,5 cm à frente do centro do robô
+  rgbEm(x, y, th, tempoS = this.t) {
+    // A cor é amostrada no instante da simulação, não no relógio do navegador.
+    // O quarto argumento permite consultar frames antigos no playback.
+    _Cen.atualizarTapete?.(this.cen, this.tapete, tempoS);
+    const sx = x + 5.5 * Math.cos(th), sy = y + 5.5 * Math.sin(th);
+    return this.cfg.amostragem === 'pixel' ? _Cen.lerPixel(this.tapete, sx, sy) : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
+  }
+  refletidaEm(x, y, th, tempoS = this.t) { return _Cen.intensidade(this.rgbEm(x, y, th, tempoS), this.cfg.modoLuz); }   // 0-100
+  corEm(x, y, th, tempoS = this.t) { const [r, g, b] = this.rgbEm(x, y, th, tempoS); return _Cen.classificarCor(r, g, b); }  // id EV3 0-7
+  refletida() { return this.refletidaEm(this.x, this.y, this.th); }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
     let best = 255;

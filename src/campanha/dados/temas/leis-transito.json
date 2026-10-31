@@ -4,7 +4,11 @@
     {
       "id": "lt01-sinalizar",
       "titulo": "Sinalizar antes de sair",
+<<<<<<< HEAD
       "ordem": 20,
+=======
+      "ordem": 5,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -20,6 +24,7 @@
         "O avaliador verifica se você usou led e andou o suficiente.",
         "robo.led('LARANJA'); time.sleep(0.3); robo.led('VERDE')"
       ],
+<<<<<<< HEAD
       "limites": {
         "tempoSimMaxS": 15,
         "tentativasPorDica": 3
@@ -67,11 +72,28 @@
         ]
       },
       "temaId": "leis-transito"
+=======
+      "limites": { "tempoSimMaxS": 15 },
+      "objetivos": [
+        { "id": "sinalizou", "tipo": "api_usada", "obrigatorio": true, "metodos": ["led"] },
+        { "id": "andou", "tipo": "dist_min", "obrigatorio": true, "cm": 12 }
+      ],
+      "recompensas": { "xp": 50, "desbloqueia": ["lt02-pare"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Agente", "texto": "Regra 1: sinalize (LARANJA) e só entre na via com VERDE." }],
+        "sucesso": [{ "personagem": "Agente", "texto": "Sinalização correta. Próxima: parada obrigatória." }],
+        "fracasso": [{ "personagem": "Agente", "texto": "Use led e circule um trecho curto." }]
+      }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     },
     {
       "id": "lt02-pare",
       "titulo": "Parada obrigatória",
+<<<<<<< HEAD
       "ordem": 21,
+=======
+      "ordem": 6,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -87,6 +109,7 @@
         "Depois led VERDE e mais um trecho com mover_continuo.",
         "A distância total ainda precisa ser ≥ 18 cm."
       ],
+<<<<<<< HEAD
       "limites": {
         "tempoSimMaxS": 20,
         "tentativasPorDica": 3
@@ -142,11 +165,29 @@
         ]
       },
       "temaId": "leis-transito"
+=======
+      "limites": { "tempoSimMaxS": 20 },
+      "objetivos": [
+        { "id": "parou", "tipo": "api_usada", "obrigatorio": true, "metodos": ["parar_motor"] },
+        { "id": "led", "tipo": "api_usada", "obrigatorio": true, "metodos": ["led"] },
+        { "id": "andou", "tipo": "dist_min", "obrigatorio": true, "cm": 18 }
+      ],
+      "recompensas": { "xp": 70, "desbloqueia": ["lt03-zona"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Agente", "texto": "Regra 2: na faixa de pare, pare de verdade e sinalize VERMELHO antes de seguir." }],
+        "sucesso": [{ "personagem": "Agente", "texto": "Parada válida. Agora respeite a zona da pista." }],
+        "fracasso": [{ "personagem": "Agente", "texto": "Faltou parar_motor, led ou distância." }]
+      }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     },
     {
       "id": "lt03-zona",
       "titulo": "Chegar na zona permitida",
+<<<<<<< HEAD
       "ordem": 22,
+=======
+      "ordem": 7,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -162,6 +203,7 @@
         "Se travar num loop, confira o limiar e o sentido da curva.",
         "LED verde = via liberada durante o percurso."
       ],
+<<<<<<< HEAD
       "limites": {
         "tempoSimMaxS": 45,
         "tentativasPorDica": 3
@@ -214,11 +256,28 @@
         ]
       },
       "temaId": "leis-transito"
+=======
+      "limites": { "tempoSimMaxS": 45 },
+      "objetivos": [
+        { "id": "sensor", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] },
+        { "id": "zona", "tipo": "regiao", "obrigatorio": true, "regiao": { "x": 70, "y": 20, "w": 50, "h": 50 } }
+      ],
+      "recompensas": { "xp": 90, "desbloqueia": ["lt04-final"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Agente", "texto": "Regra 3: destino só conta dentro da zona permitida (leste da pista)." }],
+        "sucesso": [{ "personagem": "Agente", "texto": "Zona ok. Desafio final do tema." }],
+        "fracasso": [{ "personagem": "Agente", "texto": "Não alcançou a região a tempo." }]
+      }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     },
     {
       "id": "lt04-final",
       "titulo": "Percurso completo e seguro",
+<<<<<<< HEAD
       "ordem": 23,
+=======
+      "ordem": 8,
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       "setup": {
         "cenario": "treino",
         "inicio": "padrao",
@@ -234,6 +293,7 @@
         "Objetivos: led, ler_sensor, parar_motor e região leste.",
         "No fim: parar_motor + led('VERMELHO')."
       ],
+<<<<<<< HEAD
       "limites": {
         "tempoSimMaxS": 50,
         "tentativasPorDica": 3
@@ -300,6 +360,21 @@
         ]
       },
       "temaId": "leis-transito"
+=======
+      "limites": { "tempoSimMaxS": 50 },
+      "objetivos": [
+        { "id": "led", "tipo": "api_usada", "obrigatorio": true, "metodos": ["led"] },
+        { "id": "sensor", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] },
+        { "id": "parou", "tipo": "api_usada", "obrigatorio": true, "metodos": ["parar_motor"] },
+        { "id": "zona", "tipo": "regiao", "obrigatorio": true, "regiao": { "x": 65, "y": 15, "w": 55, "h": 55 } }
+      ],
+      "recompensas": { "xp": 120, "desbloqueia": [] },
+      "narrativa": {
+        "intro": [{ "personagem": "Agente", "texto": "Final: sinalize, siga a via com sensor, chegue na zona e encerre com parada + VERMELHO." }],
+        "sucesso": [{ "personagem": "Agente", "texto": "Academia concluída. Você dominou códigos-base e leis de trânsito na pista!" }],
+        "fracasso": [{ "personagem": "Agente", "texto": "Revise: led, sensor, parar_motor e zona leste." }]
+      }
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     }
   ]
 }

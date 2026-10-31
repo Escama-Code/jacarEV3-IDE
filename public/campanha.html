@@ -38,7 +38,11 @@
     </header>
 
     <div id="campViewModulos" class="lobby-view">
+<<<<<<< HEAD
       <p class="camp-hint-mod">Trilha: <strong>Primeiros passos</strong> → <strong>Sensores OBR</strong> → <strong>Trânsito</strong> → <strong>Desafios</strong>. Cada módulo só libera quando o anterior estiver 100% concluído.</p>
+=======
+      <p class="camp-hint-mod">Escolha um módulo. O próximo só libera quando você concluir todas as missões do anterior.</p>
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
       <div id="campGridModulos" class="camp-grid-modulos"></div>
     </div>
 
@@ -88,14 +92,21 @@ function renderModulos() {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'camp-card-modulo' + (liberado ? '' : ' bloqueado') + (completo ? ' completo' : '');
+<<<<<<< HEAD
     const bloqueioMsg = liberado ? '' : '<div class="camp-card-lock">🔒 Conclua o módulo anterior</div>';
 
+=======
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     card.disabled = !liberado;
     card.innerHTML =
       '<div class="camp-card-num">' + (idx + 1) + '</div>' +
       '<div class="camp-card-body">' +
         '<div class="camp-card-titulo">' + tema.titulo + '</div>' +
+<<<<<<< HEAD
         '<div class="camp-card-desc">' + (tema.descricao || '') + '</div>' + bloqueioMsg +
+=======
+        '<div class="camp-card-desc">' + (tema.descricao || '') + '</div>' +
+>>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
         '<div class="camp-card-meta">' +
           (liberado ? (completo ? '✓ Concluído · ' : '') + sumStars + '/' + maxStars + ' ★'
             : '🔒 Conclua o módulo anterior') +
