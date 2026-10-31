@@ -12,6 +12,16 @@
 <link rel="stylesheet" href="../src/css/main.css">
 <link rel="stylesheet" href="../src/css/campanha.css">
 <style>
+  /* Indicação discreta do estado da sinalização no Tapete Urbano. */
+  .sinal-urbano-status {
+    border-radius: 999px; padding: 5px 10px; white-space: nowrap;
+    font-size: 12px; font-weight: 700; border: 1px solid #8896a5;
+    background: #253346; color: white;
+  }
+  .sinal-urbano-status[hidden], .sinal-urbano-linha[hidden] { display: none !important; }
+  /* Indicador em linha própria: a mudança da cor não desloca câmera e robô. */
+  .sinal-urbano-linha { margin: -3px 0 8px; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #btnReiniciarSinal { font-size: 12px; padding: 4px 9px; }
   /* modo campanha: mapa fixo pela missão, só 2D/3D pode trocar */
   body.modo-campanha #cenario,
   body.modo-campanha #inicio,
@@ -67,10 +77,158 @@
 #mapEditorAviso, #mapEditorStatus { margin: 6px 0; font-size: 13px; }
 #mapEditorAviso { color: #b5eece; }
 .map-editor-hint { color: #bdcde0; font-size: 12px; line-height: 1.45; }
+.map-editor-group-label { color: #9ad7de; font-size: 12px; }
+.map-editor-link { color: #8fdfe6; font-size: 12px; }
+.map-editor-validacao { border: 1px solid #627789; padding: 8px 14px; border-radius: 8px; background: #203045; max-height: 150px; overflow-y: auto; font-size: 13px; }
+.map-rule-aviso { color: #ffd77b; } .map-rule-ok { color: #92ecc8; } .map-rule-info { color: #bdccdd; }
+.map-editor-tools label:has(input[type=checkbox]) { font-size: 12px; }
 @media(max-width:650px) {
   .map-editor-window { padding: 10px; max-height: 98vh; }
   .map-editor-window button { padding: 6px 8px; }
 }
+/* Barra compacta por categorias: uma única seção de ferramentas fica visível. */
+.map-editor-identity {
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  gap:10px; margin:0 0 10px;
+}
+.map-editor-current {
+  border:1px solid #467e84; border-radius:999px; background:#193740;
+  color:#a4f2e5; font-size:12px; font-weight:600; padding:6px 12px;
+}
+.map-editor-nav {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  flex-wrap:wrap; padding-bottom:8px;
+}
+.map-editor-tabs {display:flex; gap:5px; flex-wrap:wrap; align-items:center;}
+.map-editor-window .map-editor-tabs [role="tab"] {
+  border-color:transparent; background:transparent; color:#bac8db;
+  border-radius:7px; padding:8px 12px;
+}
+.map-editor-window .map-editor-tabs [role="tab"][aria-selected="true"] {
+  background:#0d646d; border-color:#31c4c0; color:white;
+}
+.map-editor-window .map-editor-tabs [role="tab"]:focus-visible,
+.map-editor-window button:focus-visible,
+.map-editor-window a:focus-visible {
+  outline:2px solid #9ce8ed; outline-offset:2px;
+}
+.map-editor-history {display:flex;gap:5px;}
+.map-editor-panels {
+  border:1px solid #3c526b; background:#1d2c3e; border-radius:10px;
+  padding:9px 12px; margin-bottom:9px; min-height:46px;
+}
+.map-editor-panel[hidden], .map-editor-suboptions[hidden] {display:none !important;}
+.map-editor-panel .map-editor-tools {margin:3px 0;gap:7px;}
+.map-editor-panel .map-editor-suboptions {margin-top:9px;padding-top:8px;border-top:1px solid #40536b;}
+.map-editor-panel-help {font-size:12px;color:#bac8dc;line-height:1.35;margin:5px 0 0;}
+@media(max-width:650px){
+  .map-editor-window .map-editor-tabs [role="tab"] {padding:7px 8px;}
+  .map-editor-nav {align-items:stretch;}
+  .map-editor-history {width:100%;justify-content:flex-end;}
+  .map-editor-panels {padding:8px;}
+}
+
+.map-editor-room-options {display:grid;gap:7px;}
+.map-editor-room-title {display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.map-editor-room-title span {color:#b8d8e6;font-size:12px;flex:1;}
+.map-editor-room-options input[type=number] {width:72px;box-sizing:border-box;background:#25374c;
+  color:white;border:1px solid #607189;border-radius:6px;padding:6px;}
+.map-editor-room-options .map-editor-tools {margin:2px 0;}
+#mapEditorRoomSecondOptions[hidden]{display:none;}
+
+
+/* Ajustes do Sandbox: o Canvas 2D preserva a proporção do mapa.
+   A câmera 3D continua ocupando o palco inteiro e acompanha o ResizeObserver. */
+body.modo-sandbox #palco,
+body.modo-campanha #palco {
+  height: clamp(340px, 32vw, 460px);
+  min-height: 0;
+  max-height: none;
+  background: #cfd8e2;
+}
+body.modo-sandbox #palco > #cv,
+body.modo-campanha #palco > #cv {
+  object-fit: contain;
+  object-position: center;
+  background: transparent;
+}
+body.modo-sandbox .painel-arena #cenario,
+body.modo-campanha .painel-arena #cenario {
+  flex: 1 1 220px;
+  min-width: 170px;
+  max-width: 100%;
+}
+.arena-posicao #inicio { flex: 0 1 275px; min-width: 180px; max-width: 100%; }
+.arena-posicao #opts3d { flex: 1 1 300px; }
+@media (max-width: 1100px) {
+  body.modo-sandbox #palco,
+  body.modo-campanha #palco { height: clamp(300px, 60vw, 460px); }
+}
+  /* Seleção compacta dos programas por categoria. */
+  .biblioteca-filtro {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; min-width: 0;
+  }
+  .biblioteca-filtro select { min-width: 100px; max-width: 100%; }
+  .biblioteca-programa { flex: 1 1 230px; }
+  .biblioteca-programa select { flex: 1; width: 100%; }
+  body.modo-campanha .biblioteca-filtro,
+  body.modo-campanha #descricaoExemplo { display: none !important; }
+/* Dicas da Cidade Educativa ficam FORA do piso: não interferem no sensor de cor. */
+.dica-cidade {
+  display:flex; align-items:center; gap:12px;
+  margin:8px 0 4px; padding:9px 12px;
+  background:linear-gradient(110deg,#12394b,#1d3944);
+  border:1px solid #3b7181; border-left:4px solid #56c7a9;
+  border-radius:9px; color:#eefbf5; font-size:12px; line-height:1.4;
+}
+.dica-cidade[hidden] { display:none !important; }
+.dica-cidade-icone { font-size:23px; }
+.dica-cidade-texto { display:flex; flex-direction:column; gap:2px; }
+.dica-cidade-texto strong { font-size:13px; color:#baf1d6; }
+.dica-cidade-lei { font-size:11px; color:#a4e2f3; margin-top:3px; font-weight:600; }
+.dica-cidade-fonte { font-size:11px; color:#b9eeff; text-decoration:underline; text-underline-offset:2px; }
+.dica-cidade-texto { min-width:0; }
+
+  /* Sandbox: painéis equilibrados em telas largas, sem trocar altura do palco
+     quando o usuário seleciona mapas/programas. */
+  body.modo-sandbox:not(.modo-campanha) main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  body.modo-sandbox:not(.modo-campanha) main > .painel {
+    min-width: 0;
+  }
+  body.modo-sandbox:not(.modo-campanha) main > .painel-codigo {
+    display: flex;
+    flex-direction: column;
+  }
+  body.modo-sandbox:not(.modo-campanha) .painel-codigo #editor {
+    flex: 1 1 390px;
+    height: auto;
+    min-height: 340px;
+    max-height: none;
+  }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo {
+    margin: 3px 0 6px;
+    gap: 6px 12px;
+    align-items: center;
+  }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo .info { margin: 0; }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo #descricaoExemplo { flex: 1 1 250px; }
+  body.modo-sandbox:not(.modo-campanha) #mapaExemploAviso { color: #b7d9dc; }
+  body.modo-sandbox:not(.modo-campanha) #btnMapaExemplo { font-size: 11px; padding: 3px 8px; }
+  .relogio-sim {
+    color: #b9e8eb; background: #17323a; border: 1px solid #3b6873;
+    border-radius: 5px; font: 12px/1.5 ui-monospace, monospace;
+    padding: 4px 7px; white-space: nowrap;
+  }
+  @media(max-width:1100px) {
+    body.modo-sandbox:not(.modo-campanha) main { grid-template-columns: 1fr; }
+    body.modo-sandbox:not(.modo-campanha) .painel-codigo #editor {
+      flex: none; height: 390px; min-height: 340px; max-height: 390px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -165,8 +323,18 @@
 <section class="painel painel-codigo">
     <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
     <div class="linha" style="margin-top:0">
-      <select id="exemplo"></select>
-      <label>limite <input id="limite" type="number" value="300" min="1" max="300" step="1" title="Máximo 300 s"> s simulados <span class="info" style="margin:0">(máx. 300s)</span></label>
+      <label class="biblioteca-filtro">Categoria
+        <select id="categoriaExemplo" aria-label="Categoria de exemplos" disabled></select>
+      </label>
+      <label class="biblioteca-filtro biblioteca-programa">Programa
+        <select id="exemplo" aria-label="Programa de exemplo" disabled></select>
+      </label>
+      <label title="Esse valor é o máximo permitido, não o tempo obrigatório de execução.">limite máximo <input id="limite" type="number" value="300" min="1" max="300" step="1" title="O programa pode terminar antes de 300 s"> s <span class="info" style="margin:0">(o programa pode terminar antes)</span></label>
+    </div>
+    <div class="linha linha-mapa-exemplo">
+      <span id="descricaoExemplo" class="info" aria-live="polite">Carregando biblioteca de exemplos…</span>
+      <span id="mapaExemploAviso" class="info" aria-live="polite"></span>
+      <button type="button" id="btnMapaExemplo" hidden title="Trocar para o mapa recomendado por este programa (somente quando você clicar)">Usar mapa indicado</button>
     </div>
     <div id="editor" style="margin-top:8px"></div>
     <div class="linha">
@@ -188,9 +356,11 @@
       <button id="btnCarregarArena" type="button" title="Importar arquivo .sArena do sBotics">📂 Importar .sArena</button>
       <button id="btnEditorMapa" type="button" title="Desenhar pistas próprias com caneta e mouse">✏️ Editar mapa</button>
       <input id="inputSArena" type="file" accept=".sArena,.sarena,.json" hidden>
+    </div>
+    <div class="linha arena-posicao" style="margin:0 0 8px">
       <select id="inicio" title="Posição inicial do robô"></select>
       <span id="opts3d" class="linha" style="margin:0" hidden>
-        <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option> <option value="arara">Robô: Arara</option> <option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option> <option value="carro">Robô: Carro</option><option value="onibus">Robô: Onibus</option>
+        <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option> <option value="arara">Robô: Arara</option> <option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option> <option value="carro">Robô: Carro</option>
         </select>
         <select id="cam3d"><option value="livre">Câmera: livre (arraste)</option><option value="seguir">Câmera: seguir o robô</option><option value="topo">Câmera: vista de topo</option></select>
         <label id="lblDistCam" title="Distância da câmera ao seguir o robô" style="gap:4px">
@@ -200,15 +370,31 @@
         </label>
       </span>
     </div>
+    <div id="sinalUrbanoLinha" class="linha sinal-urbano-linha" hidden>
+      <span id="sinalUrbanoStatus" class="sinal-urbano-status" role="status" aria-live="off"></span>
+      <button id="btnReiniciarSinal" type="button" title="Reiniciar o relógio do semáforo e voltar a reprodução ao começo">↻ Reiniciar semáforo</button>
+      <span class="info" style="margin:0">ciclo de 12 s · durante o programa usa tempo simulado</span>
+    </div>
     <div id="palco">
       <canvas id="cv" class="vista" width="1000" height="667"></canvas>
       <div id="cv3d" class="vista" hidden></div>
+    </div>
+    <div id="dicaCidade" class="dica-cidade" hidden aria-live="polite" role="status">
+      <span id="dicaCidadeIcone" class="dica-cidade-icone" aria-hidden="true">🏙️</span>
+      <div class="dica-cidade-texto">
+        <strong id="dicaCidadeTitulo"></strong>
+        <span id="dicaCidadeMensagem"></span>
+        <span id="dicaCidadeFundamento" class="dica-cidade-lei" hidden></span>
+        <a id="dicaCidadeFonte" class="dica-cidade-fonte" href="https://www.planalto.gov.br/ccivil_03/leis/l9503compilado.htm"
+           target="_blank" rel="noopener noreferrer" hidden>Consultar o Código de Trânsito Brasileiro</a>
+      </div>
     </div>
     <div class="linha">
       <button id="btnPlay" disabled>▶ Reproduzir</button>
       <button type="button" id="btnTeleop" title="WASD ou gamepad — ao vivo">🎮 Teleop</button>
       <input id="slider" type="range" min="0" max="1000" value="0" disabled>
       <select id="vel"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+      <output id="tempoPlayback" class="relogio-sim" aria-live="off" title="Relógio da reprodução em segundos simulados: tempo atual / duração real calculada pelo programa">0,0 / 0,0 s simulados</output>
       <label><input id="som" type="checkbox" checked> som</label>
     </div>
     <div class="info" id="resumo">Rode um script pra ver o robô.</div>
@@ -361,40 +547,162 @@ def descrever_api() -> str:
 
 
 <!-- Editor visual de pistas originais: não depende de arquivos .sArena -->
-<div id="mapEditorModal" class="map-editor-modal" hidden role="dialog" aria-modal="true" aria-label="Editor de mapas autorais">
+<div id="mapEditorModal" class="map-editor-modal" hidden role="dialog" aria-modal="true" aria-label="Construtor de mapas autorais">
   <section class="map-editor-window">
     <div class="map-editor-head">
-      <h2>✏️ Editor de mapas — JacarEV3</h2>
-      <button id="mapEditorClose" type="button" aria-label="Fechar editor">✕ Fechar</button>
+      <h2>🧩 Construtor de Mapas — JacarEV3 v2</h2>
+      <button id="mapEditorClose" type="button">✕ Fechar</button>
     </div>
+<div class="map-editor-identity">
+  <label for="mapEditorNome">Nome <input id="mapEditorNome" type="text" maxlength="70" value="Meu circuito"></label>
+  <span class="map-editor-current" id="mapEditorCurrentTool" role="status" aria-live="polite">✏️ Caneta selecionada</span>
+</div>
+<div class="map-editor-nav">
+  <div class="map-editor-tabs" role="tablist" aria-label="Grupos de ferramentas do mapa">
+    <button type="button" role="tab" id="mapEditorTabDesenho" data-map-tab="desenho" aria-controls="mapEditorPanelDesenho" aria-selected="true" tabindex="0">✏️ Desenho</button>
+    <button type="button" role="tab" id="mapEditorTabObjetos" data-map-tab="objetos" aria-controls="mapEditorPanelObjetos" aria-selected="false" tabindex="-1">🧱 Objetos</button>
+    <button type="button" role="tab" id="mapEditorTabAjustes" data-map-tab="ajustes" aria-controls="mapEditorPanelAjustes" aria-selected="false" tabindex="-1">⚙️ Ajustes</button>
+    <button type="button" role="tab" id="mapEditorTabOBR" data-map-tab="obr" aria-controls="mapEditorPanelOBR" aria-selected="false" tabindex="-1">🏆 OBR</button>
+    <button type="button" role="tab" id="mapEditorTabArquivo" data-map-tab="arquivo" aria-controls="mapEditorPanelArquivo" aria-selected="false" tabindex="-1">📁 Arquivo</button>
+  </div>
+  <div class="map-editor-history" aria-label="Histórico de edição">
+    <button id="mapEditorUndo" type="button" title="Desfazer (Ctrl+Z)">↶ Desfazer</button>
+    <button id="mapEditorRedo" type="button" title="Refazer (Ctrl+Shift+Z)">↷ Refazer</button>
+  </div>
+</div>
+<div class="map-editor-panels">
+  <section role="tabpanel" id="mapEditorPanelDesenho" aria-labelledby="mapEditorTabDesenho" data-map-panel="desenho" class="map-editor-panel">
+    <div class="map-editor-tools" aria-label="Ferramentas de linha">
+      <button data-map-tool="caneta" type="button" class="ativo">✏️ Caneta</button>
+      <button data-map-tool="borracha" type="button">◻ Borracha</button>
+      <button data-map-tool="reta" type="button">╱ Reta</button>
+      <button data-map-tool="curva" type="button">⌒ Curva</button>
+      <button data-map-tool="circulo" type="button">◯ Elipse</button>
+      <button data-map-tool="retangulo" type="button">▢ Retângulo</button>
+      <label for="mapEditorBrush">Espessura <input id="mapEditorBrush" type="range" min="0.5" max="12" step="0.5" value="3"></label>
+      <output id="mapEditorBrushValor" for="mapEditorBrush">3 cm</output>
+    </div>
+    <div class="map-editor-tools map-editor-suboptions">
+      <label><input type="checkbox" id="mapEditorSmooth" checked> Suavizar mão livre</label>
+      <label><input type="checkbox" id="mapEditorRecognize"> Reconhecer retas</label>
+      <label><input type="checkbox" id="mapEditorSnap" checked> Conectar pontas próximas</label>
+    </div>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelObjetos" aria-labelledby="mapEditorTabObjetos" data-map-panel="objetos" class="map-editor-panel" hidden>
+    <div class="map-editor-tools" aria-label="Ferramentas de construção">
+      <button data-map-tool="parede" type="button">▥ Parede</button>
+      <button data-map-tool="caixa" type="button">▣ Obstáculo</button>
+      <button data-map-tool="rampa" type="button">▱ Rampa</button>
+      <button data-map-tool="esfera" type="button">● Esfera</button>
+      <button data-map-tool="verde" type="button">🟩 Área verde</button>
+      <button data-map-tool="vermelho" type="button">🟥 Área vermelha</button>
+      <button data-map-tool="sala" type="button">⌂ Criar sala</button>
+      <button data-map-tool="editarSala" type="button">✥ Selecionar sala</button>
+      <button data-map-tool="mover" type="button">✋ Mover</button>
+      <button data-map-tool="excluir" type="button">🗑 Remover</button>
+      <button data-map-tool="inicio" type="button">🤖 Largada</button>
+    </div>
+    <div class="map-editor-room-options map-editor-suboptions" data-map-options="sala" hidden>
+      <div class="map-editor-room-title">
+        <strong>Configurar sala de resgate</strong>
+        <span id="mapEditorRoomSelection" role="status">Nova sala: defina as medidas e clique no mapa.</span>
+        <button id="mapEditorRoomNew" type="button" title="Parar de editar a sala selecionada">＋ Nova sala</button>
+      </div>
+      <div class="map-editor-tools">
+        <label for="mapEditorRoomWidth">Largura (cm)
+          <input id="mapEditorRoomWidth" type="number" min="35" max="180" step="1" value="90">
+        </label>
+        <label for="mapEditorRoomHeight">Altura (cm)
+          <input id="mapEditorRoomHeight" type="number" min="35" max="180" step="1" value="90">
+        </label>
+        <label for="mapEditorRoomRotation">Orientação
+          <select id="mapEditorRoomRotation">
+            <option value="0">0°</option><option value="1">90°</option>
+            <option value="2">180°</option><option value="3">270°</option>
+          </select>
+        </label>
+        <button id="mapEditorRoomTurn" type="button" title="Girar a sala 90 graus">⟳ Girar 90°</button>
+      </div>
+      <div class="map-editor-tools">
+        <label for="mapEditorRoomSide">Entrada 1 — parede
+          <select id="mapEditorRoomSide">
+            <option value="esquerda">Esquerda</option>
+            <option value="cima">Superior</option>
+            <option value="direita">Direita</option>
+            <option value="baixo">Inferior</option>
+          </select>
+        </label>
+        <label for="mapEditorEntrance">Largura (cm)
+          <input id="mapEditorEntrance" type="number" min="10" max="70" step="1" value="27">
+        </label>
+      </div>
+      <div class="map-editor-tools">
+        <label><input id="mapEditorRoomSecond" type="checkbox"> Adicionar segunda entrada</label>
+      </div>
+      <div id="mapEditorRoomSecondOptions" class="map-editor-tools" hidden>
+        <label for="mapEditorRoomSecondSide">Entrada 2 — parede
+          <select id="mapEditorRoomSecondSide">
+            <option value="direita">Direita</option><option value="cima">Superior</option>
+            <option value="baixo">Inferior</option><option value="esquerda">Esquerda</option>
+          </select>
+        </label>
+        <label for="mapEditorRoomSecondWidth">Largura (cm)
+          <input id="mapEditorRoomSecondWidth" type="number" min="10" max="70" step="1" value="27">
+        </label>
+      </div>
+      <p class="map-editor-panel-help">Para editar uma sala já desenhada, use <b>Selecionar sala</b> e clique nela. A rotação gira também as entradas e os cantos coloridos. O Modo OBR avisa sobre medidas fora da referência.</p>
+    </div>
+    <div class="map-editor-tools map-editor-suboptions" data-map-options="area" hidden>
+      <label for="mapEditorTriCorner">Canto da área <select id="mapEditorTriCorner">
+        <option value="tr">Superior direito</option><option value="tl">Superior esquerdo</option>
+        <option value="br">Inferior direito</option><option value="bl">Inferior esquerdo</option>
+      </select></label>
+    </div>
+    <div class="map-editor-tools map-editor-suboptions" data-map-options="inicio" hidden>
+      <label for="mapEditorHeading">Direção do robô <select id="mapEditorHeading">
+        <option value="-90">↑</option><option value="0">→</option><option value="90">↓</option><option value="180">←</option>
+      </select></label>
+    </div>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelAjustes" aria-labelledby="mapEditorTabAjustes" data-map-panel="ajustes" class="map-editor-panel" hidden>
     <div class="map-editor-tools">
-      <label>Nome <input id="mapEditorNome" type="text" maxlength="70" value="Meu circuito" placeholder="Nome do mapa"></label>
-      <button id="mapEditorBlank" type="button">＋ Novo em branco</button>
-      <button id="mapEditorCopy" type="button">📋 Copiar mapa atual</button>
+      <label><input type="checkbox" id="mapEditorGrid" checked> Mostrar grade 30 cm</label>
+      <label><input type="checkbox" id="mapEditorSnapGrid"> Ajustar à grade 5 cm</label>
+      <label for="mapEditorSnapDist">Distância de conexão <select id="mapEditorSnapDist">
+        <option value="2">2 cm</option><option value="3" selected>3 cm</option><option value="5">5 cm</option>
+      </select></label>
+    </div>
+    <p class="map-editor-panel-help">Conexão e suavização podem ser ativadas ou desativadas na aba Desenho. A grade serve de referência e não aparece no mapa final.</p>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelOBR" aria-labelledby="mapEditorTabOBR" data-map-panel="obr" class="map-editor-panel" hidden>
+    <div class="map-editor-tools">
+      <label for="mapEditorPerfil">Referência de treino <select id="mapEditorPerfil" aria-label="Perfil de regras">
+        <option value="livre">Modo Livre</option>
+        <option value="regional">OBR 2026 — Regional/Estadual</option>
+        <option value="nacional">OBR 2026 — Nacional</option>
+      </select></label>
+      <label for="mapEditorNivel">Nível <select id="mapEditorNivel"><option value="1">Nível 1</option><option value="2">Nível 2</option></select></label>
+      <button id="mapEditorCheck" type="button">✓ Verificar medidas</button>
+      <a href="https://obr.robocup.org.br/documentos-e-manuais/" target="_blank" rel="noopener noreferrer" class="map-editor-link">Manuais oficiais</a>
+    </div>
+    <p class="map-editor-panel-help">Verificações parciais para treino; não certificam uma arena oficial.</p>
+  </section>
+  <section role="tabpanel" id="mapEditorPanelArquivo" aria-labelledby="mapEditorTabArquivo" data-map-panel="arquivo" class="map-editor-panel" hidden>
+    <div class="map-editor-tools">
+      <button id="mapEditorBlank" type="button">＋ Em branco</button>
+      <button id="mapEditorCopy" type="button">📋 Copiar cenário atual</button>
       <button id="mapEditorUpload" type="button">📂 Abrir .jmap</button>
       <input id="mapEditorFile" type="file" accept=".jmap,.json,application/json" hidden>
     </div>
-    <div class="map-editor-tools">
-      <button data-map-tool="caneta" type="button" class="ativo" aria-pressed="true">✏️ Caneta</button>
-      <button data-map-tool="borracha" type="button" aria-pressed="false">◻ Borracha</button>
-      <button data-map-tool="reta" type="button" aria-pressed="false">╱ Reta</button>
-      <button data-map-tool="inicio" type="button" aria-pressed="false">🤖 Posição inicial</button>
-      <label>Espessura <input id="mapEditorBrush" type="range" min="0.5" max="12" step="0.5" value="3"></label>
-      <span id="mapEditorBrushValor">3 cm</span>
-      <label>Orientação <select id="mapEditorHeading">
-        <option value="-90">↑ Cima</option>
-        <option value="0">→ Direita</option>
-        <option value="90">↓ Baixo</option>
-        <option value="180">← Esquerda</option>
-      </select></label>
-      <button id="mapEditorUndo" type="button">↶ Desfazer</button>
-      <button id="mapEditorRedo" type="button">↷ Refazer</button>
-    </div>
+    <p class="map-editor-panel-help">Para salvar seu trabalho use “Salvar .jmap” abaixo do mapa; você poderá editá-lo depois.</p>
+  </section>
+</div>
     <div class="map-editor-canvas-frame">
-      <canvas id="mapEditorCanvas" width="1040" height="720" aria-label="Área de desenho da pista"></canvas>
+      <canvas id="mapEditorCanvas" width="1040" height="720" aria-label="Área de desenho da arena"></canvas>
     </div>
     <p id="mapEditorStatus" role="status"></p>
-    <p class="map-editor-hint">Caneta: arraste para desenhar · Borracha: pinta de branco · Reta: arraste para criar um segmento · Posição inicial: clique no mapa. Ao copiar um cenário, suas paredes permanecem como obstáculos. Para apagar totalmente o traçado antigo e criar outro, use “Novo em branco”.</p>
+    <p class="map-editor-hint">Caneta/borracha: arraste. Curva: clique no início, no controle de curvatura e no fim (Esc cancela). Parede/caixa/rampa: arraste. Sala: configure as medidas e clique para criar; Selecionar sala: clique numa sala para editar suas dimensões, rotação e entradas. Esfera e áreas: clique. Mover: arraste o objeto. Remover: clique sobre ele. A borracha apaga somente a camada de linhas novas, preservando a pintura original.</p>
+    <div id="mapEditorValidacao" class="map-editor-validacao" hidden aria-live="polite"></div>
     <p id="mapEditorAviso" role="status"></p>
     <div class="map-editor-actions">
       <button id="mapEditorDownload" type="button">💾 Salvar .jmap</button>
@@ -409,7 +717,8 @@ def descrever_api() -> str:
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 
 <!-- 1. Carrega os cenários do arquivo JS externo -->
-<script src="../src/js/cenarios.js"></script>
+<script src="../src/js/cenarios.js?v=cidade-v3"></script>
+<script src="../src/js/exemplos/biblioteca.js"></script>
 
 <!-- 2. Cria o alias global obrigatorio para o SimEV3 e Playback -->
 <script>
@@ -504,6 +813,8 @@ class SimEV3 {
     if (!CENARIOS[cenario]) throw new Error('cenário desconhecido: ' + cenario);
     this.cenarioNome = cenario; this.cen = CENARIOS[cenario];
     this.tapete = _Cen.obterTapete(cenario);
+    // O Sandbox embute seu próprio SimEV3: ele também deve reiniciar o semáforo.
+    _Cen.atualizarTapete?.(this.cen, this.tapete, 0);
     const s = _Cen.inicioDe(this.cen, this.cfg.inicio);
     this.x = s.x; this.y = s.y; this.th = s.th; this.t = 0;
     this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, modo: 'ocioso', rest: 0, enc: 0 };
@@ -573,13 +884,16 @@ class SimEV3 {
     return { drenado: this.t - t0, ligados };
   }
 
-  rgbEm(x, y, th) {
+  rgbEm(x, y, th, tempoS = this.t) {
+    // Fonte da verdade: a cor do piso no instante da simulação.
+    // Não usar um Canvas estático: o mesmo tapete alimenta o sensor e o 3D.
+    _Cen.atualizarTapete?.(this.cen, this.tapete, tempoS);
     const sx = x + 5.5 * Math.cos(th), sy = y + 5.5 * Math.sin(th);
     return this.cfg.amostragem === 'pixel' ? _Cen.lerPixel(this.tapete, sx, sy) : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
   }
 
-  refletidaEm(x, y, th) { return _Cen.intensidade(this.rgbEm(x, y, th), this.cfg.modoLuz); }
-  corEm(x, y, th) { const [r, g, b] = this.rgbEm(x, y, th); return _Cen.classificarCor(r, g, b); }
+  refletidaEm(x, y, th, tempoS = this.t) { return _Cen.intensidade(this.rgbEm(x, y, th, tempoS), this.cfg.modoLuz); }
+  corEm(x, y, th, tempoS = this.t) { const [r, g, b] = this.rgbEm(x, y, th, tempoS); return _Cen.classificarCor(r, g, b); }
   refletida() { return this.refletidaEm(this.x, this.y, this.th); }
 
   ultrassonico() {
@@ -787,7 +1101,7 @@ const Sugestoes = (() => {
 </script>
 
 <script type="module">
-import '../src/js/3d/cena3d.mjs';
+import '../src/js/3d/cena3d.mjs?v=ui-camera-v1';
 import * as Campanha from '../src/campanha/index.mjs';
 window.Campanha = Campanha;
 // Sandbox: campanha opcional (não bloqueia)
@@ -806,17 +1120,40 @@ const $ = (id) => document.getElementById(id);
 // =====================================================================
 const Terminal = (() => {
   const el = $('terminal');
+  let captura = null;
   const linha = (texto, cls) => {
-    const d = document.createElement('div'); d.className = cls; d.textContent = texto;
-    el.appendChild(d); el.scrollTop = el.scrollHeight;
+    const d = document.createElement('div');
+    d.className = cls;
+    d.textContent = texto;
+    el.appendChild(d);
+    el.scrollTop = el.scrollHeight;
   };
   const limparVazio = () => { const v = el.querySelector('.vazio'); if (v) v.remove(); };
   const classeErro = (l) => (/^\s+/.test(l) ? 'quadro' : 'err');
+
+  function registrar(texto, classe) {
+    const linhas = String(texto).split('\n');
+    for (const l of linhas) {
+      const cls = typeof classe === 'function' ? classe(l) : classe;
+      if (captura) {
+        // A jacarev3 executa no relógio virtual; anotamos a hora de cada print.
+        const instante = App.sim && Number.isFinite(App.sim.t) ? App.sim.t : 0;
+        captura.push({ t: instante, texto: l, classe: cls });
+      } else {
+        limparVazio(); linha(l, cls);
+      }
+    }
+  }
   return {
-    out(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, l.startsWith('[simulador]') ? 'sys' : 'out')); },
-    err(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, classeErro(l))); },
-    sys(t) { limparVazio(); linha(t, 'sys'); },
+    out(t) { registrar(t, l => l.startsWith('[simulador]') ? 'sys' : 'out'); },
+    err(t) { registrar(t, classeErro); },
+    sys(t) { registrar(t, 'sys'); },
     limpar() { el.innerHTML = ''; linha('terminal limpo', 'vazio'); },
+    reiniciarVisor() { el.innerHTML = ''; },
+    iniciarCaptura() { captura = []; },
+    finalizarCaptura() { const mensagens = captura || []; captura = null; return mensagens; },
+    exibirMensagem(m) { limparVazio(); linha(m.texto, m.classe); },
+    exibirMensagens(mensagens) { mensagens.forEach(m => { limparVazio(); linha(m.texto, m.classe); }); }
   };
 })();
 
@@ -899,130 +1236,13 @@ const Ide = (() => {
 // =====================================================================
 // Exemplos
 // =====================================================================
-const EXEMPLOS = {
-  linha: { nome: 'Seguidor de linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3, protocolo as p
+// Os programas Python ficam em src/exemplos/*.py e são carregados sob demanda.
+const bibliotecaExemplos = JacarBibliotecaExemplos.criar({
+  categorias: document.getElementById('categoriaExemplo'),
+  exemplos: document.getElementById('exemplo'),
+  descricao: document.getElementById('descricaoExemplo'),
+});
 
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('VERDE')
-    while True:
-        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
-        if luz < 30:
-            robo.mover_continuo('B', 10)
-            robo.mover_continuo('C', 35)
-        else:
-            robo.mover_continuo('B', 35)
-            robo.mover_continuo('C', 10)
-` },
-  gamepad: { nome: 'Controle / teclado — teleop pelo código', cenario: 'treino', inicio: 'padrao', codigo:
-`"""Teleop pelo código da IDE (Rodar script).
-
-WASD/setas = andar | Espaço = parar | E = apitar | Q/R = LED | Esc = sair
-Gamepad: stick/D-pad | B = parar | A = apitar | X/Y = LED | Start = sair
-
-O await gamepadPonte.teleop(segundos, velocidade) inicia o modo ao vivo.
-"""
-from js import gamepadPonte
-
-print("Teleop 90s pelo código — mexa WASD ou o controle")
-await gamepadPonte.teleop(90, 45)
-print("fim do teleop")
-` },
-  fll_linha: { nome: 'Seguidor de linha — tapete FLL (acha a linha e segue a borda)', cenario: 'fll', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3, protocolo as p
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('VERDE')
-    robo.mover_continuo('B', 25)
-    robo.mover_continuo('C', 25)
-    while robo.ler_sensor(3, p.MODO_COR_REFLETIDA) > 30:
-        pass
-    while True:
-        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
-        if luz < 30:
-            robo.mover_continuo('B', 32)
-            robo.mover_continuo('C', 8)
-        else:
-            robo.mover_continuo('B', 8)
-            robo.mover_continuo('C', 32)
-` },
-  cores: { nome: 'Ler cores (modo COR) — tapete FLL', cenario: 'fll', inicio: 'padrao', codigo:
-`import time
-from jacarev3 import RoboEV3, protocolo as p
-
-NOMES = {0: 'sem cor', 1: 'preto', 2: 'azul', 3: 'verde', 4: 'amarelo', 5: 'vermelho', 6: 'branco', 7: 'marrom'}
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    anterior = None
-    robo.mover_continuo('B', 20)
-    robo.mover_continuo('C', 20)
-    for _ in range(120):
-        cor = int(robo.ler_sensor(3, p.MODO_COR_COR))
-        if cor != anterior:
-            print('cor:', NOMES.get(cor, cor))
-            anterior = cor
-        time.sleep(0.05)
-    robo.parar_motor('B')
-    robo.parar_motor('C')
-` },
-  topico: { nome: 'Pronto da lib: circuito.seguir_linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3
-from jacarev3.topicos import circuito
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    circuito.seguir_linha(robo, porta_sensor=3, limiar=35, velocidade=30, duracao_s=20)
-` },
-  desvio: { nome: 'Desvio clássico (recua, gira, segue) — paredes', cenario: 'desvio', inicio: 'centro', codigo:
-`import time
-from jacarev3 import RoboEV3, protocolo as p
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('VERDE')
-    while True:
-        d = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)
-        if d < 15:
-            robo.apitar(frequencia=880, duracao_ms=150)
-            robo.mover_base(velocidade=-30, direcao=0, duracao_ms=600)
-            time.sleep(0.7)
-            while robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM) < 30:
-                robo.mover_base(velocidade=25, direcao=200, duracao_ms=200)
-                time.sleep(0.25)
-        else:
-            robo.mover_base(velocidade=40, direcao=0, duracao_ms=300)
-            time.sleep(0.1)
-` },
-  rampa: { nome: 'Subir a rampa — tapete FLL (use a vista 3D)', cenario: 'fll', inicio: 'rampa', codigo:
-`import time
-from jacarev3 import RoboEV3
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('AMBAR')
-    robo.mover_base(velocidade=40, direcao=0, duracao_ms=2000)
-    time.sleep(2.2)
-    robo.apitar()
-    print('em cima da rampa!')
-` },
-  basico: { nome: 'Teste dos comandos (bytes de cada método)', cenario: 'treino', inicio: 'padrao', codigo:
-`import time
-from jacarev3 import RoboEV3
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.apitar()
-    robo.led('VERDE')
-    robo.girar_motor('B', velocidade=40, duracao_ms=1000)
-    robo.mover_base(velocidade=30, direcao=0, duracao_ms=500)
-    time.sleep(1)
-    robo.girar_motor_graus('C', 360, 50)
-    print('encoder C =', robo.ler_graus_motor('C'), 'graus')
-    print('luz refletida porta 3 =', robo.ler_sensor(3, 0))
-` },
-  erro: { nome: 'Erro de propósito (veja o Traceback em vermelho)', cenario: 'treino', inicio: 'padrao', codigo:
-`from jacarev3 import RoboEV3
-
-with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.led('ROXO')
-` },
-};
 
 // =====================================================================
 // Playback
@@ -1030,11 +1250,35 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
 const Playback = (() => {
   const COR_LED = { VERDE: '#2ecc40', VERMELHO: '#ff4136', AMBAR: '#ff9f1a', DESLIGADO: '#555' };
   let sim = null, tocando = false, t = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, audio = null;
+  let mensagensTerminal = [], idxTerminal = 0, ultimoTerminalT = -1, sincronizarPrints = false;
+  let eventosDicasCidade = [];
   let modo = '2d', vista = null, tipoRobo = 'ev3', modoCam = 'livre', sonda = null, sondaChave = '';
   let cenId = '', cen = null, tapete = null, ESC = 8;
+  let inicioRelogioUrbano = performance.now();
+
+  function atualizarSemaforoVisual(tempoS) {
+    const linha = $('sinalUrbanoLinha');
+    const painel = $('sinalUrbanoStatus');
+    if (!cen || typeof cen.estadoSemaforoEm !== 'function') {
+      if (linha) linha.hidden = true;
+      return;
+    }
+    Cenarios.atualizarTapete(cen, tapete, tempoS);
+    const duracao = cen.cicloSemaforo.reduce((s, fase) => s + fase.duracao, 0);
+    // Exibe 0-11 em vez de segundos acumulados da página (138, 200 etc.).
+    const noCiclo = ((tempoS % duracao) + duracao) % duracao;
+    if (linha) linha.hidden = false;
+    if (painel) {
+      painel.textContent = '🚦 ' + cen.semaforoEstado + ' · ' + Math.floor(noCiclo) + '/' + duracao + ' s';
+      const cores = { VERMELHO: '#9f2929', VERDE: '#166c41', AMARELO: '#88640b' };
+      painel.style.backgroundColor = cores[cen.semaforoEstado] || '#253346';
+    }
+  }
 
   function aplicarCenario(inicio) {
     cenId = $('cenario').value; cen = CENARIOS[cenId]; tapete = Cenarios.obterTapete(cenId);
+    inicioRelogioUrbano = performance.now();
+    atualizarSemaforoVisual(0);
     const sel = $('inicio'); sel.innerHTML = '';
     for (const [k, v] of Object.entries(cen.inicios)) sel.add(new Option('início: ' + v.rotulo, k));
     sel.value = cen.inicios[inicio] ? inicio : cen.inicioPadrao;
@@ -1049,8 +1293,15 @@ const Playback = (() => {
 
   function descartarSimulacao() {
     tocar(false); sim = null; t = 0; $('slider').disabled = $('btnPlay').disabled = true; $('slider').value = 0;
+    // Descarta também a simulação que o Python/teleop deixou em App.
+    // Sem isso, o semáforo parava de animar depois da primeira execução.
+    if (typeof App !== 'undefined' && !App.executando) App.sim = null;
     $('corpo').innerHTML = ''; $('contaPacotes').textContent = ''; logIdx = 0; ultimoT = 0; evIdx = 0;
+    mensagensTerminal = []; idxTerminal = 0; ultimoTerminalT = -1; sincronizarPrints = false;
+    eventosDicasCidade = [];
+    const dica = $('dicaCidade'); if (dica) { dica.hidden = true; delete dica.dataset.dica; }
     $('resumo').textContent = 'Rode um script pra ver o robô.';
+    const relogio = $('tempoPlayback'); if (relogio) relogio.textContent = '0,0 / 0,0 s simulados';
   }
 
   function acharFrame(tt) {
@@ -1074,15 +1325,15 @@ const Playback = (() => {
     return sonda;
   }
 
-  function estadoEm(tt) {
+  function estadoEm(tt, tempoS = tt) {
     if (sim && sim.frames.length >= STRIDE) {
       const i = acharFrame(tt), F = sim.frames, o = STRIDE * i, [led, ledAlpha] = ledEm(tt);
       return { t: F[o], x: F[o + 1], y: F[o + 2], th: F[o + 3], encA: F[o + 4], encB: F[o + 5], encC: F[o + 6], encD: F[o + 7],
-        led, ledAlpha, bip: bipEm(tt), refletida: sim.refletidaEm(F[o + 1], F[o + 2], F[o + 3]), ...Cenarios.terreno(cen, F[o + 1], F[o + 2], F[o + 3]), i };
+        led, ledAlpha, bip: bipEm(tt), refletida: sim.refletidaEm(F[o + 1], F[o + 2], F[o + 3], tempoS), ...Cenarios.terreno(cen, F[o + 1], F[o + 2], F[o + 3]), i };
     }
     const s = Cenarios.inicioDe(cen, $('inicio').value);
     return { t: 0, x: s.x, y: s.y, th: s.th, encA: 0, encB: 0, encC: 0, encD: 0, led: 'DESLIGADO', ledAlpha: 1, bip: false,
-      refletida: simSensor().refletidaEm(s.x, s.y, s.th), ...Cenarios.terreno(cen, s.x, s.y, s.th), i: 0 };
+      refletida: simSensor().refletidaEm(s.x, s.y, s.th, tempoS), ...Cenarios.terreno(cen, s.x, s.y, s.th), i: 0 };
   }
 
   function desenhar2D(est) {
@@ -1100,8 +1351,13 @@ const Playback = (() => {
       g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 0.35; g.strokeRect(r.x, r.y, r.w, r.h);
       g.fillStyle = '#fff'; g.font = 'bold 3px sans-serif'; g.textAlign = 'left'; g.fillText('RAMPA +' + r.altura + ' cm', r.x + 1.5, r.y + 3.6);
     }
-    for (const b of cen.caixas) { g.fillStyle = b.cor || '#7a8793'; g.fillRect(b.x, b.y, b.w, b.h);
-      g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 0.4; g.strokeRect(b.x, b.y, b.w, b.h); }
+    for (const b of cen.caixas) {
+      // Prédios da Cidade Educativa já foram pintados, com detalhes e nomes,
+      // na textura do próprio cenário. Não cobrir a arte por um bloco opaco.
+      if (cen.desenhoCaixasNaTextura && String(b.modelo||'').startsWith('cidade')) continue;
+      g.fillStyle = b.cor || '#7a8793'; g.fillRect(b.x, b.y, b.w, b.h);
+      g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 0.4; g.strokeRect(b.x, b.y, b.w, b.h);
+    }
     if (sim && est.i > 0) {
       const F = sim.frames; g.beginPath(); const passo = Math.max(1, Math.floor(est.i / 700));
       for (let k = 0; k <= est.i; k += passo) (k ? g.lineTo : g.moveTo).call(g, F[STRIDE * k + 1], F[STRIDE * k + 2]);
@@ -1134,8 +1390,84 @@ const Playback = (() => {
     desenhar(t);
   }
 
+  // Eventos calculados a partir dos frames reais, nunca a partir da posição
+  // dos edifícios. A reprodução e o slider mostram a MESMA dica no mesmo t.
+  function prepararDicasCidade(s) {
+    eventosDicasCidade = [];
+    const pontos = cen?.pontosEducativos || [];
+    const frames = s?.frames;
+    if (!pontos.length || !frames || frames.length < STRIDE) return;
+    let anterior = null;
+    for (let i = 0; i + STRIDE <= frames.length; i += STRIDE) {
+      const x = frames[i+1], y = frames[i+2], instante = frames[i];
+      let atual = null, menor = Infinity;
+      for (const p of pontos) {
+        const dx = x-p.x, dy = y-p.y, distancia2 = dx*dx+dy*dy;
+        if (distancia2 <= p.raio*p.raio && distancia2 < menor) {
+          atual = p; menor = distancia2;
+        }
+      }
+      if (atual !== anterior && atual) {
+        eventosDicasCidade.push({ t: instante, ponto: atual });
+      }
+      anterior = atual;
+    }
+  }
+
+  function atualizarDicaCidade(est, aoVivo = false) {
+    const painel = $('dicaCidade');
+    if (!painel) return;
+    const pontos = cen?.pontosEducativos || [];
+    if (!pontos.length) {
+      painel.hidden = true;
+      delete painel.dataset.dica;
+      return;
+    }
+    let escolhido = null;
+    // Em replay, mostra o último evento percorrido por 13 s simulados.
+    // Isso evita flashes de uma dica por apenas um ou dois frames.
+    if (sim && !aoVivo && eventosDicasCidade.length) {
+      let ultimo = null;
+      for (const evento of eventosDicasCidade) {
+        if (evento.t > est.t + 1e-6) break;
+        ultimo = evento;
+      }
+      if (ultimo && est.t - ultimo.t <= 13) escolhido = ultimo.ponto;
+    } else {
+      // Antes de rodar o código ou no modo teleop: leitura direta da posição.
+      let menor = Infinity;
+      for (const ponto of pontos) {
+        const dx = est.x-ponto.x, dy = est.y-ponto.y, d2 = dx*dx+dy*dy;
+        if (d2 <= ponto.raio*ponto.raio && d2 < menor) {
+          escolhido = ponto; menor = d2;
+        }
+      }
+    }
+    if (!escolhido) {
+      painel.hidden = true;
+      delete painel.dataset.dica;
+      return;
+    }
+    // Não reescreve texto e aria-live a cada frame.
+    const chave = escolhido.titulo + '|' + (escolhido.fundamento || '');
+    if (painel.dataset.dica !== chave) {
+      $('dicaCidadeTitulo').textContent = escolhido.titulo;
+      $('dicaCidadeMensagem').textContent = escolhido.mensagem;
+      $('dicaCidadeIcone').textContent = escolhido.icone || '🏙️';
+      const fundamento = $('dicaCidadeFundamento');
+      fundamento.textContent = escolhido.fundamento || '';
+      fundamento.hidden = !escolhido.fundamento;
+      $('dicaCidadeFonte').hidden = !escolhido.fundamento;
+      painel.dataset.dica = chave;
+    }
+    painel.hidden = false;
+  }
+
   function desenhar(tt) {
-    const est = estadoEm(tt);
+    const tempoS = sim ? tt : (performance.now() - inicioRelogioUrbano) / 1000;
+    atualizarSemaforoVisual(tempoS);
+    const est = estadoEm(tt, tempoS);
+    atualizarDicaCidade(est);
     if (modo === '3d' && vista) {
       vista.aplicar(est);
     } else desenhar2D(est);
@@ -1143,6 +1475,8 @@ const Playback = (() => {
 
   function desenharEstado(est) {
     if (!est) return;
+    atualizarSemaforoVisual(est.t || 0);
+    atualizarDicaCidade(est, true);
     if (modo === '3d' && vista) {
       vista.aplicar(est);
     } else desenhar2D(est);
@@ -1157,6 +1491,20 @@ const Playback = (() => {
     $('tabela').scrollTop = 1e9; $('contaPacotes').textContent = `${logIdx} de ${P.length} pacotes (↩ = EV3 devolve resposta)`;
   }
 
+  function sincronizarTerminal(tt) {
+    if (!sincronizarPrints) return;
+    // O usuário pode voltar no slider ou reiniciar a reprodução.
+    // Nesse caso reconstruímos as linhas até o tempo escolhido.
+    if (tt < ultimoTerminalT - 1e-6) {
+      Terminal.reiniciarVisor();
+      idxTerminal = 0;
+    }
+    ultimoTerminalT = tt;
+    while (idxTerminal < mensagensTerminal.length && mensagensTerminal[idxTerminal].t <= tt + 1e-6) {
+      Terminal.exibirMensagem(mensagensTerminal[idxTerminal++]);
+    }
+  }
+
   function sons(tt) {
     if (!tocando || !$('som').checked || !audio) return;
     const E = sim.eventos;
@@ -1165,7 +1513,17 @@ const Playback = (() => {
         o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + e.ms / 1000); } }
   }
 
-  function atualizar() { $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0; desenhar(t); sincronizarLog(t); sons(t); }
+  function atualizarRelogio() {
+    const relogio = $('tempoPlayback');
+    if (!relogio) return;
+    const formato = (valor) => Math.max(0, Number(valor) || 0).toFixed(1).replace('.', ',');
+    relogio.textContent = `${formato(t)} / ${formato(sim?.t)} s simulados`;
+  }
+  function atualizar() {
+    $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0;
+    atualizarRelogio();
+    desenhar(t); sincronizarLog(t); sincronizarTerminal(t); sons(t);
+  }
 
   function loop(agora) {
     if (!tocando || !sim) return;
@@ -1180,6 +1538,26 @@ const Playback = (() => {
   }
 
   function irPara(tt) { t = Math.max(0, Math.min(tt, sim.t)); evIdx = sim.eventos.findIndex((e) => e.t >= t); if (evIdx < 0) evIdx = sim.eventos.length; atualizar(); }
+
+  // Sem execução de programa, o sinal continua piscando na pista.
+  // Em playback/teleop, quem define a cor é EXCLUSIVAMENTE o tempo simulado.
+  setInterval(() => {
+    if (!sim && !(typeof App !== 'undefined' && App.sim) && !document.hidden && cen?.estadoSemaforoEm) {
+      desenhar(0);
+    }
+  }, 200);
+
+  // Volta o semáforo para vermelho em t=0 e encerra o playback anterior.
+  // Não interfere no tempo virtual do Python enquanto um programa é executado.
+  $('btnReiniciarSinal').onclick = () => {
+    if (typeof App !== 'undefined' && App.executando) return;
+    globalThis.gamepadPonte?.pararTeleop?.();
+    descartarSimulacao();
+    sonda = null; sondaChave = '';
+    inicioRelogioUrbano = performance.now();
+    atualizarSemaforoVisual(0);
+    desenhar(0);
+  };
 
   $('btnPlay').onclick = () => { if (!sim) return; if (t >= sim.t - 1e-6) irPara(0); tocar(!tocando); };
   $('slider').oninput = () => { if (!sim) return; tocar(false); irPara($('slider').value / 1000 * sim.t); };
@@ -1236,11 +1614,20 @@ const Playback = (() => {
       btnCarregarArena.disabled = false;
     }
   };
-  $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); };
-  $('inicio').onchange = () => { descartarSimulacao(); desenhar(0); };
+  $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); atualizarAvisoMapaExemplo(); };
+  $('inicio').onchange = () => {
+    descartarSimulacao();
+    sonda = null; sondaChave = '';
+    inicioRelogioUrbano = performance.now();
+    desenhar(0);
+  };
 
   return {
     desenhar, desenharEstado, setModo, estadoEm,
+    reiniciarRelogioSemaforo() {
+      inicioRelogioUrbano = performance.now();
+      atualizarSemaforoVisual(0);
+    },
     prepararEdicao() { if (globalThis.gamepadPonte?.pararTeleop) globalThis.gamepadPonte.pararTeleop(); descartarSimulacao(); sonda = null; sondaChave = ''; setModo('2d'); },
     get vista() { return vista; },
     iniciar() {
@@ -1251,8 +1638,18 @@ const Playback = (() => {
       descartarSimulacao(); $('cenario').value = id; aplicarCenario(inicio); desenhar(0);
     },
     habilitar3D() { const b = $('btn3d'); b.disabled = false; b.title = 'Vista 3D (Three.js)'; },
-    carregar(s) { sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0; $('corpo').innerHTML = '';
-      $('slider').disabled = $('btnPlay').disabled = false; tocar(true); },
+    carregar(s, mensagens = null) {
+      sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0;
+      prepararDicasCidade(s);
+      sincronizarPrints = Array.isArray(mensagens);
+      mensagensTerminal = sincronizarPrints ? mensagens.slice().sort((a, b) => a.t - b.t) : [];
+      idxTerminal = 0; ultimoTerminalT = -1;
+      $('corpo').innerHTML = '';
+      if (sincronizarPrints) Terminal.reiniciarVisor();
+      $('slider').disabled = $('btnPlay').disabled = false;
+      atualizar(); // Exibe imediatamente apenas mensagens no t=0.
+      tocar(true);
+    },
   };
 })();
 
@@ -1592,6 +1989,9 @@ async function rodar() {
   App.executando = true; btn.disabled = true; btn.textContent = '⏳ Rodando…';
   Terminal.limpar();
   App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+  Playback.reiniciarRelogioSemaforo();
+  const btnResetSinal = $('btnReiniciarSinal');
+  if (btnResetSinal) btnResetSinal.disabled = true;
   const codigo = App.editor.getValue();
   const teto = Math.min(LIMITE_SIM_MAX, Number($('limite').max) || LIMITE_SIM_MAX);
   let limite = Number($('limite').value);
@@ -1603,6 +2003,12 @@ async function rodar() {
   $('limite').value = limite;
   const t0 = performance.now();
   let res = 'erro';
+  // Execução Python comum calcula os frames antes da reprodução visual.
+  // Capturamos as mensagens para mostrá-las com os mesmos timestamps do robô.
+  const codigoAssincrono = /gamepadPonte\s*\.\s*teleop\s*\(/.test(codigo)
+    || /\bawait\b/.test(codigo)
+    || /gamepadPonte\s*\.\s*passo/.test(codigo);
+  if (!codigoAssincrono) Terminal.iniciarCaptura();
   try {
     const mTele = codigo.match(/gamepadPonte\s*\.\s*teleop\s*\(\s*([^)]*)\)/);
     if (mTele) {
@@ -1634,6 +2040,7 @@ async function rodar() {
     res = 'erro';
   } finally {
     App.executando = false; btn.disabled = false; btn.textContent = '▶ Rodar script';
+    if (btnResetSinal) btnResetSinal.disabled = false;
   }
   const s = App.sim;
   if (s && res !== 'erro') {
@@ -1647,14 +2054,47 @@ async function rodar() {
     const ms = (performance.now() - t0).toFixed(0);
     $('resumo').textContent = `${(s.t||0).toFixed(1)} s simulados em ${ms} ms · ${(s.pacotes||[]).length} pacotes · ${(s.dist||0).toFixed(0)} cm andados`;
     Terminal.sys(res === 'erro' ? '✖ terminou com erro' : `✔ fim (${res}): ${(s.pacotes||[]).length} pacotes, ${(s.t||0).toFixed(1)} s`);
-    if ((s.frames || []).length > 1) Playback.carregar(s);
+    if (res === 'ok' && s.t < limite - 0.05) {
+      Terminal.sys(`ℹ O código terminou normalmente após ${s.t.toFixed(1)} s. O limite de ${limite} s é um teto, não uma duração obrigatória.`);
+    }
     if (window.CampanhaUI && CampanhaUI.missaoAtiva && res !== 'erro') {
       CampanhaUI.avaliarTentativa(s, codigo);
     }
   }
+  const mensagensCapturadas = Terminal.finalizarCaptura();
+  if (s && res !== 'erro' && (s.frames || []).length > 1) {
+    Playback.carregar(s, codigoAssincrono ? null : mensagensCapturadas);
+  } else {
+    // Se o Python falhar antes de gerar movimento, o erro não pode ficar oculto.
+    Terminal.exibirMensagens(mensagensCapturadas);
+  }
 }
 
-function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); Playback.escolher(EXEMPLOS[k].cenario, EXEMPLOS[k].inicio); }
+// A seleção do programa altera SOMENTE o editor. Mapa/câmera/largada são escolhas
+// independentes do aluno. O cenário sugerido pelo exercício é apenas informativo.
+function atualizarAvisoMapaExemplo() {
+  const aviso = $('mapaExemploAviso');
+  const botao = $('btnMapaExemplo');
+  if (!aviso || !botao) return;
+  const exemplo = bibliotecaExemplos.atual;
+  const recomendado = exemplo && CENARIOS[exemplo.cenario];
+  if (!recomendado) {
+    aviso.textContent = exemplo ? 'Mapa sugerido indisponível nesta IDE.' : '';
+    botao.hidden = true;
+    return;
+  }
+  const outroMapa = $('cenario').value !== exemplo.cenario;
+  aviso.textContent = outroMapa
+    ? `Mapa indicado: ${recomendado.nome} (opcional).`
+    : 'Mapa atual mantido.';
+  botao.hidden = !outroMapa;
+}
+
+function aplicarExemplo(exemplo, codigo) {
+  if (!App.editor) return;
+  App.editor.setValue(codigo);
+  atualizarAvisoMapaExemplo();
+}
 
 // =====================================================================
 // CampanhaUI
@@ -1839,8 +2279,11 @@ const CampanhaUI = {
     const s = m.setup || {};
     if (typeof Playback !== 'undefined') Playback.escolher(s.cenario || 'treino', s.inicio || 'padrao');
     if (s.robo3d && $('robo3d')) {
-      $('robo3d').value = s.robo3d;
-      try { $('robo3d').dispatchEvent(new Event('change')); } catch (_) {}
+      const seletorRobo = $('robo3d');
+      // Missões antigas podem referenciar um modelo 3D já removido.
+      const disponivel = Array.from(seletorRobo.options).some((op) => op.value === s.robo3d);
+      seletorRobo.value = disponivel ? s.robo3d : 'ev3';
+      try { seletorRobo.dispatchEvent(new Event('change')); } catch (_) {}
     }
     if (App.editor) {
       // Nunca carregar codigoReferencia — só o esqueleto da missão
@@ -2000,7 +2443,6 @@ const CampanhaUI = {
 window.CampanhaUI = CampanhaUI;
 
 async function iniciar() {
-  for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
   $('btnLimpar').onclick = () => Terminal.limpar();
   $('btnRodar').onclick = rodar;
   const btnT = $('btnTeleop');
@@ -2031,19 +2473,48 @@ async function iniciar() {
   if (window.Vista3D) Playback.habilitar3D();
   setTimeout(() => { if (!window.Vista3D) { $('btn3d').title = 'Three.js não carregou (CDN bloqueado?)'; $('btn3d').textContent = '3D ✕'; } }, 20000);
   const _modoUrl = new URLSearchParams(location.search).get('modo');
+  // Carrega a biblioteca em paralelo à inicialização do Python.
+  const preparoPython = iniciarPython().catch((e) => {
+    status('falhou: ' + e.message, 'erro');
+    Terminal.err(String(e));
+  });
+  let codigoInicial = '# Selecione um programa na biblioteca de exemplos.\n';
+  try {
+    const inicial = await bibliotecaExemplos.iniciar();
+    codigoInicial = inicial.codigo;
+  } catch (erro) {
+    Terminal.err('Biblioteca de exemplos indisponível: ' + erro.message +
+      '. Verifique src/exemplos/exemplos.json e execute pelo servidor HTTP.');
+  }
+
   const [ed] = await Promise.all([
-    Ide.criar($('editor'), EXEMPLOS.linha.codigo),
-    iniciarPython().catch((e) => { status('falhou: ' + e.message, 'erro'); Terminal.err(String(e)); }),
+    Ide.criar($('editor'), codigoInicial),
+    preparoPython,
   ]);
   App.editor = ed;
   ed.aoRodar(rodar);
-  $('exemplo').onchange = () => carregarExemplo($('exemplo').value);
+
+  $('btnMapaExemplo').addEventListener('click', () => {
+    const exemplo = bibliotecaExemplos.atual;
+    if (exemplo && CENARIOS[exemplo.cenario]) {
+      Playback.escolher(exemplo.cenario, exemplo.inicio);
+      atualizarAvisoMapaExemplo();
+    }
+  });
+  atualizarAvisoMapaExemplo();
+  if (bibliotecaExemplos.catalogo) {
+    bibliotecaExemplos.ativar(
+      (exemplo, codigo) => aplicarExemplo(exemplo, codigo),
+      (erro) => Terminal.err('Erro ao carregar exemplo: ' + erro.message)
+    );
+  }
   if (ed.aviso) Terminal.sys('⚠ ' + ed.aviso);
   if (App.executarPy) { App.pronto = true; $('btnRodar').disabled = false; status('pronto — jacarev3 real carregada' + (ed.tipo === 'monaco' ? ' · Monaco ativo' : ''), 'ok'); }
 }
 
 iniciar();
 </script>
+<script src="../src/js/editor/mapaEditorCore.js"></script>
 <script src="../src/js/editor/mapaEditor.js"></script>
 </body>
 </html>

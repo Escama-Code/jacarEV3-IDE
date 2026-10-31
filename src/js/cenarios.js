@@ -59,7 +59,40 @@ const Cenarios = (() => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.save(); ctx.scale(k, k); cen.desenhar(ctx, cen); ctx.restore();
     const img = ctx.getImageData(0, 0, W, H);
-    return { id: cen.id, canvas, W, H, k, dados: img.data };       // dados: RGBA, linha 0 = y 0 (topo)
+    return {
+      id: cen.id, canvas, W, H, k, dados: img.data,
+      // A versão muda somente quando um elemento dinâmico altera o tapete.
+      versao: 0, _estadoSemaforo: cen.estadoSemaforoEm ? cen.semaforoEstado : null
+    };
+  }
+
+  /**
+   * Atualiza a pintura dinâmica do tapete usando o TEMPO SIMULADO (segundos).
+   * O Canvas, os pixels dos sensores e a textura 3D permanecem sincronizados.
+   * Não redesenha a cada passo de 10 ms: só quando a fase realmente muda.
+   */
+  function atualizarTapete(cen, tapete, tempoS = 0) {
+    if (!cen || !tapete || typeof cen.estadoSemaforoEm !== 'function') return false;
+    const estado = cen.estadoSemaforoEm(tempoS);
+    if (tapete._estadoSemaforo === estado) {
+      cen.semaforoEstado = estado; // mantém indicador e pixels coerentes após um reset
+      return false;
+    }
+
+    cen.semaforoEstado = estado;
+    const ctx = tapete.canvas.getContext('2d', { willReadFrequently: true });
+    ctx.save();
+    ctx.scale(tapete.k, tapete.k);
+    cen.desenhar(ctx, cen);
+    ctx.restore();
+
+    // Atualiza o MESMO array (evita referências antigas em outros módulos).
+    const pixels = ctx.getImageData(0, 0, tapete.W, tapete.H).data;
+    if (tapete.dados.length === pixels.length) tapete.dados.set(pixels);
+    else tapete.dados = pixels;
+    tapete._estadoSemaforo = estado;
+    tapete.versao = (tapete.versao || 0) + 1;
+    return true;
   }
   /** pixel exato sob (x,y) em cm */
   function lerPixel(t, x, y) {
@@ -330,6 +363,8 @@ const tapeteUrbanoInfantil = {
   w: 240, 
   h: 360,
   pxPorCm: 3,
+  // O semáforo é pintado no mesmo Canvas do sensor e exibido sem alteração pela luz 3D.
+  linhaAltaContraste: true,
   inicioPadrao: 'rotatoria',
   inicios: {
     // Carrinho inicia exatamente posicionado na estrada de baixo
@@ -339,10 +374,44 @@ const tapeteUrbanoInfantil = {
   caixas: [], // Elementos urbanos 3D
   rampas: [],
   
-  // Controle de tempo do semáforo urbano
+  // Semáforos pintados no CHÃO, sobre a própria linha do percurso.
+  // A sequência depende do tempo simulado, nunca de Date.now().
   semaforoEstado: 'VERMELHO',
-  
-  desenhar(ctx, self) {
+  semaforos: [
+    { x: 135, y: 321, w: 5, h: 18 }, // Avenida Sul, antes da travessia
+    { x: 121, y: 50, w: 18, h: 5 }   // Via central, antes da travessia
+  ],
+  cicloSemaforo: [
+    { estado: 'VERMELHO', duracao: 5 },
+    { estado: 'VERDE', duracao: 5 },
+    { estado: 'AMARELO', duracao: 2 }
+  ],
+  estadoSemaforoEm(tempoS = 0) {
+    const total = this.cicloSemaforo.reduce((sum, fase) => sum + fase.duracao, 0);
+    let t = ((Number.isFinite(+tempoS) ? +tempoS : 0) % total + total) % total;
+    for (const fase of this.cicloSemaforo) {
+      if (t < fase.duracao) return fase.estado;
+      t -= fase.duracao;
+    }
+    return 'VERMELHO';
+  },
+
+  // O editor pode retirar SOMENTE o traçado preto, sem alterar as faixas.
+  linhasEditor: [
+    { tipo: 'caneta', espessura: 2, pontos: [[30,330],[210,330],[210,120],[130,120],[130,40],[40,40],[40,220]] },
+    { tipo: 'circulo', espessura: 2, pontos: [[35,220],[95,280]] },
+    { tipo: 'reta', espessura: 2, pontos: [[65,280],[65,330]] }
+  ],
+  pintarFaixasPedestres(ctx) {
+    ctx.save();
+    ctx.fillStyle = '#ffffff';
+    for (let x=145; x<=165; x+=5) ctx.fillRect(x,321,2.5,18);
+    for (let x=50; x<=70; x+=5) ctx.fillRect(x,31,2.5,18);
+    for (let y=110; y<=130; y+=5) ctx.fillRect(31,y,18,2.5);
+    ctx.restore();
+  },
+
+  desenhar(ctx, self, opcoes = {}) {
     // 1. Fundo do Tapete (Grama Verde Claro)
     ctx.fillStyle = '#87a922';
     ctx.fillRect(0, 0, self.w, self.h);
@@ -385,55 +454,49 @@ const tapeteUrbanoInfantil = {
     ctx.lineTo(65, 330);
     ctx.stroke();
 
-    // 3. LINHAS PRETAS GUIA PARA O SEGUIDOR DE LINHA
-    ctx.strokeStyle = '#000000'; 
-    ctx.lineWidth = 2; 
+    // 3. Traçado preto. Pode ser omitido pelo editor para virar linha editável.
+    // Removemos as antigas linhas brancas finas, que eram pintadas sobre o preto.
+    if (!opcoes.omitirLinha) {
+      ctx.save();
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(30, 330); ctx.lineTo(210, 330);
+      ctx.lineTo(210, 120); ctx.lineTo(130, 120);
+      ctx.lineTo(130, 40); ctx.lineTo(40, 40); ctx.lineTo(40, 220);
+      ctx.stroke();
 
-    // Linha Guia Principal Integrada
-    ctx.beginPath();
-    ctx.moveTo(30, 330); ctx.lineTo(210, 330);
-    ctx.lineTo(210, 120); ctx.lineTo(130, 120);
-    ctx.lineTo(130, 40);  ctx.lineTo(40, 40);
-    ctx.lineTo(40, 220);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(65, 250, 30, 0, 2 * Math.PI);
+      ctx.stroke();
 
-    // Linha Guia Continua da Rotatória
-    ctx.beginPath();
-    ctx.arc(65, 250, 30, 0, 2 * Math.PI);
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(65, 280); ctx.lineTo(65, 330);
+      ctx.stroke();
+      ctx.restore();
+    }
 
-    // Linha Guia de Interligação Inferior
-    ctx.beginPath();
-    ctx.moveTo(65, 280);
-    ctx.lineTo(65, 330);
-    ctx.stroke();
+    // 4. Faixas reais: nunca são apagadas pelo editor de linhas.
+    if (!opcoes.omitirFaixas) self.pintarFaixasPedestres(ctx);
 
-    // 4. SINALIZAÇÃO HORIZONTAL (Efeito Visual)
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 0.6;
-    ctx.setLineDash([]); 
-    ctx.beginPath();
-    ctx.moveTo(35, 330); ctx.lineTo(205, 330);
-    ctx.moveTo(210, 325); ctx.lineTo(210, 125);
-    ctx.moveTo(45, 40);   ctx.lineTo(125, 40);
-    ctx.stroke();
+    // A faixa semafórica é parte do piso, não um obstáculo.
+    // Cores reconhecidas pelo sensor EV3: vermelho=5, verde=3, amarelo=4.
+    // Uma ÚNICA geometria para todas as fases. Somente fillStyle é alterado.
+    // Sem camadas 3D exclusivas por cor: Canvas, sensor e chão compartilham pixels.
+    const coresSemaforo = {
+      VERMELHO: '#ef4444', VERDE: '#22c55e', AMARELO: '#facc15'
+    };
+    if (!opcoes.omitirSemaforos) {
+      ctx.save();
+      ctx.fillStyle = coresSemaforo[self.semaforoEstado] || coresSemaforo.VERMELHO;
+      for (const { x, y, w, h } of self.semaforos) ctx.fillRect(x, y, w, h);
+      ctx.restore();
+    }
 
-    // Faixas de Pedestres
-    ctx.fillStyle = '#ffffff';
-    for (let x = 145; x <= 165; x += 5) ctx.fillRect(x, 321, 2.5, 18); // Hospital
-    for (let x = 50; x <= 70; x += 5) ctx.fillRect(x, 31, 2.5, 18);   // Escola
-    for (let y = 110; y <= 130; y += 5) ctx.fillRect(31, y, 18, 2.5);  // Bosque
-
-    // Gatilho Dinâmico do Semáforo
-    const ciclo = Math.floor(Date.now() / 4000) % 2;
-    self.semaforoEstado = ciclo === 0 ? 'VERMELHO' : 'VERDE';
-    ctx.fillStyle = self.semaforoEstado === 'VERMELHO' ? '#ef4444' : '#2ecc40';
-    
-    ctx.fillRect(135, 321, 5, 18); // Semáforo 1
-    ctx.fillRect(121, 50, 18, 5);   // Semáforo 2
-
-    // 5. RENDERIZAÇÃO DAS CAIXAS 3D (Prédios fora do caminho)
-    for (const caixa of self.caixas) {
+    // 5. Objetos urbanos (omitidos na camada-base do editor).
+    if (!opcoes.omitirCaixas) for (const caixa of self.caixas) {
       ctx.fillStyle = caixa.cor || '#475569';
       ctx.fillRect(caixa.x, caixa.y, caixa.w, caixa.h);
     }
@@ -453,14 +516,14 @@ tapeteUrbanoInfantil.caixas.push(
   { nome: 'Prédio do Hospital', x: 105, y: 275, w: 30, h: 35, altura: 20, cor: '#f8fafc', modelo: 'parede' },
   { nome: 'Detalhe Cruz do Hospital', x: 118, y: 273, w: 4, h: 4, altura: 22, cor: '#ef4444', modelo: 'torre' },
   
-  { nome: 'Estação de Bombeiros', x: 10, y: 10, w: 18, h: 18, altura: 18, cor: '#dc2626', modelo: 'parede' },
+  { nome: 'Estação de Bombeiros', x: 4, y: 5, w: 16, h: 16, altura: 18, cor: '#dc2626', modelo: 'parede' },
   { nome: 'Escola Municipal', x: 70, y: 118, w: 30, h: 22, altura: 16, cor: '#a855f7', modelo: 'parede' },
 
   // Veículos Decorativos nos acostamentos
   { nome: 'Carrinho de Polícia Retido', x: 222, y: 200, w: 8, h: 14, altura: 6, cor: '#172554', modelo: 'conteiner' },
   { nome: 'Sorveteiro Móvel Comercial', x: 12, y: 210, w: 12, h: 8, altura: 9, cor: '#f472b6', modelo: 'conteiner' },
   { nome: 'Ônibus Escolar Estacionado', x: 145, y: 75, w: 8, h: 18, altura: 8, cor: '#eab308', modelo: 'conteiner' },
-  { nome: 'Carro Vermelho Estacionado', x: 145, y: 312, w: 7, h: 12, altura: 5, cor: '#b91c1c', modelo: 'conteiner' },
+  { nome: 'Carro Vermelho Estacionado', x: 154, y: 296, w: 7, h: 12, altura: 5, cor: '#b91c1c', modelo: 'conteiner' },
 
   // Árvores estáticas
   { nome: 'Pinheiro_1_Tronco', x: 20, y: 220, w: 1, h: 1, altura: 6, cor: '#78350f', modelo: 'poste' },
@@ -468,6 +531,172 @@ tapeteUrbanoInfantil.caixas.push(
   { nome: 'Pinheiro_2_Tronco', x: 215, y: 20, w: 1, h: 1, altura: 6, cor: '#78350f', modelo: 'poste' },
   { nome: 'Pinheiro_2_Folhas', x: 212, y: 17, w: 6, h: 6, altura: 14, cor: '#15803d' }
 );
+
+// ---------------------------------------------------------
+// Cidade Educativa — apresentação de trânsito e cidadania
+// Reaproveita EXATAMENTE as vias, linhas, travessias e semáforos
+// do Tapete Urbano: qualquer pintura nova é feita fora do trajeto.
+// Assim, o mesmo programa Python funciona nos dois cenários.
+// ---------------------------------------------------------
+const cidadeEducativa = {
+  ...tapeteUrbanoInfantil,
+  id: 'cidadeEducativa',
+  nome: 'Cidade Educativa — Trânsito e Cidadania',
+  inicios: Object.fromEntries(Object.entries(tapeteUrbanoInfantil.inicios).map(
+    ([id, inicio]) => [id, { ...inicio }]
+  )),
+  semaforos: tapeteUrbanoInfantil.semaforos.map(s => ({ ...s })),
+  cicloSemaforo: tapeteUrbanoInfantil.cicloSemaforo.map(f => ({ ...f })),
+  linhasEditor: tapeteUrbanoInfantil.linhasEditor.map(l => ({
+    ...l, pontos: l.pontos.map(p => [...p])
+  })),
+  // Os prédios usam geometria autoral em Three.js. Nenhum GLB de terceiros.
+  // As pegadas ficam longe da linha/sensores e também são colisores reais.
+  caixas: [
+    { nome: 'Escola Municipal', x: 77, y: 148, w: 44, h: 32, altura: 19, cor: '#f2b84b', modelo: 'cidadeEscola' },
+    { nome: 'Hospital Municipal', x: 112, y: 279, w: 31, h: 28, altura: 20, cor: '#e7eef5', modelo: 'cidadeHospital' },
+    { nome: 'Biblioteca do Bairro', x: 80, y: 79, w: 31, h: 26, altura: 14, cor: '#6b96c8', modelo: 'cidadeBiblioteca' },
+    { nome: 'Mercado Local', x: 156, y: 65, w: 40, h: 25, altura: 14, cor: '#e7a060', modelo: 'cidadeMercado' },
+    { nome: 'Casa Azul', x: 158, y: 150, w: 28, h: 23, altura: 12, cor: '#91c6e2', modelo: 'cidadeCasa' },
+    { nome: 'Casa Coral', x: 158, y: 188, w: 28, h: 23, altura: 12, cor: '#e7a2a2', modelo: 'cidadeCasa' },
+    { nome: 'Posto de Bombeiros', x: 10, y: 9, w: 16, h: 19, altura: 13, cor: '#d75c55', modelo: 'cidadeBombeiro' },
+    { nome: 'Árvore da Praça 1', x: 120, y: 227, w: 7, h: 7, altura: 15, cor: '#438662', modelo: 'cidadeArvore' },
+    { nome: 'Árvore da Praça 2', x: 154, y: 230, w: 7, h: 7, altura: 16, cor: '#438662', modelo: 'cidadeArvore' },
+    { nome: 'Árvore da Praça 3', x: 136, y: 250, w: 7, h: 7, altura: 14, cor: '#438662', modelo: 'cidadeArvore' },
+    { nome: 'Ponto de Ônibus', x: 153, y: 91, w: 15, h: 6, altura: 7, cor: '#2c6878', modelo: 'cidadeAbrigo' }
+  ],
+  rampas: [],
+  semaforoEstado: 'VERMELHO',
+  // O piso já contém telhados, nomes e pintura dos lotes.
+  // A vista 2D não deve desenhar retângulos opacos sobre essa arte.
+  desenhoCaixasNaTextura: true,
+
+  // Coordenadas sobre o caminho real do robô (NÃO no centro dos prédios).
+  // O painel apresenta as dicas ao passar por esses trechos da rota.
+  // Referências: Código de Trânsito Brasileiro (Lei 9.503/1997).
+  pontosEducativos: [
+    { x: 100, y: 330, raio: 11, icone: '🚗', titulo: 'Saída com atenção',
+      mensagem: 'Todo condutor deve manter o domínio do veículo e dirigir com atenção e cuidados indispensáveis à segurança.', fundamento: 'CTB — art. 28' },
+    { x: 119, y: 330, raio: 10, icone: '🏥', titulo: 'Hospital: velocidade segura',
+      mensagem: 'Ao se aproximar de hospitais, reduza a velocidade conforme a segurança do trânsito. Isso também vale perto de escolas e pontos de embarque.', fundamento: 'CTB — art. 220, XIV' },
+    { x: 136, y: 330, raio: 10, icone: '🚦', titulo: 'Semáforo: respeite o vermelho',
+      mensagem: 'Avançar o sinal vermelho é uma infração gravíssima, salvo exceções previstas na sinalização e na lei.', fundamento: 'CTB — art. 208' },
+    { x: 157, y: 330, raio: 12, icone: '🚶', titulo: 'Faixa de pedestres',
+      mensagem: 'A travessia na faixa tem prioridade conforme as regras do CTB. Mesmo quando o sinal muda, respeite quem ainda não terminou de atravessar.', fundamento: 'CTB — art. 70' },
+    { x: 209, y: 196, raio: 17, icone: '🏘️', titulo: 'Bairro: atenção a todos',
+      mensagem: 'Ao regular a velocidade, considere a via, o movimento de pessoas e as condições do trânsito.', fundamento: 'CTB — art. 43' },
+    { x: 209, y: 125, raio: 13, icone: '🚌', titulo: 'Transporte coletivo',
+      mensagem: 'Nas proximidades de locais de embarque e desembarque, o motorista deve reduzir a velocidade de maneira compatível com a segurança.', fundamento: 'CTB — art. 220, XIV' },
+    { x: 130, y: 91, raio: 14, icone: '📚', titulo: 'Biblioteca: travessia segura',
+      mensagem: 'No caminho para a biblioteca, procure faixas e passagens apropriadas. O CTB estabelece cuidados para a travessia de pedestres.', fundamento: 'CTB — art. 69' },
+    { x: 129, y: 43, raio: 13, icone: '🚸', titulo: 'Cruzamento e segunda faixa',
+      mensagem: 'Ao chegar a um cruzamento, o condutor deve agir com prudência e velocidade moderada para poder parar com segurança.', fundamento: 'CTB — art. 44' },
+    { x: 60, y: 40, raio: 14, icone: '🤝', titulo: 'Convivência no trânsito',
+      mensagem: 'No trânsito, o cuidado com pedestres, ciclistas e outros veículos faz parte de uma circulação responsável.', fundamento: 'CTB — arts. 26 e 29' },
+    { x: 40, y: 165, raio: 17, icone: '🏫', titulo: 'Escola: reduza a velocidade',
+      mensagem: 'Perto de escolas, a velocidade deve ser compatível com a segurança de crianças e demais pedestres.', fundamento: 'CTB — art. 220, XIV' },
+    { x: 64, y: 252, raio: 20, icone: '🔄', titulo: 'Rotatória: quem tem preferência?',
+      mensagem: 'Em rotatórias sem sinalização específica em contrário, a preferência é de quem já está circulando por elas.', fundamento: 'CTB — art. 29, III, b' }
+  ],
+
+  desenhar(ctx, self, opcoes = {}) {
+    // Preserva integralmente os pixels do tapete original nas vias.
+    // As novas formas ficam somente nos lotes internos, longe do robô.
+    tapeteUrbanoInfantil.desenhar(ctx, self, { ...opcoes, omitirCaixas: true });
+    if (opcoes.omitirCaixas && !opcoes.manterDecoracao) return;
+
+    ctx.save();
+
+    function lote(x, y, w, h, cor = '#d9e7cf') {
+      ctx.fillStyle = '#8baf8a';
+      ctx.fillRect(x - 1.2, y - 1.2, w + 2.4, h + 2.4);
+      ctx.fillStyle = cor;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 0.65;
+      ctx.strokeRect(x + 1.1, y + 1.1, w - 2.2, h - 2.2);
+    }
+
+    // Os lotes são recuos das ruas, não obstruem as faixas nem a linha preta.
+    lote(69, 133, 63, 60, '#e5ddc8');      // Campus escolar
+    lote(103, 267, 54, 50, '#e2e8f0');     // Hospital
+    lote(73, 70, 46, 44, '#dce6f1');       // Biblioteca
+    lote(148, 55, 58, 48, '#e6dfd4');     // Mercado
+    lote(150, 139, 46, 43, '#f0e6d8');    // Moradias
+    lote(150, 183, 46, 39, '#f0e6d8');
+    lote(106, 216, 66, 48, '#9acb83');    // Parque
+    lote(6, 5, 23, 25, '#f1ddd8');        // Bombeiros
+
+    // Quadras e praças com elementos menores que um cartaz
+    ctx.strokeStyle = '#e0eedc';
+    ctx.lineWidth = 0.8;
+    for (const [x1,y1,x2,y2] of [
+      [110, 222, 167, 222], [111, 260, 165, 260],
+      [112, 221, 112, 258], [167, 222, 167, 258],
+      [113, 240, 163, 240]
+    ]) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); }
+
+    function arvore2d(x, y, r = 4) {
+      ctx.fillStyle = '#305b41';
+      ctx.beginPath(); ctx.arc(x + 0.6, y + 0.8, r + 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#4d9861';
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#87bd72';
+      ctx.beginPath(); ctx.arc(x - r/3, y - r/3, r*0.5, 0, Math.PI*2); ctx.fill();
+    }
+    for (const [x,y] of [[111, 231], [127, 231], [139, 231], [157, 234], [139, 253], [163, 252],
+                         [65, 177], [144, 152], [145, 211], [114, 108], [191, 100]]) {
+      arvore2d(x, y, 3.2);
+    }
+
+    // Telhados e identidade visual dos edifícios vistos por cima (2D).
+    // No 3D os mesmos lotes são representados por geometrias nativas.
+    for (const b of self.caixas) {
+      if (b.modelo === 'cidadeArvore') continue;
+      ctx.fillStyle = '#506273';
+      ctx.globalAlpha = 0.12;
+      ctx.fillRect(b.x + 1.4, b.y + 1.5, b.w, b.h);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = b.cor;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(b.x + 2, b.y + 2, b.w - 4, 2.2);
+      ctx.strokeStyle = '#51647a';
+      ctx.lineWidth = 0.6;
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+    }
+
+    function nomeLocal(texto, x, y, w, cor = '#17364c') {
+      ctx.fillStyle = cor;
+      ctx.fillRect(x, y, w, 10);
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = 'bold 4.1px system-ui, sans-serif';
+      ctx.fillText(texto, x + w / 2, y + 5.1, w - 3);
+    }
+    nomeLocal('ESCOLA', 81, 183, 36, '#925419');
+    nomeLocal('HOSPITAL', 111, 309, 35, '#b84450');
+    nomeLocal('BIBLIOTECA', 79, 108, 34, '#315e83');
+    nomeLocal('MERCADO', 159, 53, 34, '#995a33');
+    nomeLocal('PRAÇA CENTRAL', 122, 262, 36, '#32724b');
+    nomeLocal('MORADIAS', 154, 216, 38, '#7f5365');
+    nomeLocal('ÔNIBUS', 153, 99, 30, '#285f73');
+
+    // Escola, hospital e parque têm seus próprios símbolos simples.
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px system-ui, sans-serif';
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    ctx.fillText('+', 127.5, 290.5);
+    ctx.font = 'bold 10px system-ui, sans-serif';
+    ctx.fillText('E', 99, 162);
+    ctx.font = 'bold 8px system-ui, sans-serif';
+    ctx.fillText('P', 139, 240);
+
+    // Não duplicamos as mensagens sobre o piso. Elas surgem no painel didático.
+    ctx.restore();
+  }
+};
 
 // ---------------------------------------------------------
 // Cenário F — Pista BRT / OBR com rampa e área de resgate
@@ -931,7 +1160,7 @@ const brt = {
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, brt, circuitoAurora };
+  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, cidadeEducativa, brt, circuitoAurora };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
@@ -948,7 +1177,7 @@ const brt = {
 
   // Mantém tudo dentro do IIFE e retorna o objeto Cenarios
   return { 
-    lista, registrarCenario, obterTapete, gerarTapete, lerPixel, lerArea, 
+    lista, registrarCenario, obterTapete, gerarTapete, atualizarTapete, lerPixel, lerArea, 
     intensidade, classificarCor, NOMES_COR, inicioDe, 
     alturaEm, terreno, usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } 
   };

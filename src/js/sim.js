@@ -87,6 +87,8 @@ class SimEV3 {
     if (!CENARIOS[cenario]) throw new Error('cenário desconhecido: ' + cenario);
     this.cenarioNome = cenario; this.cen = CENARIOS[cenario];
     this.tapete = _Cen.obterTapete(cenario);      // imagem + pixels (a mesma que o aluno vê)
+    // Ao reiniciar, o semáforo também retorna ao início do ciclo virtual.
+    _Cen.atualizarTapete?.(this.cen, this.tapete, 0);
     const s = _Cen.inicioDe(this.cen, this.cfg.inicio);
     this.x = s.x; this.y = s.y; this.th = s.th; this.t = 0;
     this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, modo: 'ocioso', rest: 0, enc: 0 };
@@ -172,12 +174,15 @@ class SimEV3 {
 
   // ---------- sensores ----------
   // Sensor de cor: lê PIXELS do tapete (mesma imagem do 2D/3D), 5,5 cm à frente do centro do robô
-  rgbEm(x, y, th) {
+  rgbEm(x, y, th, tempoS = this.t) {
+    // A cor é amostrada no instante da simulação, não no relógio do navegador.
+    // O quarto argumento permite consultar frames antigos no playback.
+    _Cen.atualizarTapete?.(this.cen, this.tapete, tempoS);
     const sx = x + 5.5 * Math.cos(th), sy = y + 5.5 * Math.sin(th);
     return this.cfg.amostragem === 'pixel' ? _Cen.lerPixel(this.tapete, sx, sy) : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
   }
-  refletidaEm(x, y, th) { return _Cen.intensidade(this.rgbEm(x, y, th), this.cfg.modoLuz); }   // 0-100
-  corEm(x, y, th) { const [r, g, b] = this.rgbEm(x, y, th); return _Cen.classificarCor(r, g, b); }  // id EV3 0-7
+  refletidaEm(x, y, th, tempoS = this.t) { return _Cen.intensidade(this.rgbEm(x, y, th, tempoS), this.cfg.modoLuz); }   // 0-100
+  corEm(x, y, th, tempoS = this.t) { const [r, g, b] = this.rgbEm(x, y, th, tempoS); return _Cen.classificarCor(r, g, b); }  // id EV3 0-7
   refletida() { return this.refletidaEm(this.x, this.y, this.th); }
   ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
