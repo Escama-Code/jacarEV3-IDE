@@ -141,17 +141,8 @@
       <span class="modo-icon">📖</span>
       <span class="modo-info">
         <span class="modo-titulo">Campanha</span>
-        <span class="modo-desc">Missões com história para aprender a biblioteca</span>
+        <span class="modo-desc">Códigos-base e leis de trânsito — aprenda a jacarev3</span>
       </span>
-    </button>
-
-    <button class="modo-btn" data-modo="multiplayer" disabled>
-      <span class="modo-icon">👥</span>
-      <span class="modo-info">
-        <span class="modo-titulo">Multiplayer</span>
-        <span class="modo-desc">Sala do professor</span>
-      </span>
-      <span class="modo-badge">em breve</span>
     </button>
 
     <button class="modo-btn" data-modo="sandbox">
@@ -170,10 +161,13 @@
   document.querySelectorAll('.modo-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => {
       const modo = btn.dataset.modo;
-      window.location.href = `public/index.html?modo=${modo}`;
+      if (modo === 'campanha') window.location.href = 'public/campanha.html';
+      else if (modo === 'sandbox') window.location.href = 'public/sandbox.html';
+      else window.location.href = 'public/sandbox.html';
     });
   });
 </script>
 
+  <p style="text-align:center;margin:1rem"><a href="public/editor-mapas-blocos.html" style="color:#3ecf8e">Editor por blocos OBR</a></p>
 </body>
 </html>

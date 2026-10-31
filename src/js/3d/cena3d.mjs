@@ -1,3 +1,4 @@
+import { construirGrupoSArena } from '../arena/sArenaBuilder3d.mjs';
 // ============================================================
 // cena3d.mjs — Cena Three.js: arena 120×80 cm, luzes, sombras, câmeras.
 // É só o ESPELHO visual do sim.js: a física e o sensor continuam lá.
@@ -7,6 +8,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import {
   construirRoboEV3,
   construirRoboJacare,
+  construirRoboArara,
   construirRoboCapivara,
   construirRoboCaranguejo,
   construirRoboTubarao,
@@ -15,12 +17,17 @@ import {
   construirRoboCamaleao,
   construirRoboEscorpiao,
   construirRoboCoruja,
+  construirRoboCarroFusca,
+  construirRoboOpala,
+  construirRoboCorcel,
+  construirRoboCarro,
   aplicarEstado,
 } from './modelos/index.mjs';
 
 const ROBOS = {
   ev3: construirRoboEV3,
   jacare: construirRoboJacare,
+  arara: construirRoboArara,
   capivara: construirRoboCapivara,
   caranguejo: construirRoboCaranguejo,
   tubarao: construirRoboTubarao,
@@ -29,6 +36,10 @@ const ROBOS = {
   camaleao: construirRoboCamaleao,
   escorpiao: construirRoboEscorpiao,
   coruja: construirRoboCoruja,
+  fusca: construirRoboCarroFusca,
+  opala: construirRoboOpala,
+  corcel: construirRoboCorcel,
+  carro: construirRoboCarro
 };
 
 /** textura do chão = a MESMA imagem que o sensor lê (tapete.canvas / tapete.dados) */
@@ -100,7 +111,92 @@ function blocoParede(b, cor) {
   for (let i = 0; i < n; i++) for (const sx of [-1, 1]) g.add(caixaC(0.12, 1.4, 1.6, matC(i % 2 ? 0x222222 : 0xf2c230), sx * (b.w / 2 + 0.05), alt - 1.4, -b.h / 2 + 2.4 + i * 4));   // listras amarelo/preto
   return g;
 }
-const MODELOS_BLOCO = { torre: blocoTorre, plataforma: blocoPlataforma, conteiner: blocoConteiner, parede: blocoParede };
+
+/**
+ * Elementos autorais da Cidade Educativa.
+ * Compartilham a mesma pegada que o simulador usa nas colisões;
+ * nenhum modelo ou textura externa é carregado.
+ */
+function blocoCidadePredio(b, cor) {
+  const g = new THREE.Group(), h = Math.max(8, b.altura || 12);
+  const escuro = cor.clone().offsetHSL(0, -0.03, -0.13);
+  const telhado = cor.clone().offsetHSL(0, -0.04, 0.10);
+  const parede = matC(cor), moldura = matC(escuro);
+  const vidro = matC(0x9bcae5, { metalness: 0.08, roughness: 0.28 });
+  g.add(caixaC(b.w, h, b.h, parede, 0, h / 2, 0));
+  // Platibanda/telhado baixo (em vez dos blocos lisos da versão anterior).
+  g.add(caixaC(b.w + 1.2, 1.15, b.h + 1.2, matC(telhado), 0, h + 0.55, 0));
+  g.add(caixaC(b.w - 3, 0.24, b.h - 3, moldura, 0, h + 1.22, 0));
+  // Fachadas com portas e janelas, deixando a identidade da cidade legível.
+  const fachada = b.h / 2 + 0.11;
+  const janelas = Math.max(2, Math.min(5, Math.floor(b.w / 8)));
+  const passo = b.w / (janelas + 1);
+  for (let k = 1; k <= janelas; k++) {
+    const px = -b.w/2 + passo*k;
+    g.add(caixaC(Math.min(4.5, passo*0.6), 3.8, 0.23, vidro, px, h*0.60, fachada));
+    g.add(caixaC(Math.min(4.7, passo*0.62), 0.32, 0.35, moldura, px, h*0.60 + 1.9, fachada+0.1));
+  }
+  g.add(caixaC(Math.min(7, b.w*0.24), h*0.42, 0.3, matC(0x315064), 0, h*0.21, fachada+0.06));
+
+  if (b.modelo === 'cidadeHospital') {
+    const cruz = matC(0xd93c4e);
+    g.add(caixaC(7, 0.55, 2.1, cruz, 0, h + 1.78, 0));
+    g.add(caixaC(2.1, 0.56, 7, cruz, 0, h + 1.8, 0));
+  } else if (b.modelo === 'cidadeEscola') {
+    // Pátio sombreado e bandeira simples na cobertura.
+    g.add(caixaC(10, 0.45, 5, matC(0xf5f0d7), -b.w*0.28, h+1.65, 0));
+    g.add(pinoC(0.23, 5, matC(0xe2e8f0), b.w*0.3, h+3.5, 0));
+    g.add(caixaC(3.2, 2, 0.3, matC(0x38a3a5), b.w*0.3+1.7, h+5, 0));
+  } else if (b.modelo === 'cidadeMercado') {
+    const toldo = matC(0xf2d6a6);
+    g.add(caixaC(b.w * 0.76, 0.9, 3.5, toldo, 0, h*0.65, fachada+1.8));
+    for (let k = -2; k <= 2; k++) {
+      g.add(caixaC(1.6, 0.95, 3.7, matC(k%2 ? 0xffffff : 0xdb715b), k*b.w*0.115, h*0.65, fachada+1.85));
+    }
+  } else if (b.modelo === 'cidadeCasa') {
+    // Cobertura de quatro águas low-poly, sem GLB de terceiros.
+    const r = Math.sqrt(b.w*b.w + b.h*b.h) * 0.68;
+    const teto = sombraC(new THREE.Mesh(
+      new THREE.ConeGeometry(r, 5, 4),
+      matC(escuro)
+    ));
+    teto.rotation.y = Math.PI / 4;
+    teto.position.y = h + 3.1;
+    g.add(teto);
+  }
+  return g;
+}
+
+function blocoCidadeArvore(b) {
+  const g = new THREE.Group();
+  const h = Math.max(9, b.altura || 13), folhagem = matC(0x4b9360);
+  g.add(pinoC(0.7, h*0.55, matC(0x805d44), 0, h*0.275, 0));
+  for (const [dx,dy,dz,r] of [
+    [0,h*0.72,0,4.1], [-2,h*0.76,0.7,2.5], [1.8,h*0.83,-1,2.8]
+  ]) {
+    const copa = sombraC(new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), folhagem));
+    copa.position.set(dx,dy,dz); g.add(copa);
+  }
+  return g;
+}
+
+function blocoCidadeAbrigo(b) {
+  const g = new THREE.Group(), h = b.altura || 7;
+  const metal = matC(0x375b69), cobertura = matC(0x2c8295);
+  for (const x of [-b.w/2+1.2,b.w/2-1.2]) {
+    g.add(caixaC(0.55,h,0.55,metal,x,h/2,0));
+  }
+  g.add(caixaC(b.w+1.5,0.85,b.h+2,cobertura,0,h+0.4,0));
+  g.add(caixaC(b.w*0.65,0.8,1.4,matC(0xd7e4e5),0,1.7,0));
+  return g;
+}
+const MODELOS_BLOCO = {
+  torre: blocoTorre, plataforma: blocoPlataforma, conteiner: blocoConteiner, parede: blocoParede,
+  cidadeEscola: blocoCidadePredio, cidadeHospital: blocoCidadePredio,
+  cidadeBiblioteca: blocoCidadePredio, cidadeMercado: blocoCidadePredio,
+  cidadeCasa: blocoCidadePredio, cidadeBombeiro: blocoCidadePredio,
+  cidadeArvore: blocoCidadeArvore, cidadeAbrigo: blocoCidadeAbrigo
+};
 /** bloco rígido na MESMA pegada (x, y, w, h) que o sim.js usa na colisão e no ultrassônico */
 function construirBloco(b) {
   const cor = new THREE.Color(b.cor || '#5f86a6'), g = (MODELOS_BLOCO[b.modelo] || ((bb, cc) => {
@@ -124,12 +220,18 @@ function construirRampa(r, cen, mapa) {
 
 /** arena do cenário: mesa, chão (com o tapete), paredes, rampas e blocos — tudo no tamanho cen.w × cen.h */
 export function construirArena(cen, tapete, renderer = null) {
+  if (cen.tilesOriginais) return construirGrupoSArena(cen);
   const g = new THREE.Group(); g.name = 'arena';
   const cx = cen.w / 2, cz = cen.h / 2;
   const mesa = new THREE.Mesh(new THREE.BoxGeometry(cen.w + 60, 3, cen.h + 50), new THREE.MeshStandardMaterial({ color: 0x6d5a48, roughness: 0.9 }));
   mesa.position.set(cx, -1.6, cz); mesa.receiveShadow = true; g.add(mesa);
   const mapa = texturaDoTapete(tapete, renderer);
-  const chao = new THREE.Mesh(new THREE.PlaneGeometry(cen.w, cen.h).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: mapa, roughness: 0.9 }));
+  // Cenários de seguidor de linha podem optar por textura sem luz: preto/ branco
+  // permanecem iguais aos pixels realmente usados pelo sensor de refletância.
+  const materialPiso = cen.linhaAltaContraste
+    ? new THREE.MeshBasicMaterial({ map: mapa, color: 0xffffff })
+    : new THREE.MeshStandardMaterial({ map: mapa, roughness: 0.9 });
+  const chao = new THREE.Mesh(new THREE.PlaneGeometry(cen.w, cen.h).rotateX(-Math.PI / 2), materialPiso);
   chao.position.set(cx, 0, cz); chao.receiveShadow = true; chao.name = 'chao'; g.add(chao);
   const parede = new THREE.MeshStandardMaterial({ color: 0x8c96a0, roughness: 0.7 });
   for (const [w, d, x, z] of [[cen.w + 3, 1.5, cx, -0.75], [cen.w + 3, 1.5, cx, cen.h + 0.75], [1.5, cen.h, -0.75, cz], [1.5, cen.h, cen.w + 0.75, cz]]) {
@@ -137,6 +239,24 @@ export function construirArena(cen, tapete, renderer = null) {
   }
   for (const r of cen.rampas || []) g.add(construirRampa(r, cen, mapa));
   for (const b of cen.caixas) g.add(construirBloco(b));
+  // Peças decorativas originais definidas diretamente pelo cenário nativo.
+  // Não entram em cen.caixas: são referências visuais, não colisores.
+  for (const obj of cen.decoracoes3d || []) {
+    if (obj.tipo !== 'esfera') continue;
+    const raio = Number(obj.raio);
+    if (!Number.isFinite(raio) || raio <= 0 || !Number.isFinite(obj.x) || !Number.isFinite(obj.y)) continue;
+    const esfera = new THREE.Mesh(
+      new THREE.SphereGeometry(raio, 24, 16),
+      new THREE.MeshStandardMaterial({ color: obj.cor || '#cccccc', roughness: 0.55 })
+    );
+    esfera.position.set(obj.x, raio, obj.y); // apoiada na superfície de altura 0
+    esfera.name = obj.nome || 'esfera';
+    esfera.castShadow = true;
+    esfera.receiveShadow = true;
+    g.add(esfera);
+  }
+  // Textura usada pelo piso e pelas rampas: sua versão muda junto ao semáforo.
+  g.userData.texturaTapete = mapa;
   return g;
 }
 
@@ -169,7 +289,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100 };
+  const S = { cen: null, arena: null, tapete: null, versaoTapete: 0, rig: null, tipo: 'ev3', modo: 'livre', cameraLivreInicializada: false, poseLivre: null, ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map() };
 
   /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
   const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
@@ -189,6 +309,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   function enquadrarLivre() {
     S.dist = enquadrarCantos(0.78, 0.72, new THREE.Vector3(0, 1, 0)); controls.maxDistance = S.dist * 2.6;
     controls.target.copy(centro); controls.update();
+    S.cameraLivreInicializada = true;
   }
   function ajustarLuz() {
     const L = Math.max(S.cen.w, S.cen.h), r = Math.hypot(S.cen.w, S.cen.h) / 2 + 22;
@@ -197,43 +318,156 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   }
   /** troca o cenário: reconstrói arena/textura e re-enquadra tudo no novo tamanho */
   function setCenario(cen, novoTapete) {
-    if (S.arena) { scene.remove(S.arena); S.arena.traverse((o) => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); }); }
+    if (S.arena) {
+      scene.remove(S.arena);
+      S.arena.traverse((o) => {
+        o.geometry?.dispose();
+        const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+        for (const material of mats) { material.map?.dispose(); material.dispose(); }
+      });
+    }
     S.cen = cen; centro.set(cen.w / 2, 0, cen.h / 2);
+    scene.background = new THREE.Color(cen.tilesOriginais ? 0x528fa0 : 0xcfd8e2);
     S.ultimo = null; S.snap = true;                 // não herda a pose do cenário anterior; câmera de perseguição reposiciona sem deslizar
     S.arena = construirArena(cen, novoTapete, renderer); scene.add(S.arena);
+    S.tapete = novoTapete; S.versaoTapete = novoTapete?.versao || 0;
+    S.cameraLivreInicializada = false; S.poseLivre = null;
     ajustarLuz(); setModoCamera(S.modo);
   }
   function setRobo(tipo) {
-    if (!ROBOS[tipo]) throw new Error('robô desconhecido: ' + tipo);
+    if (!ROBOS[tipo]) {
+      console.warn('[jacarEV3] Modelo 3D indisponível:', tipo, '— utilizando EV3.');
+      tipo = 'ev3';
+    }
     if (S.rig) { scene.remove(S.rig.grupo); S.rig.grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
     S.tipo = tipo; S.rig = ROBOS[tipo](); scene.add(S.rig.grupo);
     if (S.ultimo) aplicarEstado(S.rig, S.ultimo);
   }
+
+  function fantasmaMateriais(grupo) {
+    grupo.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        if (!m) continue;
+        m.transparent = true;
+        m.opacity = 0.45;
+        m.depthWrite = false;
+        if (m.emissiveIntensity != null) m.emissiveIntensity *= 0.5;
+      }
+    });
+  }
+  /** Atualiza robôs fantasmas de outros jogadores (multiplayer). peers: [{alunoId,x,y,th,led,robo3d,nome}] */
+  function setPeers(lista) {
+    const ids = new Set();
+    for (const p of lista || []) {
+      if (!p || !p.alunoId || p.x == null || p.y == null) continue;
+      ids.add(p.alunoId);
+      let entry = S.peers.get(p.alunoId);
+      const tipo = (p.robo3d && ROBOS[p.robo3d]) ? p.robo3d : (S.tipo || 'ev3');
+      if (!entry || entry.tipo !== tipo) {
+        if (entry) {
+          scene.remove(entry.rig.grupo);
+          entry.rig.grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+        }
+        const construtor = ROBOS[tipo] || ROBOS.ev3;
+        const rig = construtor();
+        fantasmaMateriais(rig.grupo);
+        scene.add(rig.grupo);
+        entry = { rig, tipo };
+        S.peers.set(p.alunoId, entry);
+      }
+      const alturaPeer = S.cen?.tilesOriginais
+        ? S.cen.terreno(p.x, p.y, p.th || 0)
+        : { z: p.z || 0, pitch: p.pitch || 0, roll: p.roll || 0 };
+      aplicarEstado(entry.rig, {
+        x: p.x, y: p.y, th: p.th || 0, ...alturaPeer,
+        pitch: p.pitch || 0, roll: p.roll || 0,
+        encA: 0, encB: 0, encC: 0, encD: 0,
+        led: p.led || 'DESLIGADO', ledAlpha: 0.55, refletida: 50,
+      });
+    }
+    for (const [id, entry] of [...S.peers.entries()]) {
+      if (!ids.has(id)) {
+        scene.remove(entry.rig.grupo);
+        entry.rig.grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); });
+        S.peers.delete(id);
+      }
+    }
+  }
+
   function setModoCamera(modo) {
     if (!MODOS_CAMERA.includes(modo)) return;
+    const anterior = S.modo;
+    // Guardar o enquadramento definido pelo aluno ao sair da câmera livre.
+    if (anterior === 'livre' && modo !== 'livre' && S.cameraLivreInicializada) {
+      S.poseLivre = {
+        posicao: camera.position.clone(),
+        alvo: controls.target.clone(),
+        acima: camera.up.clone(),
+      };
+    }
     S.modo = modo; controls.enabled = modo === 'livre';
-    if (modo === 'livre') enquadrarLivre();
+    if (modo === 'livre') {
+      if (!S.cameraLivreInicializada) enquadrarLivre();
+      else if (anterior !== 'livre' && S.poseLivre) {
+        camera.position.copy(S.poseLivre.posicao);
+        camera.up.copy(S.poseLivre.acima);
+        controls.target.copy(S.poseLivre.alvo);
+        controls.update();
+      }
+    }
     if (modo === 'topo') enquadrarCantos(1, 0.0001, new THREE.Vector3(0, 0, -1));
+  }
+  function setDistanciaSeguir(d, alt) {
+    if (d != null && isFinite(d)) S.seguirDist = Math.max(8, Math.min(120, +d));
+    if (alt != null && isFinite(alt)) S.seguirAlt = Math.max(5, Math.min(80, +alt));
+    S.snap = true;
   }
   function atualizarCamera() {
     if (S.modo === 'seguir' && S.ultimo) {                          // câmera de perseguição atrás do robô
       const { x, y, th } = S.ultimo, fx = Math.cos(th), fz = Math.sin(th);
-      const desejada = new THREE.Vector3(x - fx * 30, 20, y - fz * 30);
-      const alvo = new THREE.Vector3(x + fx * 8, 3, y + fz * 8);
+      const altura = S.ultimo.z || 0;
+      const d = S.seguirDist || 30, h = S.seguirAlt || 20;
+      const desejada = new THREE.Vector3(x - fx * d, altura + h, y - fz * d);
+      const alvo = new THREE.Vector3(x + fx * 8, altura + 3, y + fz * 8);
       camera.up.set(0, 1, 0);
       if (S.snap) { camera.position.copy(desejada); S.alvoCam.copy(alvo); S.snap = false; }
       else { camera.position.lerp(desejada, 0.12); S.alvoCam.lerp(alvo, 0.2); }
       camera.lookAt(S.alvoCam);
     } else if (S.modo === 'livre') controls.update();
   }
-  function aplicar(est) { S.ultimo = est; if (S.rig) aplicarEstado(S.rig, est); }
-  function desenhar() { atualizarCamera(); renderer.render(scene, camera); }
+  function aplicar(est) {
+    if (!est) return;
+    // A geometria e o robô consultam a MESMA função de altura.
+    // Cobre tanto playback quanto teleop e chamadas diretas da vista 3D.
+    S.ultimo = S.cen?.tilesOriginais
+      ? { ...est, ...S.cen.terreno(est.x, est.y, est.th || 0) }
+      : est;
+    if (S.rig) aplicarEstado(S.rig, S.ultimo);
+  }
+  function desenhar() {
+    // CanvasTexture só atualiza na GPU quando needsUpdate é ativado.
+    // O tapete tem nova versão apenas quando o sinal muda de cor.
+    const versao = S.tapete?.versao || 0;
+    if (versao !== S.versaoTapete) {
+      const textura = S.arena?.userData?.texturaTapete;
+      if (textura) textura.needsUpdate = true;
+      S.versaoTapete = versao;
+    }
+    atualizarCamera();
+    renderer.render(scene, camera);
+  }
   /** acompanha o tamanho do contêiner (janela única): só reenquadra se o formato mudou */
   function redimensionar() {
     const w = Math.max(10, container.clientWidth || 720), h = Math.max(10, container.clientHeight || 480);
     renderer.setPixelRatio(Math.min((typeof devicePixelRatio !== 'undefined' && devicePixelRatio) || 1, 2));
     renderer.setSize(w, h); const antes = camera.aspect; camera.aspect = w / h; camera.updateProjectionMatrix();
-    if (S.cen && Math.abs(antes - camera.aspect) > 0.01) setModoCamera(S.modo);
+    // Alterações de layout NÃO podem zerar a câmera livre escolhida pelo aluno.
+    // Só a vista de topo necessita reenquadrar ao mudar a proporção do canvas.
+    if (S.cen && S.modo === 'topo' && Math.abs(antes - camera.aspect) > 0.01) {
+      enquadrarCantos(1, 0.0001, new THREE.Vector3(0, 0, -1));
+    }
   }
   function loop() { if (!S.ativo) return; S.raf = requestAnimationFrame(loop); desenhar(); }
   function mostrar(v) {
@@ -243,8 +477,8 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   if (typeof ResizeObserver !== 'undefined' && container.nodeType === 1) new ResizeObserver(() => { if (S.ativo) redimensionar(); }).observe(container);
 
   setCenario(cenario, tapete); setRobo('ev3'); redimensionar();
-  return { renderer, scene, camera, controls, setRobo, setCenario, setModoCamera, aplicar, desenhar, mostrar, redimensionar,
-    get rig() { return S.rig; }, get tipo() { return S.tipo; }, get modo() { return S.modo; } };
+  return { renderer, scene, camera, controls, setRobo, setPeers, setCenario, setModoCamera, setDistanciaSeguir, aplicar, desenhar, mostrar, redimensionar,
+    get rig() { return S.rig; }, get tipo() { return S.tipo; }, get modo() { return S.modo; }, get seguirDist() { return S.seguirDist; } };
 }
 
 

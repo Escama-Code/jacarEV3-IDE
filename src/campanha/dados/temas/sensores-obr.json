@@ -1,0 +1,127 @@
+{
+  "id": "sensores-obr",
+  "missoes": [
+    {
+      "id": "so01-tres-portas",
+      "titulo": "Ler as 3 cores",
+      "ordem": 10,
+      "temaId": "sensores-obr",
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "ev3",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Portas OBR: 1=esq  2=centro  3=dir  4=ultrassom\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: leia 1, 2 e 3 em MODO_COR_REFLETIDA e imprima\n    pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    e = robo.ler_sensor(1, p.MODO_COR_REFLETIDA)\n    c = robo.ler_sensor(2, p.MODO_COR_REFLETIDA)\n    d = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n    print(e, c, d)\n    time.sleep(0.2)\n"
+      ],
+      "dicas": [
+        "Chame ler_sensor três vezes: portas 1, 2 e 3.",
+        "Use p.MODO_COR_REFLETIDA em todas.",
+        "Um print(e, c, d) ajuda a conferir no terminal."
+      ],
+      "limites": { "tempoSimMaxS": 10, "tentativasPorDica": 3 },
+      "objetivos": [
+        { "id": "leu", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] }
+      ],
+      "recompensas": { "xp": 50, "desbloqueia": ["so02-ultrassom"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "No perfil nacional há três sensores de cor na frente. Leia os três." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "Array ok. Agora o ultrassom (porta 4)." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Faltou ler_sensor." }]
+      }
+    },
+    {
+      "id": "so02-ultrassom",
+      "titulo": "Medir distância",
+      "ordem": 11,
+      "temaId": "sensores-obr",
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "ev3",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: dist = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)\n    # TODO: print(dist)\n    pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    dist = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)\n    print('cm:', dist)\n    time.sleep(0.3)\n"
+      ],
+      "dicas": [
+        "Porta 4 = ultrassônico.",
+        "p.MODO_ULTRASSONICO_CM devolve a distância em cm.",
+        "Só ler e imprimir já completa o objetivo desta missão."
+      ],
+      "limites": { "tempoSimMaxS": 10, "tentativasPorDica": 3 },
+      "objetivos": [
+        { "id": "us", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] }
+      ],
+      "recompensas": { "xp": 50, "desbloqueia": ["so03-garra"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "Obstáculos e paredes: use o olho ultrassônico." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "Distância ok. Hora da garra (motor A)." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Leia a porta 4." }]
+      }
+    },
+    {
+      "id": "so03-garra",
+      "titulo": "Abrir e fechar a garra",
+      "ordem": 12,
+      "temaId": "sensores-obr",
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "ev3",
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Graus sempre positivos; velocidade negativa inverte o sentido.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: fechar e abrir a garra no motor A\n    pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.girar_motor_graus('A', 90, 40)\n    time.sleep(0.2)\n    robo.girar_motor_graus('A', 90, -40)\n"
+      ],
+      "dicas": [
+        "Use girar_motor_graus('A', graus, velocidade).",
+        "graus deve ser positivo; use velocidade negativa para inverter.",
+        "Ex.: 90, 40 fecha · 90, -40 abre (no modelo 3D)."
+      ],
+      "limites": { "tempoSimMaxS": 15, "tentativasPorDica": 3 },
+      "objetivos": [
+        { "id": "garra", "tipo": "api_usada", "obrigatorio": true, "metodos": ["girar_motor_graus"] }
+      ],
+      "recompensas": { "xp": 70, "desbloqueia": ["so04-array-linha"] },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "Motor A move a garra de resgate. Feche e abra uma vez." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "Garra ok! Junte o array num seguidor simples." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Chame girar_motor_graus no motor A." }]
+      }
+    },
+    {
+      "id": "so04-array-linha",
+      "titulo": "Seguidor com 3 sensores",
+      "ordem": 13,
+      "temaId": "sensores-obr",
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "ev3",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nVEL = 30\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: loop lendo 1,2,3 e ajustando B/C\n    pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nVEL = 28\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    for _ in range(80):\n        e = robo.ler_sensor(1, p.MODO_COR_REFLETIDA)\n        d = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        erro = d - e\n        robo.mover_continuo('B', max(-100, min(100, int(VEL + 0.35 * erro))))\n        robo.mover_continuo('C', max(-100, min(100, int(VEL - 0.35 * erro))))\n        time.sleep(0.04)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n"
+      ],
+      "dicas": [
+        "erro = leitura_direita - leitura_esquerda.",
+        "Some o erro na velocidade de um motor e subtraia no outro.",
+        "time.sleep(0.04) no loop para o simulador avançar."
+      ],
+      "limites": { "tempoSimMaxS": 20, "tentativasPorDica": 3 },
+      "objetivos": [
+        { "id": "leu", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] },
+        { "id": "andou", "tipo": "api_usada", "obrigatorio": true, "metodos": ["mover_continuo"] },
+        { "id": "dist", "tipo": "dist_min", "obrigatorio": true, "cm": 15 }
+      ],
+      "recompensas": { "xp": 100 },
+      "narrativa": {
+        "intro": [{ "personagem": "Instrutor", "texto": "Com esq e dir você corrige a direção. Siga a linha por um trecho." }],
+        "sucesso": [{ "personagem": "Instrutor", "texto": "Array em ação! Próximo módulo: leis de trânsito." }],
+        "fracasso": [{ "personagem": "Instrutor", "texto": "Precisa ler sensores, mover e percorrer distância mínima." }]
+      }
+    }
+  ]
+}

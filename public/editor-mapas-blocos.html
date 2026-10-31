@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Editor por blocos OBR — jacarEV3</title>
+<style>
+  :root {
+    --bg: #0c1018; --panel: #151c28; --border: #2a3548;
+    --accent: #3ecf8e; --text: #e8eef6; --muted: #8b9bb0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    display: grid;
+    grid-template-rows: 52px 1fr 28px;
+    background: var(--bg); color: var(--text);
+    font: 13px/1.45 system-ui, sans-serif;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 0 14px; border-bottom: 1px solid var(--border); background: #101722;
+  }
+  header h1 { margin: 0; font-size: 1rem; }
+  header nav { display: flex; gap: 14px; flex-wrap: wrap; }
+  header a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .workspace {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr) 300px;
+    min-height: 0;
+  }
+  @media (max-width: 1100px) {
+    .workspace { grid-template-columns: 220px minmax(0, 1fr); }
+    .aside-right { display: none; }
+  }
+  aside {
+    background: var(--panel); overflow-y: auto; min-height: 0;
+    border-right: 1px solid var(--border); padding: 10px 12px;
+  }
+  aside.aside-right { border-right: 0; border-left: 1px solid var(--border); }
+  aside h2 {
+    margin: 12px 0 6px; font-size: 0.65rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); padding-left: 4px;
+  }
+  aside h2:first-child { margin-top: 0; }
+  .paleta-grupo { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+  .paleta-grupo button {
+    text-align: left; padding: 7px 9px; border-radius: 8px;
+    border: 1px solid var(--border); background: #1a2434; color: var(--text); cursor: pointer;
+  }
+  .paleta-grupo button strong { display: block; font-size: 12px; }
+  .paleta-grupo button span { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .paleta-grupo button.ativo { border-color: var(--accent); background: #1a3d30; }
+  button, select, input {
+    background: #1a2434; color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 9px; font: inherit; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #062416; font-weight: 700; border-color: var(--accent); }
+  label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  label input, label select { width: 100%; margin-top: 3px; }
+  .row { display: flex; gap: 6px; }
+  .row > * { flex: 1; }
+  .actions { display: flex; flex-direction: column; gap: 5px; }
+  .hint { font-size: 11px; color: var(--muted); line-height: 1.4; margin: 6px 0; }
+  kbd { background: #243044; padding: 1px 5px; border-radius: 4px; font-size: 10px; }
+
+  .center {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; min-height: 0; background: #0a0e14;
+  }
+  .canvas-wrap {
+    flex: 1;
+    min-height: 0; overflow: auto;
+    display: flex; align-items: center; justify-content: center; padding: 12px;
+  }
+  #mapCanvas {
+    background: #1a2030; border-radius: 8px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.5);
+    max-width: 100%; max-height: 100%;
+    width: auto; height: auto;
+    touch-action: none; cursor: crosshair;
+  }
+  /* Prévia 3D estilo “webcam”: canto fixo, pequena, não rouba o editor */
+  .preview3d-cam {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    width: min(260px, 32vw);
+    height: 160px;
+    z-index: 20;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid rgba(62, 207, 142, 0.55);
+    box-shadow: 0 10px 28px rgba(0,0,0,.55);
+    background: #1a2434;
+    display: flex;
+    flex-direction: column;
+  }
+  .preview3d-cam .cam-label {
+    flex: 0 0 auto;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #b5e8cc;
+    background: rgba(10, 18, 28, 0.92);
+    padding: 4px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: none;
+  }
+  .preview3d-cam .cam-label span.live {
+    color: #3ecf8e;
+  }
+  #view3d {
+    flex: 1;
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #6a8aa8;
+    cursor: grab;
+  }
+  #view3d:active { cursor: grabbing; }
+  #mapInfo {
+    display: none; /* info vai para status ou label */
+  }
+  .status-bar {
+    border-top: 1px solid var(--border); padding: 4px 12px;
+    color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .status-bar.erro { color: #ff8a80; }
+  #mapValidacao {
+    margin-top: 6px; max-height: 120px; overflow: auto; font-size: 11px;
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px; background: #0c121c;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>🧱 Editor por blocos OBR · <span style="color:var(--accent)">.jcrv3map v2</span></h1>
+    </div>
+    <nav>
+      <a href="sandbox.html">← Sandbox</a>
+      <a href="editor-mapas.html">✏️ Editor livre</a>
+      <a href="../index.html">Menu</a>
+    </nav>
+  </header>
+
+  <div class="workspace">
+    <!-- ESQUERDA: paleta fixa -->
+    <aside>
+      <h2>Paleta de blocos</h2>
+      <div id="paleta"></div>
+      <h2>Ferramentas</h2>
+      <div class="actions">
+        <button type="button" id="btnApagar">🗑️ Apagar bloco</button>
+        <button type="button" id="btnInicio">📍 Início do robô</button>
+        <button type="button" id="btnRot">Rotação: 0°</button>
+        <div class="row">
+          <button type="button" id="btnUndo">↶</button>
+          <button type="button" id="btnRedo">↷</button>
+        </div>
+      </div>
+      <p class="hint">
+        <strong>Marcação verde (regra OBR):</strong> não é aleatória.
+        Use o bloco <em>Interseção + verde</em> — o quadrado <strong>2,5×2,5 cm</strong>
+        fica <em>logo antes</em> do cruzamento e indica o caminho (10 pts).
+        <em>Interseção sem marcação</em> → o robô deve seguir <strong>reto</strong>.
+        Pontos <span style="color:#50a0ff">azuis</span> nas bordas = portas de encaixe (não são marcação OBR).
+        <kbd>R</kbd> gira o bloco e a posição do verde.
+      </p>
+    </aside>
+
+    <!-- CENTRO: 2D + prévia 3D -->
+    <main class="center">
+      <div class="canvas-wrap">
+        <canvas id="mapCanvas" width="960" height="720" aria-label="Grade modular OBR — área principal de edição"></canvas>
+      </div>
+      <!-- Webcam 3D: canto fixo, edição continua 100% na grade -->
+      <div class="preview3d-cam" title="Prévia 3D — arraste para orbitar, scroll para zoom">
+        <div class="cam-label">
+          <span>Prévia 3D</span>
+          <span class="live">● ao vivo</span>
+        </div>
+        <canvas id="view3d" width="400" height="240" aria-label="Prévia 3D da arena"></canvas>
+      </div>
+      <p id="mapInfo" hidden>—</p>
+    </main>
+
+    <!-- DIREITA: propriedades fixas -->
+    <aside class="aside-right">
+      <h2>Arena</h2>
+      <label>Nome
+        <input id="mapNome" type="text" maxlength="70" value="Arena OBR">
+      </label>
+      <div class="row">
+        <label>Ladrilhos X
+          <input id="gridW" type="number" min="3" max="20" value="8">
+        </label>
+        <label>Ladrilhos Z
+          <input id="gridH" type="number" min="3" max="16" value="6">
+        </label>
+      </div>
+      <label>Andares
+        <input id="niveisMax" type="number" min="1" max="4" value="2">
+      </label>
+      <button type="button" id="btnApplyGrid">Aplicar grade</button>
+      <label style="margin-top:8px">Nível em edição
+        <select id="nivelAtivo">
+          <option value="0">0 — térreo</option>
+          <option value="1">1 — elevado</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
+      </label>
+
+      <h2>Qualidade</h2>
+      <div class="actions">
+        <button type="button" id="btnValidar">✓ Verificar encaixes OBR</button>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+          <input type="checkbox" id="chkPorts" checked> Portas de encaixe
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin:0">
+          <input type="checkbox" id="chkLabels"> Coordenadas
+        </label>
+      </div>
+      <div id="mapValidacao" hidden></div>
+
+      <h2>Arquivo</h2>
+      <div class="actions">
+        <button type="button" id="btnNovo">＋ Nova arena</button>
+        <button type="button" id="btnLoad">📂 Abrir .jcrv3map</button>
+        <input id="fileIn" type="file" accept=".jcrv3map,.json" hidden>
+        <button type="button" id="btnSave" class="primary">💾 Salvar .jcrv3map</button>
+        <button type="button" id="btnToIde">▶ Usar no Sandbox</button>
+      </div>
+      <p class="hint">Atalhos: <kbd>R</kbd> girar · <kbd>Del</kbd> apagar · <kbd>Ctrl+Z</kbd> · arrastar para pintar</p>
+    </aside>
+  </div>
+
+  <div id="mapStatus" class="status-bar" role="status">…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="../src/js/editor/obrCatalogo.js"></script>
+  <script src="../src/js/editor/mapaModular.js"></script>
+</body>
+</html>

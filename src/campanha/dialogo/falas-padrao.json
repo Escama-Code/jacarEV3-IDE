@@ -1,0 +1,17 @@
+{
+  "intro": [
+    { "personagem": "instrutor", "texto": "Missão na área! Leia o objetivo e complete o código no editor." }
+  ],
+  "dica": [
+    { "personagem": "assistente", "texto": "Calma — uma dica de cada vez. Tente aplicar antes de pedir outra." }
+  ],
+  "fracasso": [
+    { "personagem": "instrutor", "texto": "Ainda não fechou todos os objetivos. Ajuste e rode de novo." }
+  ],
+  "sucesso": [
+    { "personagem": "arbitro", "texto": "Missão cumprida! Pode seguir para a próxima quando quiser." }
+  ],
+  "referencia": [
+    { "personagem": "assistente", "texto": "Você já ganhou 3 estrelas — aqui vai uma referência para comparar, não para copiar cego." }
+  ]
+}

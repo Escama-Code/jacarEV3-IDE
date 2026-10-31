@@ -1,0 +1,305 @@
+{
+  "id": "leis-transito",
+  "missoes": [
+    {
+      "id": "lt01-sinalizar",
+      "titulo": "Sinalizar antes de sair",
+      "ordem": 20,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Lei: sinalize LARANJA, depois VERDE, e só então circule.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: LED LARANJA → sleep → LED VERDE → andar → parar\n    pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('LARANJA')\n    time.sleep(0.3)\n    robo.led('VERDE')\n    time.sleep(0.2)\n    robo.mover_continuo('B', 30)\n    robo.mover_continuo('C', 30)\n    time.sleep(1.0)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n",
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('LARANJA')\n    time.sleep(0.5)\n    robo.led('VERDE')\n    robo.mover_continuo('B', 35)\n    robo.mover_continuo('C', 35)\n    time.sleep(1.2)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n"
+      ],
+      "dicas": [
+        "Ordem: LARANJA → VERDE → mover_continuo → sleep → parar_motor.",
+        "O avaliador verifica se você usou led e andou o suficiente.",
+        "robo.led('LARANJA'); time.sleep(0.3); robo.led('VERDE')"
+      ],
+      "limites": {
+        "tempoSimMaxS": 15,
+        "tentativasPorDica": 3
+      },
+      "objetivos": [
+        {
+          "id": "sinalizou",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "led"
+          ]
+        },
+        {
+          "id": "andou",
+          "tipo": "dist_min",
+          "obrigatorio": true,
+          "cm": 12
+        }
+      ],
+      "recompensas": {
+        "xp": 50,
+        "desbloqueia": [
+          "lt02-pare"
+        ]
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Agente",
+            "texto": "Regra 1: sinalize (LARANJA) e só entre na via com VERDE."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Agente",
+            "texto": "Sinalização correta. Próxima: parada obrigatória."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Agente",
+            "texto": "Use led e circule um trecho curto."
+          }
+        ]
+      },
+      "temaId": "leis-transito"
+    },
+    {
+      "id": "lt02-pare",
+      "titulo": "Parada obrigatória",
+      "ordem": 21,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Lei: avance, pare de verdade, sinalize VERMELHO, depois siga.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: trecho 1 (mover + sleep)\n    # TODO: parar_motor B e C\n    # TODO: LED VERMELHO + sleep\n    # TODO: LED VERDE + trecho 2 + parar\n    pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    robo.mover_continuo('B', 30)\n    robo.mover_continuo('C', 30)\n    time.sleep(0.7)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n    robo.led('VERMELHO')\n    time.sleep(1.0)\n    robo.led('VERDE')\n    robo.mover_continuo('B', 30)\n    robo.mover_continuo('C', 30)\n    time.sleep(0.7)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n",
+        "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as r:\n    r.led('VERDE')\n    r.mover_continuo('B', 25)\n    r.mover_continuo('C', 25)\n    time.sleep(0.8)\n    r.parar_motor('B')\n    r.parar_motor('C')\n    r.led('VERMELHO')\n    time.sleep(1)\n    r.led('VERDE')\n    r.mover_continuo('B', 25)\n    r.mover_continuo('C', 25)\n    time.sleep(0.8)\n    r.parar_motor('B')\n    r.parar_motor('C')\n"
+      ],
+      "dicas": [
+        "Após a primeira perna: parar_motor + time.sleep(1) + led VERMELHO.",
+        "Depois led VERDE e mais um trecho com mover_continuo.",
+        "A distância total ainda precisa ser ≥ 18 cm."
+      ],
+      "limites": {
+        "tempoSimMaxS": 20,
+        "tentativasPorDica": 3
+      },
+      "objetivos": [
+        {
+          "id": "parou",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "parar_motor"
+          ]
+        },
+        {
+          "id": "led",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "led"
+          ]
+        },
+        {
+          "id": "andou",
+          "tipo": "dist_min",
+          "obrigatorio": true,
+          "cm": 18
+        }
+      ],
+      "recompensas": {
+        "xp": 70,
+        "desbloqueia": [
+          "lt03-zona"
+        ]
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Agente",
+            "texto": "Regra 2: na faixa de pare, pare de verdade e sinalize VERMELHO antes de seguir."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Agente",
+            "texto": "Parada válida. Agora respeite a zona da pista."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Agente",
+            "texto": "Faltou parar_motor, led ou distância."
+          }
+        ]
+      },
+      "temaId": "leis-transito"
+    },
+    {
+      "id": "lt03-zona",
+      "titulo": "Chegar na zona permitida",
+      "ordem": 22,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\n\n# Lei: use o sensor e chegue na zona leste permitida.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        # TODO: seguidor de linha (sensor + mover_continuo)\n        pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 10)\n            robo.mover_continuo('C', 34)\n        else:\n            robo.mover_continuo('B', 34)\n            robo.mover_continuo('C', 10)\n",
+        "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        v = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if v < 28:\n            robo.mover_continuo('B', 8)\n            robo.mover_continuo('C', 30)\n        else:\n            robo.mover_continuo('B', 30)\n            robo.mover_continuo('C', 8)\n"
+      ],
+      "dicas": [
+        "Mesma lógica do seguidor, com foco em chegar na zona.",
+        "Se travar num loop, confira o limiar e o sentido da curva.",
+        "LED verde = via liberada durante o percurso."
+      ],
+      "limites": {
+        "tempoSimMaxS": 45,
+        "tentativasPorDica": 3
+      },
+      "objetivos": [
+        {
+          "id": "sensor",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "ler_sensor"
+          ]
+        },
+        {
+          "id": "zona",
+          "tipo": "regiao",
+          "obrigatorio": true,
+          "regiao": {
+            "x": 70,
+            "y": 20,
+            "w": 50,
+            "h": 50
+          }
+        }
+      ],
+      "recompensas": {
+        "xp": 90,
+        "desbloqueia": [
+          "lt04-final"
+        ]
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Agente",
+            "texto": "Regra 3: destino só conta dentro da zona permitida (leste da pista)."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Agente",
+            "texto": "Zona ok. Desafio final do tema."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Agente",
+            "texto": "Não alcançou a região a tempo."
+          }
+        ]
+      },
+      "temaId": "leis-transito"
+    },
+    {
+      "id": "lt04-final",
+      "titulo": "Percurso completo e seguro",
+      "ordem": 23,
+      "setup": {
+        "cenario": "treino",
+        "inicio": "padrao",
+        "robo3d": "jacare",
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Final: sinalize, siga a linha, chegue na zona e encerre com parada + VERMELHO.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: LED LARANJA e depois VERDE\n    # TODO: loop com sensor e motores\n    # TODO: no fim, parar_motor e LED VERMELHO\n    pass\n"
+      },
+      "codigosReferencia": [
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('LARANJA')\n    time.sleep(0.25)\n    robo.led('VERDE')\n    t0 = 0\n    while t0 < 25:\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 12)\n            robo.mover_continuo('C', 32)\n        else:\n            robo.mover_continuo('B', 32)\n            robo.mover_continuo('C', 12)\n        time.sleep(0.05)\n        t0 += 0.05\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n    robo.led('VERMELHO')\n",
+        "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('LARANJA')\n    time.sleep(0.3)\n    robo.led('VERDE')\n    for _ in range(400):\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 10)\n            robo.mover_continuo('C', 30)\n        else:\n            robo.mover_continuo('B', 30)\n            robo.mover_continuo('C', 10)\n        time.sleep(0.05)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n    robo.led('VERMELHO')\n"
+      ],
+      "dicas": [
+        "Você pode parar por tempo após alguns segundos no loop.",
+        "Objetivos: led, ler_sensor, parar_motor e região leste.",
+        "No fim: parar_motor + led('VERMELHO')."
+      ],
+      "limites": {
+        "tempoSimMaxS": 50,
+        "tentativasPorDica": 3
+      },
+      "objetivos": [
+        {
+          "id": "led",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "led"
+          ]
+        },
+        {
+          "id": "sensor",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "ler_sensor"
+          ]
+        },
+        {
+          "id": "parou",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "parar_motor"
+          ]
+        },
+        {
+          "id": "zona",
+          "tipo": "regiao",
+          "obrigatorio": true,
+          "regiao": {
+            "x": 65,
+            "y": 15,
+            "w": 55,
+            "h": 55
+          }
+        }
+      ],
+      "recompensas": {
+        "xp": 120,
+        "desbloqueia": []
+      },
+      "narrativa": {
+        "intro": [
+          {
+            "personagem": "Agente",
+            "texto": "Final: sinalize, siga a via com sensor, chegue na zona e encerre com parada + VERMELHO."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "Agente",
+            "texto": "Academia concluída. Você dominou códigos-base e leis de trânsito na pista!"
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "Agente",
+            "texto": "Revise: led, sensor, parar_motor e zona leste."
+          }
+        ]
+      },
+      "temaId": "leis-transito"
+    }
+  ]
+}

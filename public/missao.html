@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jacarEV3 IDE — Missão</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/" } }
+</script>
+<link rel="stylesheet" href="../src/css/main.css">
+<link rel="stylesheet" href="../src/css/campanha.css">
+<style>
+  /* modo campanha: mapa fixo pela missão, só 2D/3D pode trocar */
+  body.modo-campanha #cenario,
+  body.modo-campanha #inicio,
+  body.modo-campanha #exemplo { display: none; }
+
+  body.modo-campanha #cenario,
+  body.modo-campanha #inicio,
+  body.modo-campanha #exemplo { display: none; }
+  body.modo-missao #telaInicio { display: none !important; }
+  body.modo-missao #lobbyCampanha { display: none !important; }
+  #hudCampanha { display: flex; }
+  #hudCampanha[hidden] { display: none !important; }
+</style>
+</head>
+<body class="modo-missao modo-sandbox modo-campanha">
+
+<div id="hudCampanha" class="hud-campanha">
+  <div class="hud-left">
+    <span class="hud-badge">Missão</span>
+    <span id="hudModulo" class="hud-meta"></span>
+    <strong id="hudMissaoTitulo">carregando…</strong>
+    <span id="hudEstrelas" class="camp-stars">☆☆☆☆☆</span>
+  </div>
+  <div class="hud-right">
+    <span id="hudTentativas" class="hud-meta">tentativas: 0</span>
+    <button type="button" id="campDica" class="camp-btn-sec">Dica</button>
+    <button type="button" id="campReabrirLobby" class="camp-btn-sec">← Missões</button>
+  </div>
+</div>
+<div id="campResultado" class="camp-resultado-float" hidden></div>
+
+
+<!-- Tela inicial: Campanha / Multiplayer / Sandbox -->
+
+
+<div id="telaInicio" class="tela-inicio" hidden>
+  <div class="tela-inicio-card">
+    <div class="tela-inicio-logo">🐊</div>
+    <h1>jacarEV3 IDE</h1>
+    <p class="tela-inicio-sub">Aprenda robótica com Python real no navegador</p>
+    <div class="tela-inicio-modos">
+      <button type="button" class="modo-card" data-modo="campanha">
+        <span class="modo-icon">📖</span>
+        <span class="modo-titulo">Campanha</span>
+        <span class="modo-desc">Missões com história para aprender a biblioteca</span>
+      </button>
+<button type="button" class="modo-card" data-modo="sandbox">
+        <span class="modo-icon">🧪</span>
+        <span class="modo-titulo">Sandbox</span>
+        <span class="modo-desc">Editor livre, simulador 2D/3D e teleop</span>
+      </button>
+    </div>
+    <p class="tela-inicio-rodape">jacarev3 · simulação EV3 no browser</p>
+  </div>
+</div>
+
+<!-- Lobby Campanha (tela exclusiva) -->
+<div id="lobbyCampanha" class="lobby-campanha" hidden hidden>
+  <div class="lobby-card">
+    <header class="lobby-header">
+      <div>
+        <p class="lobby-kicker">Modo campanha</p>
+        <h1 id="campTitulo">Academia jacarev3</h1>
+        <p id="campDesc" class="lobby-sub">Aprenda a biblioteca e as regras da pista em missões guiadas.</p>
+      </div>
+      <div class="lobby-header-actions">
+        <span id="campXp" class="camp-xp">0 XP</span>
+        <button type="button" id="campSandbox" class="camp-btn-sec">Sandbox</button>
+        <button type="button" id="campInicio" class="camp-btn-sec">Menu</button>
+      </div>
+    </header>
+
+    <div id="campViewModulos" class="lobby-view">
+      <p class="camp-hint-mod">Escolha um módulo. O próximo só libera quando você concluir todas as missões do anterior.</p>
+      <div id="campGridModulos" class="camp-grid-modulos"></div>
+    </div>
+
+    <div id="campViewMissoes" class="lobby-view" hidden>
+      <button type="button" id="campVoltarModulos" class="camp-btn-sec camp-voltar">← Módulos</button>
+      <h2 id="campModuloTitulo" class="camp-modulo-titulo"></h2>
+      <div class="lobby-missao-layout">
+        <ul id="campListaMissoes" class="camp-lista"></ul>
+        <div class="camp-detalhe">
+          <div id="campDialogo" class="camp-dialogo"></div>
+          <div id="campObjetivos" class="camp-objetivos"></div>
+          <div class="camp-actions">
+            <button type="button" id="campIniciar" class="principal" disabled>Começar missão na IDE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HUD compacto durante a missão na IDE -->
+<div id="hudCampanha" class="hud-campanha" hidden>
+  <div class="hud-left">
+    <span class="hud-badge">Campanha</span>
+    <span id="hudModulo" class="hud-meta"></span>
+    <strong id="hudMissaoTitulo">—</strong>
+    <span id="hudEstrelas" class="camp-stars">☆☆☆☆☆</span>
+  </div>
+  <div class="hud-right">
+    <span id="hudTentativas" class="hud-meta">tentativas: 0</span>
+    <button type="button" id="campDica" class="camp-btn-sec">Dica</button>
+    <button type="button" id="campReabrirLobby" class="camp-btn-sec">Missões</button>
+  </div>
+</div>
+<div id="campResultado" class="camp-resultado-float" hidden></div>
+
+
+<style id="camp-missao-panel-css">
+#campPainelMissao {
+  position: fixed; top: 58px; right: 10px; width: min(300px, 34vw); max-height: calc(100vh - 80px);
+  overflow: auto; z-index: 40; background: #161b22ee; border: 1px solid #30363d; border-radius: 12px;
+  padding: 12px 14px; color: #e6edf3; font-size: 13px; box-shadow: 0 8px 28px #0008;
+}
+#campPainelMissao[hidden] { display: none !important; }
+#campPainelMissao h3 { margin: 0 0 8px; font-size: 14px; color: #3ecf8e; }
+#campPainelMissao .obj-li { margin: 4px 0; }
+#campPainelMissao .obj-li.ok { color: #3fb950; }
+#campPainelMissao .obj-li.pend { color: #8b949e; }
+#campPainelMissao .dica-box { background: #0d1117; border-radius: 8px; padding: 8px; margin-top: 8px; border-left: 3px solid #e3b341; }
+#campPainelMissao .ref-box { margin-top: 10px; font-size: 12px; color: #8b949e; }
+#campPainelMissao button { margin-top: 6px; width: 100%; }
+body.modo-campanha main { padding-right: min(320px, 36vw); }
+@media (max-width: 900px) {
+  #campPainelMissao { position: static; width: auto; max-height: none; margin: 8px; }
+  body.modo-campanha main { padding-right: 0; }
+}
+</style>
+<div id="campPainelMissao" hidden>
+  <h3 id="campPainelTitulo">Missão</h3>
+  <p id="campPainelNarrativa" style="color:#8b949e;margin:0 0 8px;font-size:12px"></p>
+  <strong>Objetivos</strong>
+  <div id="campPainelObjs"></div>
+  <div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">
+    <button type="button" id="campBtnDica" class="camp-btn-sec">💡 Pedir dica</button>
+    <button type="button" id="campBtnRef" class="camp-btn-sec" hidden>📖 Ver referência</button>
+  </div>
+  <div id="campPainelDica" class="dica-box" hidden></div>
+  <div id="campPainelRef" class="ref-box" hidden></div>
+  <p style="margin:10px 0 0;font-size:11px;color:#6e7681">A cada 3 falhas sai uma dica. Referência só com 3★ ou mais.</p>
+</div>
+
+<header>
+  <h1>🐊 jacarEV3 IDE</h1>
+  <button type="button" id="btnMenuModos" class="btn-menu-modos" title="Trocar modo">Menu</button>
+  <span id="badgeModo" class="badge-modo">Sandbox</span>
+  <span id="status">iniciando…</span>
+  <span id="gpStatus" class="info" title="Controle USB/Bluetooth">controle: —</span>
+</header>
+
+<main>
+<section class="painel painel-codigo">
+    <h2>Editor — <span style="text-transform:none">digite <kbd>robo.</kbd> ou <kbd>p.</kbd> pro autocomplete</span></h2>
+    <div class="linha" style="margin-top:0">
+      <select id="exemplo"></select>
+      <label>limite <input id="limite" type="number" value="30" min="1" max="60" step="1" title="Máximo 60 s"> s simulados <span class="info" style="margin:0">(máx. 60s)</span></label>
+    </div>
+    <div id="editor" style="margin-top:8px"></div>
+    <div class="linha">
+      <button id="btnRodar" class="principal" disabled>▶ Rodar script</button>
+      <span class="info" style="margin:0"><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+      <label style="margin-left:auto">jacarev3 <input id="versao" type="text" placeholder="última"></label>
+      <span class="info" style="margin:0" id="versaoInst"></span>
+    </div>
+    <div class="termbar"><h2>Terminal</h2><button id="btnLimpar">Limpar Terminal</button></div>
+    <div id="terminal"></div>
+    <div class="info">Sensores: <b>1</b> cor · <b>2</b> toque · <b>3</b> cor · <b>4</b> ultrassônico. Motores: <b>B</b> esquerda, <b>C</b> direita.
+    <code>time.sleep()</code> avança o relógio do simulador (não trava a aba).</div>
+  </section>
+<section class="painel painel-arena">
+    <h2>Arena virtual</h2>
+    <div class="linha" style="margin:0 0 8px">
+      <div class="seg"><button id="btn2d" class="ativo">2D</button><button id="btn3d" disabled title="carregando Three.js…">3D</button></div>
+      <select id="cenario" title="Cenário"></select>
+      <select id="inicio" title="Posição inicial do robô"></select>
+      <span id="opts3d" class="linha" style="margin:0" hidden>
+        <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option> <option value="arara">Robô: Arara</option><option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option> <option value="carro">Robô: Carro</option>
+        </select>
+        <select id="cam3d"><option value="livre">Câmera: livre (arraste)</option><option value="seguir">Câmera: seguir o robô</option><option value="topo">Câmera: vista de topo</option></select>
+        <label id="lblDistCam" title="Distância da câmera ao seguir o robô" style="gap:4px">
+          Dist.
+          <input id="distCam" type="range" min="12" max="90" value="30" style="width:90px;min-width:90px">
+          <span id="distCamVal">30</span>
+        </label>
+      </span>
+    </div>
+    <div id="palco">
+      <canvas id="cv" class="vista" width="1000" height="667"></canvas>
+      <div id="cv3d" class="vista" hidden></div>
+    </div>
+    <div class="linha">
+      <button id="btnPlay" disabled>▶ Reproduzir</button>
+      <button type="button" id="btnTeleop" title="WASD ou gamepad — ao vivo">🎮 Teleop</button>
+      <input id="slider" type="range" min="0" max="1000" value="0" disabled>
+      <select id="vel"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+      <label><input id="som" type="checkbox" checked> som</label>
+    </div>
+    <div class="info" id="resumo">Rode um script pra ver o robô.</div>
+    <h2>Bytes que a jacarev3 gerou</h2>
+    <div id="tabela"><table><tbody id="corpo"></tbody></table></div>
+    <div class="info" id="contaPacotes"></div>
+  </section>
+</main>
+
+<script type="text/x-python" id="ponte-py">
+"""
+ponte.py — liga a jacarev3 REAL (sem alterar um byte dela) ao simulador JS.
+"""
+import itertools
+import struct
+import sys
+import time
+import traceback
+import types
+
+try:
+    import termios
+except ModuleNotFoundError:
+    _termios = types.ModuleType('termios')
+    _termios.TCSANOW, _termios.TCSADRAIN, _termios.TCSAFLUSH = 0, 1, 2
+    sys.modules['termios'] = _termios
+
+import js
+import jacarev3.robo as _robo
+from jacarev3 import protocolo as p
+from pyodide.ffi import to_js
+
+class TempoVirtualEsgotado(Exception):
+    """O script passou do limite de tempo simulado (evita loop infinito)."""
+
+class ConexaoNavegador:
+    def __init__(self, mac=None, canal=None, timeout=10, **_ignorado):
+        self.mac = mac
+        self._contador = itertools.count(1)
+        self._resposta = b''
+
+    def proximo_contador(self) -> int:
+        return next(self._contador) & 0xFFFF
+
+    def enviar(self, pacote: bytes) -> None:
+        saida = js.ev3Ponte.enviar(to_js(bytes(pacote)))
+        contador = struct.unpack_from('<H', pacote, 2)[0]
+        if saida is None:
+            self._resposta = b''
+        elif saida is False:
+            corpo = bytes([p.DIRECT_REPLY_ERROR])
+            self._resposta = struct.pack('<HH', 2 + len(corpo), contador) + corpo
+        else:
+            corpo = bytes([p.DIRECT_REPLY_OK]) + bytes(saida.to_py())
+            self._resposta = struct.pack('<HH', 2 + len(corpo), contador) + corpo
+
+    def receber(self, tamanho_max: int = 1024) -> bytes:
+        return self._resposta
+
+    def fechar(self) -> None:
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.fechar()
+
+class _RelogioVirtual:
+    def __init__(self, limite_s: float):
+        self.limite = limite_s
+        self.base = time.time()
+
+    def sleep(self, segundos: float) -> None:
+        js.ev3Ponte.avancar(float(segundos))
+        self._checar()
+
+    def time(self) -> float:
+        return self.base + js.ev3Ponte.agora()
+
+    monotonic = time
+
+    def _checar(self) -> None:
+        if js.ev3Ponte.agora() >= self.limite:
+            raise TempoVirtualEsgotado(f"limite de {self.limite:g}s simulados atingido")
+
+def executar(codigo: str, limite_s: float = 30.0) -> str:
+    resultado = 'ok'
+    relogio = _RelogioVirtual(limite_s)
+    originais = (time.sleep, time.time, time.monotonic, _robo.ConexaoBluetooth)
+    time.sleep, time.time, time.monotonic = relogio.sleep, relogio.time, relogio.time
+    _robo.ConexaoBluetooth = ConexaoNavegador
+    envio_original = ConexaoNavegador.enviar
+
+    def enviar_com_limite(self, pacote):
+        envio_original(self, pacote)
+        relogio._checar()
+
+    ConexaoNavegador.enviar = enviar_com_limite
+    try:
+        exec(compile(codigo, '<seu_script.py>', 'exec'), {'__name__': '__main__'})
+    except TempoVirtualEsgotado as e:
+        print(f"[simulador] {e}")
+        resultado = 'limite'
+    except BaseException as e:
+        traceback.print_exception(type(e), e, e.__traceback__.tb_next)
+        resultado = 'erro'
+    finally:
+        time.sleep, time.time, time.monotonic, _robo.ConexaoBluetooth = originais
+        ConexaoNavegador.enviar = envio_original
+    return resultado
+</script>
+
+<script type="text/x-python" id="api-py">
+import importlib.metadata as _md
+import inspect
+import json
+import re
+
+from jacarev3 import RoboEV3, protocolo as _p
+from jacarev3.robo import CODIGOS_LED
+from jacarev3.topicos import circuito, controle, desvio
+
+def _params(f, pular=('self',)):
+    saida = []
+    for nome, q in inspect.signature(f).parameters.items():
+        if nome in pular:
+            continue
+        pad = None if q.default is inspect.Parameter.empty else repr(q.default)
+        if q.kind is q.VAR_POSITIONAL:
+            nome = '*' + nome
+        elif q.kind is q.VAR_KEYWORD:
+            nome = '**' + nome
+        saida.append({'n': nome, 'd': pad})
+    return saida
+
+def _item(nome, f, pular=('self',)):
+    doc = (inspect.getdoc(f) or '').strip()
+    return {'n': nome, 'p': _params(f, pular), 'doc': doc[:1200]}
+
+def descrever_api() -> str:
+    robo = [_item(n, f) for n, f in inspect.getmembers(RoboEV3, callable) if not n.startswith('_')]
+    topicos = {}
+    for mod in (circuito, controle, desvio):
+        nome = mod.__name__.rsplit('.', 1)[-1]
+        topicos[nome] = [_item(n, f, pular=()) for n, f in inspect.getmembers(mod, inspect.isfunction) if not n.startswith('_') and f.__module__ == mod.__name__]
+    consts = [{'n': n, 'v': v} for n, v in vars(_p).items() if re.match(r'^(MODO|LED|PORTA|INDICE|PARAR|TURN)_', n) and isinstance(v, int)]
+    return json.dumps({'versao': _md.version('jacarev3'), 'robo': robo, 'topicos': topicos, 'constantes': consts, 'leds': list(CODIGOS_LED)}, ensure_ascii=False)
+</script>
+
+<!-- Scripts de dependência externa -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
+
+<!-- 1. Carrega os cenários do arquivo JS externo -->
+<script src="../src/js/cenarios.js"></script>
+
+<!-- 2. Cria o alias global obrigatorio para o SimEV3 e Playback -->
+<script>
+  if (typeof Cenarios !== 'undefined') {
+    window.CENARIOS = Cenarios.lista;
+  }
+</script>
+
+<script>
+// ============================================================
+// SimEV3 — EV3 virtual
+// ============================================================
+const OP = {
+  SOUND: 0x94, UI_WRITE: 0x82, INPUT_DEVICE: 0x99,
+  OUT_RESET: 0xA2, OUT_STOP: 0xA3, OUT_SPEED: 0xA5, OUT_START: 0xA6,
+  OUT_TEST: 0xA9, OUT_READY: 0xAA,
+  OUT_STEP_SPEED: 0xAE, OUT_TIME_SPEED: 0xAF,
+  OUT_STEP_SYNC: 0xB0, OUT_TIME_SYNC: 0xB1,
+  OUT_CLR_COUNT: 0xB2, OUT_GET_COUNT: 0xB3,
+};
+
+const OPCODES = {
+  [OP.SOUND]: ['som', 4], [OP.UI_WRITE]: ['LED', 2], [OP.INPUT_DEVICE]: ['sensor ler', 7],
+  [OP.OUT_RESET]: ['motor reset', 2], [OP.OUT_STOP]: ['motor parar', 3],
+  [OP.OUT_SPEED]: ['motor velocidade', 3], [OP.OUT_START]: ['motor ligar', 2],
+  [OP.OUT_TEST]: ['motor ocupado?', 3], [OP.OUT_READY]: ['motor pronto', 2],
+  [OP.OUT_STEP_SPEED]: ['motor graus', 7], [OP.OUT_TIME_SPEED]: ['motor tempo', 7],
+  [OP.OUT_STEP_SYNC]: ['base graus', 6], [OP.OUT_TIME_SYNC]: ['base tempo', 6],
+  [OP.OUT_CLR_COUNT]: ['encoder zerar', 2], [OP.OUT_GET_COUNT]: ['encoder ler', 3],
+};
+const CORES_LED = ['DESLIGADO', 'VERDE', 'VERMELHO', 'AMBAR', 'VERDE_PISCA', 'VERMELHO_PISCA', 'AMBAR_PISCA', 'VERDE_PULSA', 'VERMELHO_PULSA', 'AMBAR_PULSA'];
+
+function lerParam(b, i) {
+  const x = b[i];
+  if ((x & 0x80) === 0) {
+    if ((x & 0xC0) === 0x40) return { tipo: 'var', valor: x & 0x1F, prox: i + 1 };
+    let v = x & 0x3F; if (v & 0x20) v -= 0x40;
+    return { tipo: 'const', valor: v, prox: i + 1 };
+  }
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  switch (x) {
+    case 0x81: return { tipo: 'const', valor: dv.getInt8(i + 1), prox: i + 2 };
+    case 0x82: return { tipo: 'const', valor: dv.getInt16(i + 1, true), prox: i + 3 };
+    case 0x83: return { tipo: 'const', valor: dv.getInt32(i + 1, true), prox: i + 5 };
+    case 0x84: { let j = i + 1, s = ''; while (b[j] !== 0) s += String.fromCharCode(b[j++]); return { tipo: 'str', valor: s, prox: j + 1 }; }
+    default: throw new Error('parâmetro desconhecido 0x' + x.toString(16));
+  }
+}
+
+function decodificar(pacote) {
+  const b = pacote instanceof Uint8Array ? pacote : new Uint8Array(pacote);
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  const r = {
+    contador: dv.getUint16(2, true), resposta: b[4] === 0x00,
+    bytesGlobais: b[5] | ((b[6] & 0x03) << 8), ops: [],
+  };
+  let i = 7;
+  while (i < b.length) {
+    const op = b[i++]; const def = OPCODES[op];
+    if (!def) { r.ops.push({ op, nome: 'opcode 0x' + op.toString(16), params: [] }); break; }
+    const params = [];
+    for (let k = 0; k < def[1]; k++) { const q = lerParam(b, i); params.push(q.valor); i = q.prox; }
+    r.ops.push({ op, nome: def[0], params });
+  }
+  return r;
+}
+
+const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(' ');
+const MASK_PORTAS = (m) => ['A', 'B', 'C', 'D'].filter((_, k) => m & (1 << k));
+
+const _Cen = (typeof Cenarios !== 'undefined') ? Cenarios : require('./cenarios.js');
+const CENARIOS = _Cen.lista;
+const STRIDE = 8;
+
+class SimEV3 {
+  constructor(cenario = 'treino', cfg = {}) {
+    this.cfg = Object.assign({
+      grausPorPct: 10,
+      cmPorGrau: Math.PI * 5.6 / 360,
+      bitola: 12, raio: 7, passo: 0.01,
+      latEnvio: 0.005, latResposta: 0.02,
+      sensores: { 1: 'cor', 2: 'toque', 3: 'cor', 4: 'ultrassonico' },
+      inicio: null,
+      amostragem: 'area',
+      raioSensorCm: 0.35,
+      modoLuz: 'luminancia',
+    }, cfg);
+    this.reset(cenario);
+  }
+
+  reset(cenario = this.cenarioNome) {
+    if (!CENARIOS[cenario]) throw new Error('cenário desconhecido: ' + cenario);
+    this.cenarioNome = cenario; this.cen = CENARIOS[cenario];
+    this.tapete = _Cen.obterTapete(cenario);
+    const s = _Cen.inicioDe(this.cen, this.cfg.inicio);
+    this.x = s.x; this.y = s.y; this.th = s.th; this.t = 0;
+    this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, modo: 'ocioso', rest: 0, enc: 0 };
+    this.led = 'DESLIGADO';
+    this.frames = [];
+    this._gravar();
+    this.eventos = []; this.pacotes = []; this.dist = 0;
+  }
+
+  agora() { return this.t; }
+
+  avancar(dt) {
+    let falta = dt; const h = this.cfg.passo;
+    while (falta > 1e-9) { const d = Math.min(h, falta); this._passo(d); falta -= d; }
+  }
+
+  _passo(h) {
+    const c = this.cfg, dm = {};
+    for (const p of 'ABCD') {
+      const m = this.motores[p]; let d = 0;
+      if (m.modo !== 'ocioso') {
+        d = m.modo === 'tempo' ? Math.min(h, Math.max(m.rest, 0)) : h;
+        const graus = m.v * c.grausPorPct * d; m.enc += graus; dm[p] = graus * c.cmPorGrau;
+        if (m.modo === 'tempo') { m.rest -= h; if (m.rest <= 1e-9) { m.v = 0; m.modo = 'ocioso'; } }
+      } else dm[p] = 0;
+    }
+    const dl = dm.B, dr = dm.C, ds = (dl + dr) / 2, dth = -(dr - dl) / c.bitola;
+    const nx = this.x + ds * Math.cos(this.th + dth / 2);
+    const ny = this.y + ds * Math.sin(this.th + dth / 2);
+
+    let px = nx, py = ny;
+    if (this._colide(px, py)) { if (!this._colide(nx, this.y)) py = this.y; else if (!this._colide(this.x, ny)) px = this.x; else { px = this.x; py = this.y; } }
+    this.dist += Math.hypot(px - this.x, py - this.y); this.x = px; this.y = py;
+    this.th += dth; this.t += h;
+    this._gravar();
+  }
+
+  _gravar() {
+    const M = this.motores;
+    this.frames.push(this.t, this.x, this.y, this.th, M.A.enc, M.B.enc, M.C.enc, M.D.enc);
+  }
+
+  _colide(x, y) {
+    const r = this.cfg.raio;
+    if (x < r || y < r || x > this.cen.w - r || y > this.cen.h - r) return true;
+    return this.cen.caixas.some((b) => {
+      const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
+      return Math.hypot(x - cx, y - cy) < r;
+    });
+  }
+
+  concluirComandos(maxS = 30) {
+    const t0 = this.t;
+    while (Object.values(this.motores).some((m) => m.modo === 'tempo') && this.t - t0 < maxS) this.avancar(0.05);
+    const ligados = Object.entries(this.motores).filter(([, m]) => m.modo === 'continuo' && m.v !== 0).map(([p]) => p);
+    return { drenado: this.t - t0, ligados };
+  }
+
+  rgbEm(x, y, th) {
+    const sx = x + 5.5 * Math.cos(th), sy = y + 5.5 * Math.sin(th);
+    return this.cfg.amostragem === 'pixel' ? _Cen.lerPixel(this.tapete, sx, sy) : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
+  }
+
+  refletidaEm(x, y, th) { return _Cen.intensidade(this.rgbEm(x, y, th), this.cfg.modoLuz); }
+  corEm(x, y, th) { const [r, g, b] = this.rgbEm(x, y, th); return _Cen.classificarCor(r, g, b); }
+  refletida() { return this.refletidaEm(this.x, this.y, this.th); }
+
+  ultrassonico() {
+    const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
+    let best = 255;
+    const caixas = this.cen.caixas;
+    for (let k = -3; k <= 3; k++) {
+      const a = this.th + k * (15 * Math.PI / 180) / 3, dx = Math.cos(a), dy = Math.sin(a);
+      const hit = (x0, y0, x1, y1) => {
+        let tmin = 0, tmax = Infinity;
+        for (const [o, dd, lo, hi] of [[ox, dx, x0, x1], [oy, dy, y0, y1]]) {
+          if (Math.abs(dd) < 1e-9) { if (o < lo || o > hi) return Infinity; }
+          else { let t1 = (lo - o) / dd, t2 = (hi - o) / dd; if (t1 > t2) [t1, t2] = [t2, t1];
+            tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); if (tmin > tmax) return Infinity; }
+        }
+        return tmin;
+      };
+      for (const b of caixas) best = Math.min(best, hit(b.x, b.y, b.x + b.w, b.y + b.h));
+      const ts = [];
+      if (dx > 1e-9) ts.push((this.cen.w - ox) / dx); if (dx < -1e-9) ts.push(-ox / dx);
+      if (dy > 1e-9) ts.push((this.cen.h - oy) / dy); if (dy < -1e-9) ts.push(-oy / dy);
+      best = Math.min(best, ...ts);
+    }
+    return Math.max(0, Math.min(255, best));
+  }
+
+  lerSensor(porta, modo) {
+    const tipo = this.cfg.sensores[porta + 1];
+    if (!tipo) return null;
+    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : this.corEm(this.x, this.y, this.th);
+    if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
+    return this.ultrassonico();
+  }
+
+  processar(pacote) {
+    const b = pacote instanceof Uint8Array ? pacote : new Uint8Array(pacote);
+    const dec = decodificar(b);
+    this.pacotes.push({ t: this.t, hex: hex(b), desc: dec.ops.map((o) => this._descrever(o)).join(' + '), resposta: dec.resposta });
+    let saida = dec.resposta ? new Uint8Array(dec.bytesGlobais) : null;
+    let erro = false;
+    for (const o of dec.ops) { const r = this._executar(o, saida); if (r === 'erro') erro = true; }
+    this.avancar(this.cfg.latEnvio + (dec.resposta ? this.cfg.latResposta : 0));
+    return erro ? false : saida;
+  }
+
+  _descrever(o) {
+    const q = o.params, P = (m) => MASK_PORTAS(m).join('');
+    switch (o.op) {
+      case OP.OUT_SPEED: return `velocidade ${q[2]}% porta ${P(q[1])}`;
+      case OP.OUT_START: return `ligar porta ${P(q[1])}`;
+      case OP.OUT_STOP: return `parar porta ${P(q[1])}`;
+      case OP.OUT_TIME_SPEED: return `motor ${P(q[1])} ${q[2]}% por ${q[4]} ms`;
+      case OP.OUT_STEP_SPEED: return `motor ${P(q[1])} ${q[2]}% por ${q[4]}°`;
+      case OP.OUT_TIME_SYNC: return `base ${P(q[1])} ${q[2]}% curva ${q[3]} por ${q[4]} ms`;
+      case OP.OUT_STEP_SYNC: return `base ${P(q[1])} ${q[2]}% curva ${q[3]} por ${q[4]}°`;
+      case OP.SOUND: return `bip ${q[2]} Hz ${q[3]} ms`;
+      case OP.UI_WRITE: return `LED ${CORES_LED[q[1]] || q[1]}`;
+      case OP.INPUT_DEVICE: return `ler sensor porta ${q[2] + 1} modo ${q[4]}`;
+      case OP.OUT_TEST: return `motor ${P(q[1])} ocupado?`;
+      case OP.OUT_GET_COUNT: return `ler encoder ${'ABCD'[q[1]]}`;
+      default: return o.nome;
+    }
+  }
+
+  _executar(o, saida) {
+    const q = o.params, M = this.motores, c = this.cfg;
+    const dv = saida ? new DataView(saida.buffer) : null;
+    const portas = (m) => MASK_PORTAS(m);
+    switch (o.op) {
+      case OP.OUT_SPEED: portas(q[1]).forEach((p) => { M[p].setv = q[2]; }); break;
+      case OP.OUT_START: portas(q[1]).forEach((p) => { M[p].v = M[p].setv; M[p].modo = 'continuo'; }); break;
+      case OP.OUT_STOP: portas(q[1]).forEach((p) => { M[p].v = 0; M[p].modo = 'ocioso'; }); break;
+      case OP.OUT_RESET: case OP.OUT_CLR_COUNT: portas(q[1]).forEach((p) => { M[p].enc = 0; }); break;
+      case OP.OUT_TIME_SPEED: case OP.OUT_STEP_SPEED: {
+        const v = q[2], rest = o.op === OP.OUT_TIME_SPEED ? q[4] / 1000 : (v === 0 ? 0 : q[4] / (Math.abs(v) * c.grausPorPct));
+        portas(q[1]).forEach((p) => { Object.assign(M[p], { v, modo: 'tempo', rest }); }); break;
+      }
+      case OP.OUT_TIME_SYNC: case OP.OUT_STEP_SYNC: {
+        const ps = portas(q[1]); if (ps.length !== 2) break;
+        const v = q[2], t = q[3];
+        const vl = t < 0 ? v * (1 + t / 100) : v, vr = t > 0 ? v * (1 - t / 100) : v;
+        const vmax = Math.max(Math.abs(vl), Math.abs(vr));
+        const rest = o.op === OP.OUT_TIME_SYNC ? q[4] / 1000 : (vmax === 0 ? 0 : q[4] / (vmax * c.grausPorPct));
+        Object.assign(M[ps[0]], { v: vl, modo: 'tempo', rest });
+        Object.assign(M[ps[1]], { v: vr, modo: 'tempo', rest }); break;
+      }
+      case OP.OUT_TEST: if (dv) dv.setInt8(0, portas(q[1]).some((p) => M[p].modo === 'tempo') ? 1 : 0); break;
+      case OP.OUT_GET_COUNT: if (dv) dv.setInt32(0, Math.round(M['ABCD'[q[1]]].enc), true); break;
+      case OP.SOUND: this.eventos.push({ t: this.t, tipo: 'bip', freq: q[2], ms: q[3] }); break;
+      case OP.UI_WRITE: this.led = CORES_LED[q[1]] || 'DESLIGADO';
+        this.eventos.push({ t: this.t, tipo: 'led', cor: this.led }); break;
+      case OP.INPUT_DEVICE: {
+        const v = this.lerSensor(q[2], q[4]); if (v === null) return 'erro';
+        if (dv) for (let k = 0; k + 4 <= saida.length; k += 4) dv.setFloat32(k, v, true); break;
+      }
+    }
+    return 'ok';
+  }
+}
+
+if (typeof module !== 'undefined') module.exports = { SimEV3, decodificar, hex, CENARIOS, STRIDE };
+</script>
+
+<script>
+// ============================================================
+// Sugestoes — autocompletion e hover da jacarEV3.
+// ============================================================
+const Sugestoes = (() => {
+  const PORTAS = 'B,C,A,D';
+  const DOC_CONST = {
+    MODO_TOQUE: '0 = solto, 1 = pressionado.',
+    MODO_ULTRASSONICO_CM: 'Distância medida, em cm.',
+    MODO_COR_REFLETIDA: 'Luz refletida, 0 a 100 (útil pra seguir linha).',
+    MODO_COR_AMBIENTE: 'Luz ambiente, 0 a 100.',
+    MODO_COR_COR: 'Cor detectada, 0-7: nenhuma, preto, azul, verde, amarelo, vermelho, branco, marrom.',
+  };
+  const CURADOS = {
+    apitar: () => 'apitar($0)',
+    led: () => "led('${1|VERDE,VERMELHO,AMBAR,DESLIGADO|}')",
+    girar_motor: () => "girar_motor('${1|" + PORTAS + "|}', velocidade=${2:30}, duracao_ms=${3:1000})",
+    girar_motor_graus: () => "girar_motor_graus('${1|" + PORTAS + "|}', ${2:360}, ${3:30})",
+    mover_continuo: () => "mover_continuo('${1|" + PORTAS + "|}', ${2:30})",
+    parar_motor: () => "parar_motor('${1|" + PORTAS + "|}')",
+    mover_base: () => 'mover_base(velocidade=${1:30}, direcao=${2:0}, duracao_ms=${3:500})',
+    ler_sensor: (alias) => 'ler_sensor(${1|1,2,3,4|}, ${2|' + ['MODO_COR_REFLETIDA', 'MODO_ULTRASSONICO_CM', 'MODO_TOQUE', 'MODO_COR_AMBIENTE', 'MODO_COR_COR'].map((m) => alias + '.' + m).join(',') + '|})',
+  };
+
+  const assinatura = (item) => item.n + '(' + item.p.map((q) => q.n + (q.d !== null ? '=' + q.d : '')).join(', ') + ')';
+  const snippetGerado = (item) => {
+    const obrig = item.p.filter((q) => q.d === null && !q.n.startsWith('*'));
+    return item.n + '(' + obrig.map((q, i) => '${' + (i + 1) + ':' + q.n + '}').join(', ') + ')';
+  };
+
+  function detectar(codigo) {
+    const robos = new Set(['robo']), protos = new Set(['p']); let alias = 'p';
+    for (const m of codigo.matchAll(/RoboEV3\s*\([^)]*\)\s+as\s+(\w+)/g)) robos.add(m[1]);
+    for (const m of codigo.matchAll(/^\s*(\w+)\s*=\s*RoboEV3\s*\(/gm)) robos.add(m[1]);
+    for (const m of codigo.matchAll(/protocolo\s+as\s+(\w+)/g)) { protos.add(m[1]); alias = m[1]; }
+    if (/from\s+jacarev3\s+import[^\n]*\bprotocolo\b(?!\s+as)/.test(codigo)) { protos.add('protocolo'); if (alias === 'p' && !/protocolo\s+as/.test(codigo)) alias = 'protocolo'; }
+    return { robos, protos, alias };
+  }
+
+  function itensMetodos(api, alias) {
+    return (api.robo || []).map((m) => ({
+      label: m.n, tipo: 'metodo', detail: assinatura(m), doc: m.doc,
+      insertText: (CURADOS[m.n] ? CURADOS[m.n](alias) : snippetGerado(m)), snippet: true,
+    }));
+  }
+
+  const itensConst = (api, prefixo) => (api.constantes || []).map((c) => ({
+    label: prefixo + c.n, tipo: 'constante', detail: '= ' + c.v, doc: DOC_CONST[c.n] || '',
+    insertText: prefixo + c.n, snippet: false,
+  }));
+
+  function sugerir(api, linha, codigo) {
+    const det = detectar(codigo);
+    let m;
+    if ((m = /\.led\(\s*(['"])(\w*)$/.exec(linha)))
+      return { recuo: m[2].length, itens: (api.leds || []).map((c) => ({ label: c, tipo: 'valor', insertText: c, snippet: false, detail: 'cor do LED' })) };
+    if ((m = /\.ler_sensor\(\s*[^,()]+,\s*([\w.]*)$/.exec(linha))) {
+      const itens = [];
+      for (const al of [det.alias]) itens.push(...itensConst(api, al + '.').filter((i) => i.label.includes('.MODO_')));
+      return { recuo: m[1].length, itens };
+    }
+    if ((m = /([A-Za-z_]\w*)\.(\w*)$/.exec(linha))) {
+      const [, recv, pref] = m;
+      if (det.robos.has(recv)) return { recuo: pref.length, itens: itensMetodos(api, det.alias) };
+      if (det.protos.has(recv)) return { recuo: pref.length, itens: itensConst(api, '') };
+      if (api.topicos && api.topicos[recv]) return { recuo: pref.length, itens: api.topicos[recv].map((f) => ({
+        label: f.n, tipo: 'funcao', detail: assinatura(f), doc: f.doc, insertText: snippetGerado(f), snippet: true })) };
+      return { recuo: 0, itens: [] };
+    }
+    if ((m = /^\s*from\s+jacarev3(\.topicos)?\s+import\s+(?:[\w\s]*,\s*)?(\w*)$/.exec(linha))) {
+      const nomes = m[1] ? Object.keys(api.topicos || {}) : ['RoboEV3', 'protocolo'];
+      return { recuo: m[2].length, itens: nomes.map((n) => ({ label: n, tipo: 'modulo', insertText: n, snippet: false })) };
+    }
+    if ((m = /(?:^|[^\w.])([A-Za-z_]\w*)$/.exec(linha))) {
+      const al = det.alias;
+      const S = (label, insert, doc) => ({ label, tipo: 'snippet', insertText: insert, snippet: true, detail: 'jacarEV3', doc });
+      return { recuo: m[1].length, itens: [
+        S('jacar_import', 'from jacarev3 import RoboEV3, protocolo as p', 'Importa a classe do robô e as constantes.'),
+        S('jacar_topicos', 'from jacarev3.topicos import circuito, desvio', 'Rotinas prontas da lib.'),
+        S('jacar_with', "with RoboEV3('${1:00:16:53:64:F8:B8}') as robo:\n\t${0:robo.apitar()}", 'Bloco padrão: conecta, roda e fecha sozinho.'),
+        S('jacar_seguidor', "while True:\n\tluz = robo.ler_sensor(${1:3}, " + al + ".MODO_COR_REFLETIDA)\n\tif luz < ${2:30}:\n\t\trobo.mover_continuo('B', ${3:10})\n\t\trobo.mover_continuo('C', ${4:35})\n\telse:\n\t\trobo.mover_continuo('B', ${4:35})\n\t\trobo.mover_continuo('C', ${3:10})", 'Esqueleto de seguidor de linha.'),
+        S('jacar_desvio', "while True:\n\td = robo.ler_sensor(${1:4}, " + al + ".MODO_ULTRASSONICO_CM)\n\tif d < ${2:20}:\n\t\trobo.apitar()\n\t\trobo.mover_base(velocidade=25, direcao=200, duracao_ms=400)\n\telse:\n\t\trobo.mover_base(velocidade=40, direcao=0, duracao_ms=300)", 'Esqueleto de desvio de obstáculo.'),
+      ] };
+    }
+    return { recuo: 0, itens: [] };
+  }
+
+  function hover(api, linha, palavra, codigo) {
+    const det = detectar(codigo), i = linha.indexOf(palavra);
+    const m = /([A-Za-z_]\w*)\.$/.exec(linha.slice(0, i));
+    if (!m) return null;
+    if (det.robos.has(m[1])) { const it = (api.robo || []).find((x) => x.n === palavra);
+      return it ? '```python\n' + m[1] + '.' + assinatura(it) + '\n```\n' + it.doc : null; }
+    if (det.protos.has(m[1])) { const c = (api.constantes || []).find((x) => x.n === palavra);
+      return c ? '```python\n' + m[1] + '.' + c.n + ' = ' + c.v + '\n```\n' + (DOC_CONST[c.n] || '') : null; }
+    if (api.topicos && api.topicos[m[1]]) { const it = api.topicos[m[1]].find((x) => x.n === palavra);
+      return it ? '```python\n' + m[1] + '.' + assinatura(it) + '\n```\n' + it.doc : null; }
+    return null;
+  }
+  return { sugerir, hover, detectar, assinatura };
+})();
+</script>
+
+<script type="module">
+import '../src/js/3d/cena3d.mjs';
+import * as Campanha from '../src/campanha/index.mjs';
+import { Dialogo } from '../src/campanha/dialogo/dialogo.mjs';
+window.Campanha = Campanha;
+window.Dialogo = Dialogo;
+Dialogo.init().catch(console.warn);
+async function bootCatalogo() {
+  try {
+    const cat = await Campanha.initCampanha();
+    window.__campanhaPronta = true;
+    window.__campanhaMissoes = cat.MISSOES;
+    window.__campanhaMeta = cat.CAMPANHA;
+    console.log('[missao] catálogo', cat.MISSOES.length, 'missões');
+  } catch (e) {
+    console.error('[missao] falha JSON', e);
+    window.__campanhaPronta = true;
+    window.__campanhaMissoes = [];
+  }
+  window.dispatchEvent(new Event('campanha-pronta'));
+}
+bootCatalogo();
+</script>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+
+// =====================================================================
+// Terminal
+// =====================================================================
+const Terminal = (() => {
+  const el = $('terminal');
+  const linha = (texto, cls) => {
+    const d = document.createElement('div'); d.className = cls; d.textContent = texto;
+    el.appendChild(d); el.scrollTop = el.scrollHeight;
+  };
+  const limparVazio = () => { const v = el.querySelector('.vazio'); if (v) v.remove(); };
+  const classeErro = (l) => (/^\s+/.test(l) ? 'quadro' : 'err');
+  return {
+    out(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, l.startsWith('[simulador]') ? 'sys' : 'out')); },
+    err(t) { limparVazio(); String(t).split('\n').forEach((l) => linha(l, classeErro(l))); },
+    sys(t) { limparVazio(); linha(t, 'sys'); },
+    limpar() { el.innerHTML = ''; linha('terminal limpo', 'vazio'); },
+  };
+})();
+
+// =====================================================================
+// Api — Leitura segura do script embutido
+// =====================================================================
+const elApi = $('api-embutida');
+const Api = { 
+  atual: elApi ? JSON.parse(elApi.textContent) : { versao: '0.6.0', robo: [], topicos: {}, constantes: [], leds: [] } 
+};
+
+// =====================================================================
+// Ide — Monaco + Fallback
+// =====================================================================
+const Ide = (() => {
+  const BASE = 'https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs';
+
+  function fallback(el, aviso) {
+    el.innerHTML = '<textarea spellcheck="false"></textarea>';
+    const ta = el.firstChild;
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') { e.preventDefault(); ta.setRangeText('    ', ta.selectionStart, ta.selectionEnd, 'end'); }
+    });
+    return { tipo: 'textarea', aviso, getValue: () => ta.value, setValue: (v) => { ta.value = v; },
+      aoRodar(fn) { ta.addEventListener('keydown', (e) => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); fn(); } }); } };
+  }
+
+  function registrarProviders(monaco, getApi) {
+    const K = monaco.languages.CompletionItemKind;
+    const tipos = { metodo: K.Method, funcao: K.Function, constante: K.Constant, snippet: K.Snippet, valor: K.Value, modulo: K.Module };
+    monaco.languages.registerCompletionItemProvider('python', {
+      triggerCharacters: ['.', "'", '"', ','],
+      provideCompletionItems(model, pos) {
+        const linha = model.getLineContent(pos.lineNumber).slice(0, pos.column - 1);
+        const r = Sugestoes.sugerir(getApi(), linha, model.getValue());
+        const range = { startLineNumber: pos.lineNumber, endLineNumber: pos.lineNumber, startColumn: pos.column - r.recuo, endColumn: pos.column };
+        return { suggestions: r.itens.map((it, i) => ({
+          label: it.label, kind: tipos[it.tipo], detail: it.detail, range,
+          documentation: it.doc ? { value: it.doc } : undefined,
+          insertText: it.insertText,
+          insertTextRules: it.snippet ? monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet : undefined,
+          sortText: String(i).padStart(3, '0'),
+        })) };
+      },
+    });
+    monaco.languages.registerHoverProvider('python', {
+      provideHover(model, pos) {
+        const w = model.getWordAtPosition(pos); if (!w) return null;
+        const md = Sugestoes.hover(getApi(), model.getLineContent(pos.lineNumber), w.word, model.getValue());
+        return md ? { range: new monaco.Range(pos.lineNumber, w.startColumn, pos.lineNumber, w.endColumn), contents: [{ value: md }] } : null;
+      },
+    });
+  }
+
+  function criar(el, valorInicial) {
+    if (typeof require === 'undefined' || !require.config) {
+      const ed = fallback(el, 'Monaco não carregou (CDN bloqueado?) — usando editor simples.'); ed.setValue(valorInicial); return Promise.resolve(ed);
+    }
+    return new Promise((resolve) => {
+      window.MonacoEnvironment = { getWorkerUrl: () => URL.createObjectURL(new Blob(
+        ["self.MonacoEnvironment={baseUrl:'" + BASE.replace(/vs$/, '') + "'};importScripts('" + BASE + "/base/worker/workerMain.js');"],
+        { type: 'text/javascript' })) };
+      require.config({ paths: { vs: BASE } });
+      require(['vs/editor/editor.main'], () => {
+        registrarProviders(monaco, () => Api.atual);
+        const m = monaco.editor.create(el, {
+          value: valorInicial, language: 'python', theme: 'vs-dark', automaticLayout: true,
+          fontSize: 13, minimap: { enabled: false }, scrollBeyondLastLine: false, tabSize: 4, insertSpaces: true,
+          wordBasedSuggestions: 'off', quickSuggestions: { other: true, comments: false, strings: true },
+          suggestOnTriggerCharacters: true, snippetSuggestions: 'top',
+        });
+        resolve({ tipo: 'monaco', getValue: () => m.getValue(), setValue: (v) => m.setValue(v),
+          aoRodar: (fn) => m.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, fn) });
+      }, () => { const ed = fallback(el, 'Monaco falhou ao carregar — usando editor simples.'); ed.setValue(valorInicial); resolve(ed); });
+    });
+  }
+  return { criar };
+})();
+
+// =====================================================================
+// Exemplos
+// =====================================================================
+const EXEMPLOS = {
+  linha: { nome: 'Seguidor de linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
+`from jacarev3 import RoboEV3, protocolo as p
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('VERDE')
+    while True:
+        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
+        if luz < 30:
+            robo.mover_continuo('B', 10)
+            robo.mover_continuo('C', 35)
+        else:
+            robo.mover_continuo('B', 35)
+            robo.mover_continuo('C', 10)
+` },
+  gamepad: { nome: 'Controle / teclado — teleop pelo código', cenario: 'treino', inicio: 'padrao', codigo:
+`"""Teleop pelo código da IDE (Rodar script).
+
+WASD/setas = andar | Espaço = parar | E = apitar | Q/R = LED | Esc = sair
+Gamepad: stick/D-pad | B = parar | A = apitar | X/Y = LED | Start = sair
+
+O await gamepadPonte.teleop(segundos, velocidade) inicia o modo ao vivo.
+"""
+from js import gamepadPonte
+
+print("Teleop 90s pelo código — mexa WASD ou o controle")
+await gamepadPonte.teleop(90, 45)
+print("fim do teleop")
+` },
+  fll_linha: { nome: 'Seguidor de linha — tapete FLL (acha a linha e segue a borda)', cenario: 'fll', inicio: 'padrao', codigo:
+`from jacarev3 import RoboEV3, protocolo as p
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('VERDE')
+    robo.mover_continuo('B', 25)
+    robo.mover_continuo('C', 25)
+    while robo.ler_sensor(3, p.MODO_COR_REFLETIDA) > 30:
+        pass
+    while True:
+        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
+        if luz < 30:
+            robo.mover_continuo('B', 32)
+            robo.mover_continuo('C', 8)
+        else:
+            robo.mover_continuo('B', 8)
+            robo.mover_continuo('C', 32)
+` },
+  cores: { nome: 'Ler cores (modo COR) — tapete FLL', cenario: 'fll', inicio: 'padrao', codigo:
+`import time
+from jacarev3 import RoboEV3, protocolo as p
+
+NOMES = {0: 'sem cor', 1: 'preto', 2: 'azul', 3: 'verde', 4: 'amarelo', 5: 'vermelho', 6: 'branco', 7: 'marrom'}
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    anterior = None
+    robo.mover_continuo('B', 20)
+    robo.mover_continuo('C', 20)
+    for _ in range(120):
+        cor = int(robo.ler_sensor(3, p.MODO_COR_COR))
+        if cor != anterior:
+            print('cor:', NOMES.get(cor, cor))
+            anterior = cor
+        time.sleep(0.05)
+    robo.parar_motor('B')
+    robo.parar_motor('C')
+` },
+  topico: { nome: 'Pronto da lib: circuito.seguir_linha — treino', cenario: 'treino', inicio: 'padrao', codigo:
+`from jacarev3 import RoboEV3
+from jacarev3.topicos import circuito
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    circuito.seguir_linha(robo, porta_sensor=3, limiar=35, velocidade=30, duracao_s=20)
+` },
+  desvio: { nome: 'Desvio clássico (recua, gira, segue) — paredes', cenario: 'desvio', inicio: 'centro', codigo:
+`import time
+from jacarev3 import RoboEV3, protocolo as p
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('VERDE')
+    while True:
+        d = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)
+        if d < 15:
+            robo.apitar(frequencia=880, duracao_ms=150)
+            robo.mover_base(velocidade=-30, direcao=0, duracao_ms=600)
+            time.sleep(0.7)
+            while robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM) < 30:
+                robo.mover_base(velocidade=25, direcao=200, duracao_ms=200)
+                time.sleep(0.25)
+        else:
+            robo.mover_base(velocidade=40, direcao=0, duracao_ms=300)
+            time.sleep(0.1)
+` },
+  rampa: { nome: 'Subir a rampa — tapete FLL (use a vista 3D)', cenario: 'fll', inicio: 'rampa', codigo:
+`import time
+from jacarev3 import RoboEV3
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('AMBAR')
+    robo.mover_base(velocidade=40, direcao=0, duracao_ms=2000)
+    time.sleep(2.2)
+    robo.apitar()
+    print('em cima da rampa!')
+` },
+  basico: { nome: 'Teste dos comandos (bytes de cada método)', cenario: 'treino', inicio: 'padrao', codigo:
+`import time
+from jacarev3 import RoboEV3
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.apitar()
+    robo.led('VERDE')
+    robo.girar_motor('B', velocidade=40, duracao_ms=1000)
+    robo.mover_base(velocidade=30, direcao=0, duracao_ms=500)
+    time.sleep(1)
+    robo.girar_motor_graus('C', 360, 50)
+    print('encoder C =', robo.ler_graus_motor('C'), 'graus')
+    print('luz refletida porta 3 =', robo.ler_sensor(3, 0))
+` },
+  erro: { nome: 'Erro de propósito (veja o Traceback em vermelho)', cenario: 'treino', inicio: 'padrao', codigo:
+`from jacarev3 import RoboEV3
+
+with RoboEV3('00:16:53:64:F8:B8') as robo:
+    robo.led('ROXO')
+` },
+};
+
+// =====================================================================
+// Playback
+// =====================================================================
+const Playback = (() => {
+  const COR_LED = { VERDE: '#2ecc40', VERMELHO: '#ff4136', AMBAR: '#ff9f1a', DESLIGADO: '#555' };
+  let sim = null, tocando = false, t = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, audio = null;
+  let modo = '2d', vista = null, tipoRobo = 'ev3', modoCam = 'livre', sonda = null, sondaChave = '';
+  let cenId = '', cen = null, tapete = null, ESC = 8;
+
+  function aplicarCenario(inicio) {
+    cenId = $('cenario').value; cen = CENARIOS[cenId]; tapete = Cenarios.obterTapete(cenId);
+    const sel = $('inicio'); sel.innerHTML = '';
+    for (const [k, v] of Object.entries(cen.inicios)) sel.add(new Option('início: ' + v.rotulo, k));
+    sel.value = cen.inicios[inicio] ? inicio : cen.inicioPadrao;
+    // tamanho do palco é fixo no CSS — não alterar aspectRatio ao trocar mapa
+    ESC = Math.min(10, 1000 / Math.max(cen.w, cen.h));
+    const cv = $('cv'); cv.width = Math.round(cen.w * ESC); cv.height = Math.round(cen.h * ESC);
+    if (vista) {
+      if (modo === '3d') vista.redimensionar();
+      vista.setCenario(cen, tapete);
+    }
+  }
+
+  function descartarSimulacao() {
+    tocar(false); sim = null; t = 0; $('slider').disabled = $('btnPlay').disabled = true; $('slider').value = 0;
+    $('corpo').innerHTML = ''; $('contaPacotes').textContent = ''; logIdx = 0; ultimoT = 0; evIdx = 0;
+    $('resumo').textContent = 'Rode um script pra ver o robô.';
+  }
+
+  function acharFrame(tt) {
+    const F = sim.frames; let lo = 0, hi = F.length / STRIDE - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (F[STRIDE * m] <= tt) lo = m; else hi = m - 1; }
+    return lo;
+  }
+
+  function ledEm(tt) {
+    let cor = 'DESLIGADO'; for (const e of sim.eventos) { if (e.t > tt) break; if (e.tipo === 'led') cor = e.cor; }
+    let a = 1; if (cor.endsWith('PISCA')) a = (Math.floor(tt * 2) % 2) ? 0.15 : 1; if (cor.endsWith('PULSA')) a = 0.4 + 0.6 * Math.abs(Math.sin(tt * 3));
+    return [cor, a];
+  }
+
+  const bipEm = (tt) => !!sim && sim.eventos.some((e) => e.tipo === 'bip' && e.t <= tt && tt < e.t + e.ms / 1000);
+
+  function simSensor() {
+    if (sim) return sim;
+    const chave = cenId + '/' + $('inicio').value;
+    if (!sonda || sondaChave !== chave) { sonda = new SimEV3(cenId, { inicio: $('inicio').value }); sondaChave = chave; }
+    return sonda;
+  }
+
+  function estadoEm(tt) {
+    if (sim && sim.frames.length >= STRIDE) {
+      const i = acharFrame(tt), F = sim.frames, o = STRIDE * i, [led, ledAlpha] = ledEm(tt);
+      return { t: F[o], x: F[o + 1], y: F[o + 2], th: F[o + 3], encA: F[o + 4], encB: F[o + 5], encC: F[o + 6], encD: F[o + 7],
+        led, ledAlpha, bip: bipEm(tt), refletida: sim.refletidaEm(F[o + 1], F[o + 2], F[o + 3]), ...Cenarios.terreno(cen, F[o + 1], F[o + 2], F[o + 3]), i };
+    }
+    const s = Cenarios.inicioDe(cen, $('inicio').value);
+    return { t: 0, x: s.x, y: s.y, th: s.th, encA: 0, encB: 0, encC: 0, encD: 0, led: 'DESLIGADO', ledAlpha: 1, bip: false,
+      refletida: simSensor().refletidaEm(s.x, s.y, s.th), ...Cenarios.terreno(cen, s.x, s.y, s.th), i: 0 };
+  }
+
+  function desenhar2D(est) {
+    const g = $('cv').getContext('2d');
+    g.setTransform(ESC, 0, 0, ESC, 0, 0); g.clearRect(0, 0, cen.w, cen.h);
+    if (tapete && tapete.canvas) g.drawImage(tapete.canvas, 0, 0, cen.w, cen.h); else { g.fillStyle = '#f4f3ee'; g.fillRect(0, 0, cen.w, cen.h); }
+    for (const r of cen.rampas || []) {
+      g.save(); g.beginPath(); g.rect(r.x, r.y, r.w, r.h); g.clip();
+      g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 0.7;
+      for (let u = r.x - r.h; u < r.x + r.w; u += 3) { g.beginPath(); g.moveTo(u, r.y + r.h); g.lineTo(u + r.h, r.y); g.stroke(); }
+      g.restore();
+      const cy = r.y + r.h / 2, sgn = r.dir === '-x' ? -1 : 1, xa = sgn > 0 ? r.x + 2 : r.x + r.w - 2, xb = sgn > 0 ? r.x + r.subida : r.x + r.w - r.subida;
+      g.strokeStyle = '#fff'; g.fillStyle = '#fff'; g.lineWidth = 1; g.beginPath(); g.moveTo(xa, cy); g.lineTo(xb, cy); g.stroke();
+      g.beginPath(); g.moveTo(xb + sgn * 2.2, cy); g.lineTo(xb - sgn * 0.6, cy - 1.8); g.lineTo(xb - sgn * 0.6, cy + 1.8); g.closePath(); g.fill();
+      g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 0.35; g.strokeRect(r.x, r.y, r.w, r.h);
+      g.fillStyle = '#fff'; g.font = 'bold 3px sans-serif'; g.textAlign = 'left'; g.fillText('RAMPA +' + r.altura + ' cm', r.x + 1.5, r.y + 3.6);
+    }
+    for (const b of cen.caixas) { g.fillStyle = b.cor || '#7a8793'; g.fillRect(b.x, b.y, b.w, b.h);
+      g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 0.4; g.strokeRect(b.x, b.y, b.w, b.h); }
+    if (sim && est.i > 0) {
+      const F = sim.frames; g.beginPath(); const passo = Math.max(1, Math.floor(est.i / 700));
+      for (let k = 0; k <= est.i; k += passo) (k ? g.lineTo : g.moveTo).call(g, F[STRIDE * k + 1], F[STRIDE * k + 2]);
+      g.strokeStyle = 'rgba(255,40,120,.75)'; g.lineWidth = 0.5; g.stroke();
+    }
+    const base = est.led.split('_')[0];
+    g.save(); g.translate(est.x, est.y); g.rotate(est.th);
+    g.fillStyle = '#222'; g.fillRect(-3, -7, 6, 2); g.fillRect(-3, 5, 6, 2);
+    g.fillStyle = '#e8b800'; g.fillRect(-7, -5, 14, 10); g.fillStyle = '#c99a00'; g.fillRect(4, -5, 3, 10);
+    g.globalAlpha = est.ledAlpha; g.fillStyle = COR_LED[base] || '#555'; g.beginPath(); g.arc(-2, 0, 1.6, 0, 7); g.fill(); g.globalAlpha = 1;
+    g.fillStyle = '#0b84ff'; g.beginPath(); g.arc(5.5, 0, 0.9, 0, 7); g.fill();
+    g.fillStyle = '#444'; g.fillRect(6.5, -3, 1, 6); g.restore();
+
+    if (sim) { g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(16, 14, 112, 22);
+      g.fillStyle = '#111'; g.font = '14px ui-monospace, monospace'; g.fillText(`t = ${est.t.toFixed(2)} s`, 22, 30); }
+  }
+
+  function setModo(m) {
+    if (m === '3d' && !window.Vista3D) return;
+    modo = m;
+    $('cv').hidden = m === '3d'; $('cv3d').hidden = m !== '3d'; $('opts3d').hidden = m !== '3d';
+    $('btn2d').classList.toggle('ativo', m === '2d'); $('btn3d').classList.toggle('ativo', m === '3d');
+    if (m === '3d') {
+      if (!vista) {
+        vista = window.Vista3D.criarVista($('cv3d'), { cenario: cen, tapete });
+        vista.setRobo(tipoRobo); vista.setModoCamera(modoCam);
+      }
+      vista.mostrar(true);
+    } else if (vista) vista.mostrar(false);
+    desenhar(t);
+  }
+
+  function desenhar(tt) {
+    const est = estadoEm(tt);
+    if (modo === '3d' && vista) {
+      vista.aplicar(est);
+    } else desenhar2D(est);
+  }
+
+  function desenharEstado(est) {
+    if (!est) return;
+    if (modo === '3d' && vista) {
+      vista.aplicar(est);
+    } else desenhar2D(est);
+  }
+
+  function sincronizarLog(tt) {
+    const corpo = $('corpo'); if (tt < ultimoT) { corpo.innerHTML = ''; logIdx = 0; } ultimoT = tt;
+    const P = sim.pacotes;
+    while (logIdx < P.length && P[logIdx].t <= tt) { const q = P[logIdx++];
+      corpo.insertRow().innerHTML = `<td class="t">${q.t.toFixed(3)}s</td><td class="hex">${q.hex}</td><td class="d">${q.desc}${q.resposta ? ' ↩' : ''}</td>`;
+      if (corpo.rows.length > 150) corpo.deleteRow(0); }
+    $('tabela').scrollTop = 1e9; $('contaPacotes').textContent = `${logIdx} de ${P.length} pacotes (↩ = EV3 devolve resposta)`;
+  }
+
+  function sons(tt) {
+    if (!tocando || !$('som').checked || !audio) return;
+    const E = sim.eventos;
+    while (evIdx < E.length && E[evIdx].t <= tt) { const e = E[evIdx++];
+      if (e.tipo === 'bip') { const o = audio.createOscillator(), g = audio.createGain(); o.frequency.value = e.freq; g.gain.value = 0.05;
+        o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + e.ms / 1000); } }
+  }
+
+  function atualizar() { $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0; desenhar(t); sincronizarLog(t); sons(t); }
+
+  function loop(agora) {
+    if (!tocando || !sim) return;
+    t += (agora - ultimoRaf) / 1000 * (+$('vel').value); ultimoRaf = agora;
+    if (t >= sim.t) { t = sim.t; tocar(false); }
+    atualizar(); if (tocando) requestAnimationFrame(loop);
+  }
+
+  function tocar(v) {
+    tocando = v; $('btnPlay').textContent = v ? '⏸ Pausar' : '▶ Reproduzir';
+    if (v) { ultimoRaf = performance.now(); if (!audio && $('som').checked && (window.AudioContext || window.webkitAudioContext)) audio = new (window.AudioContext || window.webkitAudioContext)(); requestAnimationFrame(loop); }
+  }
+
+  function irPara(tt) { t = Math.max(0, Math.min(tt, sim.t)); evIdx = sim.eventos.findIndex((e) => e.t >= t); if (evIdx < 0) evIdx = sim.eventos.length; atualizar(); }
+
+  $('btnPlay').onclick = () => { if (!sim) return; if (t >= sim.t - 1e-6) irPara(0); tocar(!tocando); };
+  $('slider').oninput = () => { if (!sim) return; tocar(false); irPara($('slider').value / 1000 * sim.t); };
+  $('btn2d').onclick = () => setModo('2d');
+  $('btn3d').onclick = () => setModo('3d');
+  $('robo3d').onchange = () => { tipoRobo = $('robo3d').value; if (vista) vista.setRobo(tipoRobo); };
+  $('cam3d').onchange = () => {
+      modoCam = $('cam3d').value;
+      if (vista) vista.setModoCamera(modoCam);
+      const lbl = $('lblDistCam');
+      if (lbl) lbl.style.opacity = modoCam === 'seguir' ? '1' : '0.45';
+    };
+    if ($('distCam')) {
+      $('distCam').oninput = () => {
+        const v = +$('distCam').value;
+        if ($('distCamVal')) $('distCamVal').textContent = v;
+        if (vista && typeof vista.setDistanciaSeguir === 'function') vista.setDistanciaSeguir(v);
+      };
+    }
+  $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); };
+  $('inicio').onchange = () => { descartarSimulacao(); desenhar(0); };
+
+  return {
+    desenhar, desenharEstado, setModo, estadoEm,
+    get vista() { return vista; },
+    iniciar() {
+      for (const [id, c] of Object.entries(CENARIOS)) $('cenario').add(new Option(c.nome, id));
+      aplicarCenario(); desenhar(0);
+    },
+    escolher(id, inicio) {
+      descartarSimulacao(); $('cenario').value = id; aplicarCenario(inicio); desenhar(0);
+    },
+    habilitar3D() { const b = $('btn3d'); b.disabled = false; b.title = 'Vista 3D (Three.js)'; },
+    carregar(s) { sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0; $('corpo').innerHTML = '';
+      $('slider').disabled = $('btnPlay').disabled = false; tocar(true); },
+  };
+})();
+
+// =====================================================================
+// Teleop ao vivo
+// =====================================================================
+const GamepadPonte = (() => {
+  const DEAD = 0.15;
+  let index = null;
+  let ultimoId = '';
+  let teleopRaf = 0;
+  let teleopStop = false;
+  let ativo = false;
+
+  const keys = new Set();
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    keys.add(k);
+    if (ativo && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault();
+  });
+  window.addEventListener('keyup', (e) => {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    keys.delete(k);
+  });
+  window.addEventListener('blur', () => keys.clear());
+
+  function deadzone(v) { return Math.abs(v) < DEAD ? 0 : v; }
+
+  function atualizarUi(txt) {
+    const el = document.getElementById('gpStatus');
+    if (el) el.textContent = txt;
+  }
+
+  function setBotaoTeleop(rodando) {
+    const b = document.getElementById('btnTeleop');
+    if (!b) return;
+    if (rodando) {
+      b.textContent = '⏹ Parar teleop';
+      b.classList.add('ativo');
+    } else {
+      b.textContent = '🎮 Teleop';
+      b.classList.remove('ativo');
+    }
+  }
+
+  window.addEventListener('gamepadconnected', (e) => {
+    index = e.gamepad.index;
+    ultimoId = e.gamepad.id || 'gamepad';
+    atualizarUi('controle: ' + (ultimoId.length > 36 ? ultimoId.slice(0, 36) + '…' : ultimoId));
+    if (typeof Terminal !== 'undefined' && Terminal.sys) Terminal.sys('🎮 pad: ' + ultimoId);
+  });
+  window.addEventListener('gamepaddisconnected', (e) => {
+    if (index === e.gamepad.index) {
+      index = null;
+      atualizarUi(ativo ? 'teleop: teclado WASD' : 'controle: —');
+      if (typeof Terminal !== 'undefined' && Terminal.sys) Terminal.sys('🎮 pad desconectado');
+    }
+  });
+
+  function lerPad() {
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    let gp = null;
+    if (index != null && pads[index]) gp = pads[index];
+    else {
+      for (const p of pads) {
+        if (p) { gp = p; index = p.index; ultimoId = p.id || 'gamepad'; break; }
+      }
+    }
+    if (!gp) return null;
+
+    const buttons = [];
+    for (let i = 0; i < gp.buttons.length; i++) {
+      const b = gp.buttons[i];
+      buttons.push(!!(b && (b.pressed || (b.value || 0) > 0.5)));
+    }
+    const axes = [];
+    for (let i = 0; i < gp.axes.length; i++) axes.push(deadzone(Number(gp.axes[i]) || 0));
+
+    let mx = axes[0] || 0, my = axes[1] || 0;
+    if (buttons[14]) mx = -1;
+    if (buttons[15]) mx = 1;
+    if (buttons[12]) my = -1;
+    if (buttons[13]) my = 1;
+
+    return {
+      id: String(gp.id || ''),
+      mx, my,
+      a: !!buttons[0], b: !!buttons[1], x: !!buttons[2], y: !!buttons[3],
+      start: !!buttons[9],
+      buttons, axes,
+      lx: axes[0] || 0, ly: axes[1] || 0,
+    };
+  }
+
+  function lerEntrada() {
+    let mx = 0, my = 0, stop = false, bip = false, ledV = false, ledR = false, end = false;
+    const fonte = [];
+
+    if (keys.has('w') || keys.has('ArrowUp')) { my -= 1; }
+    if (keys.has('s') || keys.has('ArrowDown')) { my += 1; }
+    if (keys.has('a') || keys.has('ArrowLeft')) { mx -= 1; }
+    if (keys.has('d') || keys.has('ArrowRight')) { mx += 1; }
+    if (keys.has(' ') || keys.has('shift')) stop = true;
+    if (keys.has('e')) bip = true;
+    if (keys.has('q')) ledV = true;
+    if (keys.has('r')) ledR = true;
+    if (keys.has('Escape')) end = true;
+    if (mx || my || stop || bip || ledV || ledR) fonte.push('teclado');
+
+    const gp = lerPad();
+    if (gp) {
+      fonte.push('pad');
+      if (Math.abs(gp.mx) > Math.abs(mx)) mx = gp.mx;
+      if (Math.abs(gp.my) > Math.abs(my)) my = gp.my;
+      if (gp.mx || gp.my) { mx = gp.mx; my = gp.my; }
+      if (gp.b) stop = true;
+      if (gp.a) bip = true;
+      if (gp.y) ledV = true;
+      if (gp.x) ledR = true;
+      if (gp.start) end = true;
+    }
+
+    const mag = Math.hypot(mx, my);
+    if (mag > 1) { mx /= mag; my /= mag; }
+
+    return { mx, my, stop, bip, ledV, ledR, end, fonte: fonte.join('+') || 'nenhuma' };
+  }
+
+  function ler() {
+    const e = lerEntrada();
+    const gp = lerPad();
+    return {
+      id: gp ? gp.id : (e.fonte.includes('teclado') ? 'teclado' : ''),
+      lx: e.mx, ly: e.my, mx: e.mx, my: e.my,
+      a: e.bip, b: e.stop, x: e.ledR, y: e.ledV,
+      start: e.end,
+      axes: [e.mx, e.my, 0, 0],
+      buttons: [],
+    };
+  }
+
+  function conectado() { return !!lerPad() || keys.size > 0; }
+
+  function mostrarAoVivo() {
+    if (!App.sim) return;
+    if (typeof Playback === 'undefined' || typeof Playback.desenharEstado !== 'function') return;
+    const s = App.sim;
+    const M = s.motores || {};
+    let refletida = 50;
+    try {
+      if (typeof s.refletidaEm === 'function') refletida = s.refletidaEm(s.x, s.y, s.th);
+    } catch (_) {}
+    Playback.desenharEstado({
+      t: s.t, x: s.x, y: s.y, th: s.th,
+      encA: (M.A && M.A.enc) || 0, encB: (M.B && M.B.enc) || 0,
+      encC: (M.C && M.C.enc) || 0, encD: (M.D && M.D.enc) || 0,
+      led: s.led || 'DESLIGADO', ledAlpha: 1, bip: false, refletida,
+    });
+  }
+
+  function aplicarMotores(e, vel) {
+    if (!App.sim) return;
+    const M = App.sim.motores;
+    if (!M || !M.B || !M.C) return;
+
+    if (e.stop) {
+      M.B.v = 0; M.C.v = 0; M.B.modo = 'ocioso'; M.C.modo = 'ocioso';
+    } else {
+      const frente = -e.my;
+      const giro = e.mx;
+      let vB = vel * frente + vel * giro;
+      let vC = vel * frente - vel * giro;
+      vB = Math.max(-100, Math.min(100, vB));
+      vC = Math.max(-100, Math.min(100, vC));
+      if (Math.abs(vB) < 0.5 && Math.abs(vC) < 0.5) {
+        M.B.v = 0; M.C.v = 0; M.B.modo = 'ocioso'; M.C.modo = 'ocioso';
+      } else {
+        M.B.v = vB; M.C.v = vC; M.B.modo = 'continuo'; M.C.modo = 'continuo';
+      }
+    }
+    if (e.ledV) App.sim.led = 'VERDE';
+    if (e.ledR) App.sim.led = 'VERMELHO';
+    if (e.bip) {
+      const evs = App.sim.eventos;
+      const last = evs.length ? evs[evs.length - 1] : null;
+      if (!last || last.tipo !== 'bip' || App.sim.t - last.t > 0.2) {
+        evs.push({ t: App.sim.t, tipo: 'bip', freq: 880, ms: 80 });
+      }
+    }
+  }
+
+  function teleop(limite_s, vel) {
+    limite_s = Number(limite_s) > 0 ? Math.min(Number(limite_s), 60) : 60;
+    vel = Number(vel) > 0 ? Number(vel) : 45;
+    teleopStop = false;
+    if (teleopRaf) cancelAnimationFrame(teleopRaf);
+    ativo = true;
+    setBotaoTeleop(true);
+
+    try {
+      if (typeof Playback !== 'undefined') {
+        const playBtn = document.getElementById('btnPlay');
+        if (playBtn && playBtn.textContent.indexOf('Pausar') >= 0) playBtn.click();
+      }
+    } catch (_) {}
+
+    if (!App.sim) {
+      App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+    }
+
+    const t0 = performance.now();
+    let last = t0;
+    atualizarUi('teleop: WASD/setas ou pad');
+    if (typeof Terminal !== 'undefined' && Terminal.sys) {
+      Terminal.sys('🎮 TELEOP — WASD ou setas andam · Espaço para · E apita · Q/R LED · Esc para');
+    }
+
+    return new Promise((resolve) => {
+      function frame(now) {
+        if (teleopStop) {
+          teleopRaf = 0; ativo = false; setBotaoTeleop(false);
+          if (App.sim) {
+            App.sim.motores.B.v = 0; App.sim.motores.C.v = 0;
+            App.sim.motores.B.modo = 'ocioso'; App.sim.motores.C.modo = 'ocioso';
+          }
+          mostrarAoVivo();
+          atualizarUi(lerPad() ? ('controle: ' + ultimoId) : 'controle: —');
+          if (typeof Terminal !== 'undefined' && Terminal.sys) Terminal.sys('🎮 teleop parado');
+          if (App.sim && (App.sim.frames || []).length > 1 && typeof Playback !== 'undefined') {
+            Playback.carregar(App.sim);
+          }
+          resolve('parado');
+          return;
+        }
+
+        const elapsed = (now - t0) / 1000;
+        if (elapsed >= limite_s) {
+          teleopStop = true;
+          teleopRaf = requestAnimationFrame(frame);
+          return;
+        }
+
+        let dt = (now - last) / 1000;
+        last = now;
+        if (dt > 0.08) dt = 0.08;
+        if (dt < 0.001) dt = 0.001;
+
+        const e = lerEntrada();
+        if (e.end) teleopStop = true;
+        aplicarMotores(e, vel);
+
+        if (App.sim) App.sim.avancar(dt);
+        mostrarAoVivo();
+
+        const st = document.getElementById('resumo');
+        if (st && App.sim) {
+          st.textContent = `teleop ${(elapsed).toFixed(0)}/${limite_s}s · (${App.sim.x.toFixed(0)}, ${App.sim.y.toFixed(0)}) cm · ${e.fonte}`;
+        }
+
+        teleopRaf = requestAnimationFrame(frame);
+      }
+      teleopRaf = requestAnimationFrame(frame);
+    });
+  }
+
+  function pararTeleop() { teleopStop = true; }
+
+  function toggleTeleop() {
+    if (ativo) pararTeleop();
+    else teleop(120, 45);
+  }
+
+  let _passoLast = 0;
+  function passo(vel) {
+    vel = Number(vel) > 0 ? Number(vel) : 45;
+    if (!App.sim) {
+      App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+    }
+    const now = performance.now();
+    let dt = _passoLast ? (now - _passoLast) / 1000 : 0.05;
+    _passoLast = now;
+    if (dt > 0.1) dt = 0.1;
+    if (dt < 0.001) dt = 0.05;
+    const e = lerEntrada();
+    aplicarMotores(e, vel);
+    App.sim.avancar(dt);
+    mostrarAoVivo();
+    const st = document.getElementById('resumo');
+    if (st) st.textContent = `teleop py · (${App.sim.x.toFixed(0)}, ${App.sim.y.toFixed(0)}) cm · ${e.fonte}`;
+    return !!e.end;
+  }
+  function resetPasso() { _passoLast = 0; }
+
+  globalThis.gamepadPonte = { ler, conectado, mostrarAoVivo, teleop, pararTeleop, toggleTeleop, lerEntrada, passo, resetPasso };
+  return globalThis.gamepadPonte;
+})();
+
+// =====================================================================
+// App — Inicialização geral
+// =====================================================================
+const App = { py: null, executarPy: null, editor: null, sim: null, pronto: false, executando: false };
+
+globalThis.ev3Ponte = {
+  enviar: (b) => App.sim.processar(b),
+  avancar: (dt) => App.sim.avancar(dt),
+  agora: () => App.sim.agora(),
+};
+const status = (s, cls = '') => { const e = $('status'); e.textContent = s; e.className = cls; };
+
+async function iniciarPython() {
+  status('carregando Pyodide (Python em WebAssembly)…');
+  const py = App.py = await loadPyodide();
+  py.setStdout({ batched: (s) => Terminal.out(s) });
+  py.setStderr({ batched: (s) => Terminal.err(s) });
+  status('instalando jacarev3 do PyPI via micropip…');
+  await py.loadPackage('micropip');
+  const v = $('versao').value.trim();
+  await py.pyimport('micropip').install(v ? 'jacarev3==' + v : 'jacarev3');
+  py.runPython($('ponte-py').textContent);
+  App.executarPy = py.globals.get('executar');
+  py.runPython($('api-py').textContent);
+  
+  const desc = py.globals.get('descrever_api')();
+  if (desc) Api.atual = JSON.parse(desc);
+  $('versaoInst').textContent = 'jacarev3 v' + (Api.atual.versao || '0.6.0');
+  Terminal.sys(`jacarev3 v${Api.atual.versao || '0.6.0'} instalada — ${(Api.atual.robo || []).length} métodos no autocomplete.`);
+}
+
+async function rodar() {
+  if (!App.pronto || App.executando) return;
+  const btn = $('btnRodar');
+  App.executando = true; btn.disabled = true; btn.textContent = '⏳ Rodando…';
+  Terminal.limpar();
+  App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+  const codigo = App.editor.getValue();
+  const LIMITE_SIM_MAX = 60;
+  let limite = +$('limite').value || 30;
+  if (!Number.isFinite(limite) || limite < 1) limite = 30;
+  if (limite > LIMITE_SIM_MAX) {
+    limite = LIMITE_SIM_MAX;
+    $('limite').value = LIMITE_SIM_MAX;
+    Terminal.sys('⏱ Limite máximo de simulação: ' + LIMITE_SIM_MAX + ' s');
+  }
+  const t0 = performance.now();
+  let res = 'erro';
+  try {
+    const mTele = codigo.match(/gamepadPonte\s*\.\s*teleop\s*\(\s*([^)]*)\)/);
+    if (mTele) {
+      const args = mTele[1].split(',').map((s) => s.trim()).filter(Boolean);
+      const sec = args[0] && !isNaN(+args[0]) ? +args[0] : Math.max(limite, 60);
+      const vel = args[1] && !isNaN(+args[1]) ? +args[1] : 45;
+      Terminal.sys('▶ teleop pelo código (' + sec + 's, vel ' + vel + ') — WASD/setas ou gamepad');
+      if (typeof gamepadPonte === 'undefined') throw new Error('gamepadPonte não carregou');
+      await gamepadPonte.teleop(sec, vel);
+      res = 'ok';
+    } else if (/\bawait\b/.test(codigo) || /gamepadPonte\s*\.\s*passo/.test(codigo)) {
+      Terminal.sys('▶ script async…');
+      if (typeof gamepadPonte !== 'undefined' && gamepadPonte.resetPasso) gamepadPonte.resetPasso();
+      const body = codigo.split('\n').map((l) => '    ' + l).join('\n');
+      await App.py.runPythonAsync(
+        'import asyncio\n' +
+        'from js import gamepadPonte\n' +
+        'async def __jacar_main():\n' +
+        body + '\n' +
+        'await __jacar_main()'
+      );
+      res = 'ok';
+    } else {
+      res = App.executarPy(codigo, limite);
+    }
+  } catch (e) {
+    console.error(e);
+    Terminal.err('Erro: ' + (e.message || String(e)));
+    res = 'erro';
+  } finally {
+    App.executando = false; btn.disabled = false; btn.textContent = '▶ Rodar script';
+  }
+  const s = App.sim;
+  if (s && res !== 'erro') {
+    try {
+      if (typeof s.concluirComandos === 'function') {
+        const fim = s.concluirComandos();
+        if (fim && fim.drenado > 0.05) Terminal.sys(`↳ comandos por tempo continuaram (+${fim.drenado.toFixed(1)} s).`);
+        if (fim && fim.ligados && fim.ligados.length) Terminal.sys(`⚠ motor ${fim.ligados.join(' e ')} ficou ligado: use parar_motor().`);
+      }
+    } catch (_) {}
+    const ms = (performance.now() - t0).toFixed(0);
+    $('resumo').textContent = `${(s.t||0).toFixed(1)} s simulados em ${ms} ms · ${(s.pacotes||[]).length} pacotes · ${(s.dist||0).toFixed(0)} cm andados`;
+    Terminal.sys(res === 'erro' ? '✖ terminou com erro' : `✔ fim (${res}): ${(s.pacotes||[]).length} pacotes, ${(s.t||0).toFixed(1)} s`);
+    if ((s.frames || []).length > 1) Playback.carregar(s);
+    if (window.CampanhaUI && CampanhaUI.missaoAtiva && res !== 'erro') {
+      CampanhaUI.avaliarTentativa(s, codigo);
+    }
+  }
+}
+
+function carregarExemplo(k) { App.editor.setValue(EXEMPLOS[k].codigo); Playback.escolher(EXEMPLOS[k].cenario, EXEMPLOS[k].inicio); }
+
+// =====================================================================
+// CampanhaUI
+// =====================================================================
+
+
+
+
+
+// =====================================================================
+// MissaoPage
+// =====================================================================
+const MissaoPage = {
+  missaoAtiva: null,
+  save: null,
+  falhasSeguidas: {},
+
+  ensureSave() {
+    if (!window.Campanha) return null;
+    if (!this.save) this.save = Campanha.carregarSave(Campanha.CAMPANHA.id || 'jacarev3-fundamentos');
+    return this.save;
+  },
+
+  idDaUrl() {
+    const q = new URLSearchParams(location.search).get('id');
+    if (q) return q;
+    try { return sessionStorage.getItem('jacar-missao-id'); } catch (_) { return null; }
+  },
+
+  async esperarCatalogo(msMax) {
+    const t0 = Date.now();
+    while (Date.now() - t0 < (msMax || 8000)) {
+      const n = (window.Campanha && Campanha.MISSOES && Campanha.MISSOES.length)
+        || (window.__campanhaMissoes && window.__campanhaMissoes.length);
+      if (n) return true;
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    return !!(window.Campanha && Campanha.MISSOES && Campanha.MISSOES.length);
+  },
+
+  getMissao(id) {
+    if (window.Campanha && typeof Campanha.getMissao === 'function') {
+      const m = Campanha.getMissao(id);
+      if (m) return m;
+    }
+    const list = window.__campanhaMissoes || (window.Campanha && Campanha.MISSOES) || [];
+    return list.find((x) => x.id === id) || null;
+  },
+
+  async iniciar() {
+    document.body.classList.add('modo-sandbox', 'modo-campanha', 'modo-missao');
+    const ti = $('telaInicio'); if (ti) ti.hidden = true;
+    const lb = $('lobbyCampanha'); if (lb) lb.hidden = true;
+    const b = $('badgeModo'); if (b) b.textContent = 'Missão';
+
+    const ok = await this.esperarCatalogo(10000);
+    if (!ok) {
+      Terminal.err('Não carregou o catálogo da campanha (JSON). Confira a rede / Live Server.');
+      return;
+    }
+
+    const id = this.idDaUrl();
+    if (!id) {
+      Terminal.err('Nenhuma missão na URL. Voltando ao lobby…');
+      setTimeout(() => { location.href = 'campanha.html'; }, 700);
+      return;
+    }
+
+    const missao = this.getMissao(id);
+    if (!missao) {
+      Terminal.err('Missão não encontrada: ' + id);
+      setTimeout(() => { location.href = 'campanha.html'; }, 900);
+      return;
+    }
+    this.ativar(missao);
+  },
+
+  ativar(missao) {
+    this.missaoAtiva = missao;
+    this.falhasSeguidas[missao.id] = 0;
+    const s = missao.setup || {};
+    try {
+      if (typeof Playback !== 'undefined') Playback.escolher(s.cenario || 'treino', s.inicio || 'padrao');
+    } catch (e) { console.warn(e); }
+    if (s.robo3d && $('robo3d')) {
+      try {
+        const seletorRobo = $('robo3d');
+        // Usa EV3 se a missão antiga solicitar um modelo não disponível.
+        const disponivel = Array.from(seletorRobo.options).some((op) => op.value === s.robo3d);
+        seletorRobo.value = disponivel ? s.robo3d : 'ev3';
+        seletorRobo.dispatchEvent(new Event('change'));
+      } catch (_) {}
+    }
+    if (App.editor) {
+      App.editor.setValue(s.codigoInicial != null ? s.codigoInicial : '# complete a missão\n');
+    }
+    // trava limite da simulação (missão e teto global)
+    if ($('limite')) {
+      const maxMissao = (missao.limites && missao.limites.tempoSimMaxS) ? +missao.limites.tempoSimMaxS : 60;
+      const teto = Math.min(60, maxMissao);
+      $('limite').max = String(teto);
+      let v = +$('limite').value || 30;
+      if (v > teto) v = teto;
+      $('limite').value = v;
+    }
+    const temas = (window.Campanha && Campanha.CAMPANHA && Campanha.CAMPANHA.temas) || (window.__campanhaMeta && window.__campanhaMeta.temas) || [];
+    const tema = temas.find((x) => x.id === missao.temaId);
+    if ($('hudModulo')) $('hudModulo').textContent = tema ? tema.titulo : '';
+    if ($('hudMissaoTitulo')) $('hudMissaoTitulo').textContent = missao.titulo;
+    const save = this.ensureSave();
+    const info = (save && save.missoes[missao.id]) || {};
+    const n = info.estrelas || 0;
+    if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
+    if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (info.tentativas || 0);
+    if ($('campDica')) $('campDica').onclick = () => this.mostrarDica(false);
+    const _bd = document.getElementById('campBtnDica');
+    if (_bd) _bd.onclick = () => this.mostrarDica(false);
+    const _br = document.getElementById('campBtnRef');
+    if (_br) _br.onclick = () => this.mostrarReferenciaSePermitido();
+
+    if ($('campReabrirLobby')) $('campReabrirLobby').onclick = () => { location.href = 'campanha.html'; };
+    if ($('btnMenuModos')) $('btnMenuModos').onclick = () => { location.href = '../index.html'; };
+    document.body.classList.add('modo-campanha');
+    Terminal.sys('📖 Missão: ' + missao.titulo);
+    Terminal.sys('💡 A cada 3 falhas sai uma dica automática.');
+    this.atualizarPainelCampanha();
+    if (window.Dialogo) {
+      Dialogo.intro(missao).catch(() => {});
+    }
+
+  },
+
+
+  atualizarPainelCampanha() {
+    const box = document.getElementById('campPainelMissao');
+    if (!box || !this.missaoAtiva) { if (box) box.hidden = true; return; }
+    const m = this.missaoAtiva;
+    box.hidden = false;
+    const tit = document.getElementById('campPainelTitulo');
+    if (tit) tit.textContent = m.titulo || m.id;
+    const nar = document.getElementById('campPainelNarrativa');
+    const intro = m.narrativa && m.narrativa.intro && m.narrativa.intro[0];
+    if (nar) nar.textContent = intro ? intro.texto : '';
+    const objs = document.getElementById('campPainelObjs');
+    if (objs) {
+      objs.innerHTML = (m.objetivos || []).map((o) => {
+        const label = o.id || o.tipo || 'objetivo';
+        return '<div class="obj-li pend">○ ' + label + (o.obrigatorio ? ' · obrigatório' : '') + '</div>';
+      }).join('') || '<div class="obj-li pend">Complete o enunciado</div>';
+    }
+    const save = this.ensureSave();
+    const est = (save.missoes[m.id] && save.missoes[m.id].estrelas) || 0;
+    const btnRef = document.getElementById('campBtnRef');
+    if (btnRef) btnRef.hidden = est < 3;
+  },
+
+  mostrarReferenciaSePermitido() {
+    const m = this.missaoAtiva;
+    if (!m) return;
+    const save = this.ensureSave();
+    const est = (save.missoes[m.id] && save.missoes[m.id].estrelas) || 0;
+    if (est < 3) {
+      Terminal.sys('🔒 Referência liberada a partir de 3 estrelas.');
+      return;
+    }
+    const refs = m.codigosReferencia || [];
+    const ref = document.getElementById('campPainelRef');
+    if (ref) {
+      ref.hidden = false;
+      const code = (refs[0] || '—').replace(/</g, '&lt;');
+      ref.innerHTML = '<strong>Código de referência</strong><pre style="white-space:pre-wrap;font-size:11px;background:#0d1117;padding:8px;border-radius:8px;overflow:auto;max-height:220px">' + code + '</pre>';
+    }
+    if (window.Dialogo) Dialogo.referencia(m).catch(() => {});
+  },
+
+  mostrarDica(auto) {
+    const missao = this.missaoAtiva;
+    if (!missao) return;
+    const dicas = (missao.dicas || []).map((x) => (x && typeof x === 'object' ? (x.texto || x.hint || '') : String(x || ''))).filter(Boolean);
+    if (!dicas.length) { Terminal.sys('Sem dicas nesta missão.'); return; }
+    const save = this.ensureSave();
+    if (!save.dicasUsadas) save.dicasUsadas = {};
+    const n = save.dicasUsadas[missao.id] || 0;
+    const idx = Math.min(n, dicas.length - 1);
+    save.dicasUsadas[missao.id] = Math.min(n + 1, dicas.length);
+    Campanha.gravarSave(save);
+    const texto = dicas[idx];
+    Terminal.sys((auto ? '💡 Dica automática (' : '💡 Dica (') + (idx + 1) + '/' + dicas.length + '): ' + texto);
+    const pd = document.getElementById('campPainelDica');
+    if (pd) { pd.hidden = false; pd.textContent = '(' + (idx + 1) + '/' + dicas.length + ') ' + texto; }
+    if (window.Dialogo) {
+      Dialogo.dica(missao, '(' + (idx + 1) + '/' + dicas.length + ') ' + texto).catch(() => {});
+    }
+  },
+
+  avaliarTentativa(sim, codigo) {
+    if (!this.missaoAtiva || !window.Campanha) return null;
+    const r = Campanha.avaliar(sim, codigo, this.missaoAtiva);
+    this.save = Campanha.aplicarResultado(this.ensureSave(), this.missaoAtiva, r);
+    this.mostrarResultado(r);
+    const mid = this.missaoAtiva.id;
+    if (!r.ok) {
+      this.falhasSeguidas[mid] = (this.falhasSeguidas[mid] || 0) + 1;
+      if (this.falhasSeguidas[mid] >= 3) {
+        this.falhasSeguidas[mid] = 0;
+        this.mostrarDica(true);
+      } else {
+        Terminal.sys('📖 Ainda não passou. Mais ' + (3 - this.falhasSeguidas[mid]) + ' falha(s) → dica.');
+      }
+    } else this.falhasSeguidas[mid] = 0;
+    const n = this.save.missoes[mid]?.estrelas || 0;
+    if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
+    if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (this.save.missoes[mid]?.tentativas || 0);
+    this.atualizarPainelCampanha();
+    const btnRef = document.getElementById('campBtnRef');
+    if (btnRef) btnRef.hidden = (this.save.missoes[mid]?.estrelas || 0) < 3;
+
+    return r;
+  },
+
+  mostrarResultado(r) {
+    const box = $('campResultado');
+    if (!box) return;
+    box.hidden = false;
+    const missao = this.missaoAtiva;
+    if (window.Dialogo && missao) {
+      (r.ok ? Dialogo.sucesso(missao) : Dialogo.fracasso(missao)).catch(() => {});
+    }
+    const falas = r.ok ? (missao.narrativa?.sucesso || []) : (missao.narrativa?.fracasso || []);
+    const fala = falas.map((d) => '<p><strong>' + d.personagem + ':</strong> ' + d.texto + '</p>').join('');
+    const n = Math.min(5, r.estrelas || 0);
+    const stars = '★'.repeat(n) + '☆'.repeat(5 - n);
+    const simPct = Math.round((r.similaridade || 0) * 100);
+    const objs = Object.entries(r.objetivos || {}).map(([id, ok]) =>
+      '<li class="' + (ok ? 'ok' : 'fail') + '">' + (ok ? '✓' : '✗') + ' ' + id + '</li>').join('');
+    box.innerHTML =
+      '<button type="button" class="camp-resultado-fechar" id="campFechaResultado">×</button>' +
+      '<h3>' + (r.ok ? 'Missão cumprida!' : 'Ainda não…') + ' <span class="camp-stars">' + stars + '</span></h3>' +
+      fala + '<ul class="camp-obj-result">' + objs + '</ul>' +
+      '<p class="camp-metricas">' + r.metricas.tempoSim.toFixed(1) + ' s · ' +
+      r.metricas.dist.toFixed(0) + ' cm · proximidade: <strong>' + simPct + '%</strong></p>' +
+      (r.ok
+        ? '<div class="camp-actions" style="margin-top:10px;display:flex;gap:8px">' +
+          '<button type="button" class="principal" id="campProxMissao">Próxima missão</button>' +
+          '<button type="button" class="camp-btn-sec" id="campAposOk">Lista de missões</button></div>'
+        : '<p class="camp-hint-mod">Ajuste e rode de novo.</p>');
+    if ($('campFechaResultado')) $('campFechaResultado').onclick = () => { box.hidden = true; };
+    if ($('campAposOk')) $('campAposOk').onclick = () => { location.href = 'campanha.html'; };
+    if ($('campProxMissao')) $('campProxMissao').onclick = () => this.irProxima();
+  },
+
+  irProxima() {
+    const atual = this.missaoAtiva;
+    if (!atual) { location.href = 'campanha.html'; return; }
+    const save = this.ensureSave();
+    const list = (window.Campanha && Campanha.MISSOES) || window.__campanhaMissoes || [];
+    const doTema = list.filter((x) => x.temaId === atual.temaId);
+    const primeira = doTema[0]?.id;
+    let found = false;
+    for (const x of doTema) {
+      if (x.id === atual.id) { found = true; continue; }
+      if (!found) continue;
+      if (Campanha.statusMissao(save, x.id, primeira) !== 'bloqueada') {
+        location.href = 'missao.html?id=' + encodeURIComponent(x.id);
+        return;
+      }
+    }
+    location.href = 'campanha.html';
+  },
+};
+window.MissaoPage = MissaoPage;
+window.CampanhaUI = {
+  get missaoAtiva() { return MissaoPage.missaoAtiva; },
+  avaliarTentativa(sim, codigo) { return MissaoPage.avaliarTentativa(sim, codigo); },
+  wire() {},
+};
+
+
+async function iniciar() {
+  for (const [k, v] of Object.entries(EXEMPLOS)) $('exemplo').add(new Option(v.nome, k));
+  $('btnLimpar').onclick = () => Terminal.limpar();
+  $('btnRodar').onclick = rodar;
+  const btnT = $('btnTeleop');
+  if (btnT) btnT.onclick = () => {
+    if (typeof gamepadPonte !== 'undefined') gamepadPonte.toggleTeleop();
+    else Terminal.err('teleop não carregou');
+  };
+  Terminal.limpar();
+  Playback.iniciar();
+  const elLim = $('limite');
+  if (elLim) {
+    elLim.max = String(60);
+    const clampLim = () => {
+      let v = +elLim.value;
+      if (!Number.isFinite(v) || v < 1) v = 1;
+      if (v > 60) v = 60;
+      elLim.value = v;
+    };
+    elLim.addEventListener('change', clampLim);
+    elLim.addEventListener('blur', clampLim);
+  }
+  const ti0 = $('telaInicio'); if (ti0) ti0.hidden = true;
+  Terminal.sys('🎮 Controle: conecte o pad e aperte um botão (exemplo "Controle (gamepad)")');
+
+  window.addEventListener('vista3d-pronta', () => Playback.habilitar3D());
+  if (window.Vista3D) Playback.habilitar3D();
+  setTimeout(() => { if (!window.Vista3D) { $('btn3d').title = 'Three.js não carregou (CDN bloqueado?)'; $('btn3d').textContent = '3D ✕'; } }, 20000);
+  const _modoUrl = new URLSearchParams(location.search).get('modo');
+  const [ed] = await Promise.all([
+    Ide.criar($('editor'), ''),
+    iniciarPython().catch((e) => { status('falhou: ' + e.message, 'erro'); Terminal.err(String(e)); }),
+  ]);
+  App.editor = ed;
+  ed.aoRodar(rodar);
+  $('exemplo').onchange = () => carregarExemplo($('exemplo').value);
+  if (ed.aviso) Terminal.sys('⚠ ' + ed.aviso);
+  if (App.executarPy) { App.pronto = true; $('btnRodar').disabled = false; status('pronto — jacarev3 real carregada' + (ed.tipo === 'monaco' ? ' · Monaco ativo' : ''), 'ok'); }
+  MissaoPage.iniciar().catch((e) => { console.error(e); Terminal.err(String(e)); });
+
+}
+
+iniciar();
+</script>
+</body>
+</html>
