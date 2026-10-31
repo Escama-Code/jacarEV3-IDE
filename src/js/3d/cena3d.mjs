@@ -21,7 +21,6 @@ import {
   construirRoboOpala,
   construirRoboCorcel,
   construirRoboCarro,
-  construirRoboOnibus,
   aplicarEstado,
 } from './modelos/index.mjs';
 
@@ -40,8 +39,7 @@ const ROBOS = {
   fusca: construirRoboCarroFusca,
   opala: construirRoboOpala,
   corcel: construirRoboCorcel,
-  carro: construirRoboCarro,
-  onibus: construirRoboOnibus
+  carro: construirRoboCarro
 };
 
 /** textura do chão = a MESMA imagem que o sensor lê (tapete.canvas / tapete.dados) */
@@ -250,7 +248,10 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     ajustarLuz(); setModoCamera(S.modo);
   }
   function setRobo(tipo) {
-    if (!ROBOS[tipo]) throw new Error('robô desconhecido: ' + tipo);
+    if (!ROBOS[tipo]) {
+      console.warn('[jacarEV3] Modelo 3D indisponível:', tipo, '— utilizando EV3.');
+      tipo = 'ev3';
+    }
     if (S.rig) { scene.remove(S.rig.grupo); S.rig.grupo.traverse((o) => { if (o.geometry) o.geometry.dispose(); }); }
     S.tipo = tipo; S.rig = ROBOS[tipo](); scene.add(S.rig.grupo);
     if (S.ultimo) aplicarEstado(S.rig, S.ultimo);

@@ -22,6 +22,5 @@ export {
   construirRoboCarroFusca,
   construirRoboOpala,
   construirRoboCorcel,
-  construirRoboOnibus,
   aplicarEstado,
 } from './modelos/index.mjs';

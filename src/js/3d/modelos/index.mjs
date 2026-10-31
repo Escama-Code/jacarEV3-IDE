@@ -19,5 +19,4 @@ export { construirRoboCarroFusca } from './carro-fusca.mjs';
 export { construirRoboOpala } from './Opala.mjs';
 export { construirRoboCorcel } from './Cocel.mjs';
 export { construirRoboCarro } from './carro.mjs';
-export { construirRoboOnibus} from './onibus.mjs'
 export { aplicarEstado } from './aplicar-estado.mjs';

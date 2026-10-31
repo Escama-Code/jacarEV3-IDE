@@ -156,7 +156,7 @@
       <select id="cenario" title="Cenário"></select>
       <select id="inicio" title="Posição inicial do robô"></select>
       <span id="opts3d" class="linha" style="margin:0" hidden>
-        <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option> <option value="arara">Robô: Arara</option><option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option> <option value="carro">Robô: Carro</option><option value="onibus">Robô: Onibus</option>
+        <select id="robo3d"><option value="ev3">Robô: LEGO EV3</option><option value="jacare">Robô: Jacaré</option><option value="capivara">Robô: Capivara</option><option value="caranguejo">Robô: Caranguejo</option><option value="tubarao">Robô: Tubarão</option><option value="sapo">Robô: Sapo</option><option value="elefante">Robô: Elefante</option><option value="camaleao">Robô: Camaleão</option><option value="escorpiao">Robô: Escorpiao</option><option value="coruja">Robô: Coruja</option> <option value="arara">Robô: Arara</option><option value="fusca">Robô: Fusca</option><option value="opala">Robô: Opala</option> <option value="corcel">Robô: Corcel</option> <option value="carro">Robô: Carro</option>
         </select>
         <select id="cam3d"><option value="livre">Câmera: livre (arraste)</option><option value="seguir">Câmera: seguir o robô</option><option value="topo">Câmera: vista de topo</option></select>
         <label id="lblDistCam" title="Distância da câmera ao seguir o robô" style="gap:4px">
@@ -1619,8 +1619,11 @@ const MissaoPage = {
     } catch (e) { console.warn(e); }
     if (s.robo3d && $('robo3d')) {
       try {
-        $('robo3d').value = s.robo3d;
-        $('robo3d').dispatchEvent(new Event('change'));
+        const seletorRobo = $('robo3d');
+        // Usa EV3 se a missão antiga solicitar um modelo não disponível.
+        const disponivel = Array.from(seletorRobo.options).some((op) => op.value === s.robo3d);
+        seletorRobo.value = disponivel ? s.robo3d : 'ev3';
+        seletorRobo.dispatchEvent(new Event('change'));
       } catch (_) {}
     }
     if (App.editor) {
