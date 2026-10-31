@@ -15,6 +15,7 @@
   function criarDocumento(w=260,h=180) {
     return { formato:'jacarev3-mapa', versao:2, nome:'Meu circuito', w, h, pxPorCm:5,
       basePNG:'', sobreposicaoPNG:'', legadoRaster:false, borrachasBase:[], sinalUrbano:null, tracos:[], caixas:[], rampas:[], decoracoes3d:[], areas:[], salas:[],
+      pontosEducativos:[], desenhoCaixasNaTextura:false,
       perfil:'livre', nivel:1, inicio:{ x:28, y:h-25, th:-Math.PI/2 } };
   }
   function migrar(data) {
@@ -27,6 +28,8 @@
     d.salas = d.salas.map(normalizarSala);
     d.perfil ||= 'livre'; d.nivel ||= 1;
     d.caixas ||= []; d.rampas ||= []; d.decoracoes3d ||= []; d.tracos ||= [];
+    d.pontosEducativos ||= [];
+    d.desenhoCaixasNaTextura ??= false;
     for (const t of d.tracos) { if (t.tipo==='borracha') t.espessura=Math.max(.5,t.espessura); }
     return validar(d);
   }
@@ -144,6 +147,21 @@
     for(const a of d.areas){if(a.tipo!=='triangulo'||!['verde','vermelho'].includes(a.cor)||!['tl','tr','bl','br'].includes(a.canto))throw Error('Área inválida');num(a.x,0,d.w,'área x');num(a.y,0,d.h,'área y');num(a.lado,2,60,'lado da área');if(a.x+a.lado>d.w+.01||a.y+a.lado>d.h+.01)throw Error('Área fora do mapa');}
     if(!Array.isArray(d.salas)||d.salas.length>12)throw Error('Salas inválidas');
     for(const original of d.salas){validarSala(normalizarSala(original),d);}
+    // Metadados didáticos persistidos no .jmap: nunca executados como HTML.
+    if(d.desenhoCaixasNaTextura!==undefined&&typeof d.desenhoCaixasNaTextura!=='boolean')
+      throw Error('Configuração visual inválida');
+    if(d.pontosEducativos!==undefined) {
+      if(!Array.isArray(d.pontosEducativos)||d.pontosEducativos.length>40)throw Error('Pontos educativos inválidos');
+      for(const p of d.pontosEducativos) {
+        num(p.x,0,d.w,'ponto educativo x');num(p.y,0,d.h,'ponto educativo y');
+        num(p.raio,1,40,'raio educativo');
+        for(const [chave,limite] of [['titulo',100],['mensagem',420],['fundamento',100],['icone',20]]) {
+          const texto=p[chave];
+          if(texto===undefined && ['fundamento','icone'].includes(chave))continue;
+          if(typeof texto!=='string'||!texto.trim()||texto.length>limite)throw Error('Texto educativo inválido: '+chave);
+        }
+      }
+    }
     return d;
   }
   function getPontosFinais(t) {

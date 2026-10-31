@@ -289,7 +289,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { cen: null, arena: null, tapete: null, versaoTapete: 0, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map() };
+  const S = { cen: null, arena: null, tapete: null, versaoTapete: 0, rig: null, tipo: 'ev3', modo: 'livre', cameraLivreInicializada: false, poseLivre: null, ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map() };
 
   /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
   const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
@@ -309,6 +309,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   function enquadrarLivre() {
     S.dist = enquadrarCantos(0.78, 0.72, new THREE.Vector3(0, 1, 0)); controls.maxDistance = S.dist * 2.6;
     controls.target.copy(centro); controls.update();
+    S.cameraLivreInicializada = true;
   }
   function ajustarLuz() {
     const L = Math.max(S.cen.w, S.cen.h), r = Math.hypot(S.cen.w, S.cen.h) / 2 + 22;
@@ -330,6 +331,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     S.ultimo = null; S.snap = true;                 // não herda a pose do cenário anterior; câmera de perseguição reposiciona sem deslizar
     S.arena = construirArena(cen, novoTapete, renderer); scene.add(S.arena);
     S.tapete = novoTapete; S.versaoTapete = novoTapete?.versao || 0;
+    S.cameraLivreInicializada = false; S.poseLivre = null;
     ajustarLuz(); setModoCamera(S.modo);
   }
   function setRobo(tipo) {
@@ -396,8 +398,25 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
 
   function setModoCamera(modo) {
     if (!MODOS_CAMERA.includes(modo)) return;
+    const anterior = S.modo;
+    // Guardar o enquadramento definido pelo aluno ao sair da câmera livre.
+    if (anterior === 'livre' && modo !== 'livre' && S.cameraLivreInicializada) {
+      S.poseLivre = {
+        posicao: camera.position.clone(),
+        alvo: controls.target.clone(),
+        acima: camera.up.clone(),
+      };
+    }
     S.modo = modo; controls.enabled = modo === 'livre';
-    if (modo === 'livre') enquadrarLivre();
+    if (modo === 'livre') {
+      if (!S.cameraLivreInicializada) enquadrarLivre();
+      else if (anterior !== 'livre' && S.poseLivre) {
+        camera.position.copy(S.poseLivre.posicao);
+        camera.up.copy(S.poseLivre.acima);
+        controls.target.copy(S.poseLivre.alvo);
+        controls.update();
+      }
+    }
     if (modo === 'topo') enquadrarCantos(1, 0.0001, new THREE.Vector3(0, 0, -1));
   }
   function setDistanciaSeguir(d, alt) {
@@ -444,7 +463,11 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     const w = Math.max(10, container.clientWidth || 720), h = Math.max(10, container.clientHeight || 480);
     renderer.setPixelRatio(Math.min((typeof devicePixelRatio !== 'undefined' && devicePixelRatio) || 1, 2));
     renderer.setSize(w, h); const antes = camera.aspect; camera.aspect = w / h; camera.updateProjectionMatrix();
-    if (S.cen && Math.abs(antes - camera.aspect) > 0.01) setModoCamera(S.modo);
+    // Alterações de layout NÃO podem zerar a câmera livre escolhida pelo aluno.
+    // Só a vista de topo necessita reenquadrar ao mudar a proporção do canvas.
+    if (S.cen && S.modo === 'topo' && Math.abs(antes - camera.aspect) > 0.01) {
+      enquadrarCantos(1, 0.0001, new THREE.Vector3(0, 0, -1));
+    }
   }
   function loop() { if (!S.ativo) return; S.raf = requestAnimationFrame(loop); desenhar(); }
   function mostrar(v) {

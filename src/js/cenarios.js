@@ -567,26 +567,43 @@ const cidadeEducativa = {
   ],
   rampas: [],
   semaforoEstado: 'VERMELHO',
+  // O piso já contém telhados, nomes e pintura dos lotes.
+  // A vista 2D não deve desenhar retângulos opacos sobre essa arte.
+  desenhoCaixasNaTextura: true,
 
-  // Dicas fora da textura do piso: renderizadas no painel da interface
-  // no momento em que o robô passa perto de cada lugar.
+  // Coordenadas sobre o caminho real do robô (NÃO no centro dos prédios).
+  // O painel apresenta as dicas ao passar por esses trechos da rota.
+  // Referências: Código de Trânsito Brasileiro (Lei 9.503/1997).
   pontosEducativos: [
-    { x: 102, y: 330, raio: 19, titulo: 'Saída com atenção', mensagem: 'Antes de circular, observe as condições da via e respeite a sinalização.' },
-    { x: 136, y: 330, raio: 15, titulo: 'Semáforo', mensagem: 'No vermelho, pare. No verde, siga apenas quando houver segurança.' },
-    { x: 157, y: 330, raio: 14, titulo: 'Faixa de pedestres', mensagem: 'O motorista deve respeitar a travessia e dar prioridade aos pedestres nas condições previstas em lei.' },
-    { x: 208, y: 196, raio: 24, titulo: 'Área residencial', mensagem: 'Reduza a velocidade e tenha atenção especial a quem circula a pé ou de bicicleta.' },
-    { x: 206, y: 125, raio: 22, titulo: 'Transporte coletivo', mensagem: 'O transporte coletivo amplia a mobilidade e pode reduzir o número de veículos individuais.' },
-    { x: 128, y: 43, raio: 19, titulo: 'Segunda travessia', mensagem: 'Mesmo com o sinal aberto, motoristas devem observar o cruzamento.' },
-    { x: 60, y: 42, raio: 22, titulo: 'Convivência no trânsito', mensagem: 'Pedestres, ciclistas e motoristas compartilham o espaço público.' },
-    { x: 41, y: 129, raio: 23, titulo: 'Próximo à escola', mensagem: 'Em áreas escolares, cuidado redobrado com crianças e travessias.' },
-    { x: 64, y: 252, raio: 22, titulo: 'Rotatória', mensagem: 'Nas rotatórias, observe a preferência de quem já está circulando, salvo sinalização em contrário.' }
+    { x: 100, y: 330, raio: 11, icone: '🚗', titulo: 'Saída com atenção',
+      mensagem: 'Todo condutor deve manter o domínio do veículo e dirigir com atenção e cuidados indispensáveis à segurança.', fundamento: 'CTB — art. 28' },
+    { x: 119, y: 330, raio: 10, icone: '🏥', titulo: 'Hospital: velocidade segura',
+      mensagem: 'Ao se aproximar de hospitais, reduza a velocidade conforme a segurança do trânsito. Isso também vale perto de escolas e pontos de embarque.', fundamento: 'CTB — art. 220, XIV' },
+    { x: 136, y: 330, raio: 10, icone: '🚦', titulo: 'Semáforo: respeite o vermelho',
+      mensagem: 'Avançar o sinal vermelho é uma infração gravíssima, salvo exceções previstas na sinalização e na lei.', fundamento: 'CTB — art. 208' },
+    { x: 157, y: 330, raio: 12, icone: '🚶', titulo: 'Faixa de pedestres',
+      mensagem: 'A travessia na faixa tem prioridade conforme as regras do CTB. Mesmo quando o sinal muda, respeite quem ainda não terminou de atravessar.', fundamento: 'CTB — art. 70' },
+    { x: 209, y: 196, raio: 17, icone: '🏘️', titulo: 'Bairro: atenção a todos',
+      mensagem: 'Ao regular a velocidade, considere a via, o movimento de pessoas e as condições do trânsito.', fundamento: 'CTB — art. 43' },
+    { x: 209, y: 125, raio: 13, icone: '🚌', titulo: 'Transporte coletivo',
+      mensagem: 'Nas proximidades de locais de embarque e desembarque, o motorista deve reduzir a velocidade de maneira compatível com a segurança.', fundamento: 'CTB — art. 220, XIV' },
+    { x: 130, y: 91, raio: 14, icone: '📚', titulo: 'Biblioteca: travessia segura',
+      mensagem: 'No caminho para a biblioteca, procure faixas e passagens apropriadas. O CTB estabelece cuidados para a travessia de pedestres.', fundamento: 'CTB — art. 69' },
+    { x: 129, y: 43, raio: 13, icone: '🚸', titulo: 'Cruzamento e segunda faixa',
+      mensagem: 'Ao chegar a um cruzamento, o condutor deve agir com prudência e velocidade moderada para poder parar com segurança.', fundamento: 'CTB — art. 44' },
+    { x: 60, y: 40, raio: 14, icone: '🤝', titulo: 'Convivência no trânsito',
+      mensagem: 'No trânsito, o cuidado com pedestres, ciclistas e outros veículos faz parte de uma circulação responsável.', fundamento: 'CTB — arts. 26 e 29' },
+    { x: 40, y: 165, raio: 17, icone: '🏫', titulo: 'Escola: reduza a velocidade',
+      mensagem: 'Perto de escolas, a velocidade deve ser compatível com a segurança de crianças e demais pedestres.', fundamento: 'CTB — art. 220, XIV' },
+    { x: 64, y: 252, raio: 20, icone: '🔄', titulo: 'Rotatória: quem tem preferência?',
+      mensagem: 'Em rotatórias sem sinalização específica em contrário, a preferência é de quem já está circulando por elas.', fundamento: 'CTB — art. 29, III, b' }
   ],
 
   desenhar(ctx, self, opcoes = {}) {
     // Preserva integralmente os pixels do tapete original nas vias.
     // As novas formas ficam somente nos lotes internos, longe do robô.
     tapeteUrbanoInfantil.desenhar(ctx, self, { ...opcoes, omitirCaixas: true });
-    if (opcoes.omitirCaixas) return;
+    if (opcoes.omitirCaixas && !opcoes.manterDecoracao) return;
 
     ctx.save();
 

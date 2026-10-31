@@ -149,7 +149,17 @@
       }
       ctx.restore();
     }
-    for(const b of [...d.caixas,...M.caixasDasSalas(d.salas)])retangulo(b.x,b.y,b.w,b.h,b.tipoEditor==='parede'||b.nome==='Parede da sala'?'#9da9ae':b.cor||'#aa906a');
+    for(const b of [...d.caixas,...M.caixasDasSalas(d.salas)]) {
+      // A arte de prédios autorais já está pintada no piso desta cidade.
+      if(d.desenhoCaixasNaTextura && String(b.modelo||'').startsWith('cidade')) {
+        ctx.save();
+        ctx.strokeStyle='rgba(60,80,100,.35)';ctx.lineWidth=.25;
+        ctx.setLineDash([1.2,1.2]);ctx.strokeRect(b.x,b.y,b.w,b.h);
+        ctx.restore();
+      } else {
+        retangulo(b.x,b.y,b.w,b.h,b.tipoEditor==='parede'||b.nome==='Parede da sala'?'#9da9ae':b.cor||'#aa906a');
+      }
+    }
     const esferas=[...d.decoracoes3d,...M.elementosDasSalas(d.salas).objetos];
     for(const o of esferas){ctx.beginPath();ctx.arc(o.x,o.y,o.raio,0,Math.PI*2);ctx.fillStyle=o.cor||'#d1d5d8';ctx.fill();ctx.strokeStyle='#3a454f';ctx.lineWidth=.25;ctx.stroke();}
   }
@@ -524,7 +534,9 @@
     if(Array.isArray(cen.linhasEditor) && cen.linhasEditor.length){
       // Linha nativa separada do asfalto, para que possa ser apagada.
       cen.desenhar(ctx,cen,{
-        omitirLinha:true,omitirFaixas:true,omitirSemaforos:true,omitirCaixas:true
+        omitirLinha:true,omitirFaixas:true,omitirSemaforos:true,omitirCaixas:true,
+        // Inclui a identidade visual da cidade na base do mapa editável.
+        manterDecoracao:!!cen.desenhoCaixasNaTextura
       });
       d.tracos=deep(cen.linhasEditor);
       if(typeof cen.pintarFaixasPedestres==='function'){
@@ -543,6 +555,8 @@
     ctx.restore();
     d.basePNG=base.toDataURL('image/png');
     d.caixas=deep(cen.caixas||[]);
+    d.pontosEducativos=deep(cen.pontosEducativos||[]);
+    d.desenhoCaixasNaTextura=!!cen.desenhoCaixasNaTextura;
     d.rampas=deep(cen.rampas||[]);
     d.decoracoes3d=deep(cen.decoracoes3d||[]);
     const ini=Cenarios.inicioDe(cen,cen.inicioPadrao);
@@ -562,6 +576,8 @@
       caixas:[...deep(d.caixas),...M.caixasDasSalas(d.salas)],
       rampas:deep(d.rampas),decoracoes3d:[...deep(d.decoracoes3d),...gerados.objetos],
       editorDocumento:snapshot,
+      pontosEducativos:deep(snapshot.pontosEducativos||[]),
+      desenhoCaixasNaTextura:!!snapshot.desenhoCaixasNaTextura,
       desenhar(ctx) {
         pintarBase(ctx,snapshot,img,snapshot.tracos,overlay,this.semaforoEstado||'VERMELHO');
       }

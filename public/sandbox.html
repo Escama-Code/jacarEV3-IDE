@@ -186,6 +186,49 @@ body.modo-campanha .painel-arena #cenario {
 .dica-cidade-icone { font-size:23px; }
 .dica-cidade-texto { display:flex; flex-direction:column; gap:2px; }
 .dica-cidade-texto strong { font-size:13px; color:#baf1d6; }
+.dica-cidade-lei { font-size:11px; color:#a4e2f3; margin-top:3px; font-weight:600; }
+.dica-cidade-fonte { font-size:11px; color:#b9eeff; text-decoration:underline; text-underline-offset:2px; }
+.dica-cidade-texto { min-width:0; }
+
+  /* Sandbox: painéis equilibrados em telas largas, sem trocar altura do palco
+     quando o usuário seleciona mapas/programas. */
+  body.modo-sandbox:not(.modo-campanha) main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+  }
+  body.modo-sandbox:not(.modo-campanha) main > .painel {
+    min-width: 0;
+  }
+  body.modo-sandbox:not(.modo-campanha) main > .painel-codigo {
+    display: flex;
+    flex-direction: column;
+  }
+  body.modo-sandbox:not(.modo-campanha) .painel-codigo #editor {
+    flex: 1 1 390px;
+    height: auto;
+    min-height: 340px;
+    max-height: none;
+  }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo {
+    margin: 3px 0 6px;
+    gap: 6px 12px;
+    align-items: center;
+  }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo .info { margin: 0; }
+  body.modo-sandbox:not(.modo-campanha) .linha-mapa-exemplo #descricaoExemplo { flex: 1 1 250px; }
+  body.modo-sandbox:not(.modo-campanha) #mapaExemploAviso { color: #b7d9dc; }
+  body.modo-sandbox:not(.modo-campanha) #btnMapaExemplo { font-size: 11px; padding: 3px 8px; }
+  .relogio-sim {
+    color: #b9e8eb; background: #17323a; border: 1px solid #3b6873;
+    border-radius: 5px; font: 12px/1.5 ui-monospace, monospace;
+    padding: 4px 7px; white-space: nowrap;
+  }
+  @media(max-width:1100px) {
+    body.modo-sandbox:not(.modo-campanha) main { grid-template-columns: 1fr; }
+    body.modo-sandbox:not(.modo-campanha) .painel-codigo #editor {
+      flex: none; height: 390px; min-height: 340px; max-height: 390px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -288,7 +331,11 @@ body.modo-campanha .painel-arena #cenario {
       </label>
       <label title="Esse valor é o máximo permitido, não o tempo obrigatório de execução.">limite máximo <input id="limite" type="number" value="300" min="1" max="300" step="1" title="O programa pode terminar antes de 300 s"> s <span class="info" style="margin:0">(o programa pode terminar antes)</span></label>
     </div>
-    <div id="descricaoExemplo" class="info" aria-live="polite" style="margin:3px 0 7px">Carregando biblioteca de exemplos…</div>
+    <div class="linha linha-mapa-exemplo">
+      <span id="descricaoExemplo" class="info" aria-live="polite">Carregando biblioteca de exemplos…</span>
+      <span id="mapaExemploAviso" class="info" aria-live="polite"></span>
+      <button type="button" id="btnMapaExemplo" hidden title="Trocar para o mapa recomendado por este programa (somente quando você clicar)">Usar mapa indicado</button>
+    </div>
     <div id="editor" style="margin-top:8px"></div>
     <div class="linha">
       <button id="btnRodar" class="principal" disabled>▶ Rodar script</button>
@@ -332,15 +379,22 @@ body.modo-campanha .painel-arena #cenario {
       <canvas id="cv" class="vista" width="1000" height="667"></canvas>
       <div id="cv3d" class="vista" hidden></div>
     </div>
-    <div id="dicaCidade" class="dica-cidade" hidden aria-live="off">
-      <span class="dica-cidade-icone" aria-hidden="true">🏙️</span>
-      <div class="dica-cidade-texto"><strong id="dicaCidadeTitulo"></strong><span id="dicaCidadeMensagem"></span></div>
+    <div id="dicaCidade" class="dica-cidade" hidden aria-live="polite" role="status">
+      <span id="dicaCidadeIcone" class="dica-cidade-icone" aria-hidden="true">🏙️</span>
+      <div class="dica-cidade-texto">
+        <strong id="dicaCidadeTitulo"></strong>
+        <span id="dicaCidadeMensagem"></span>
+        <span id="dicaCidadeFundamento" class="dica-cidade-lei" hidden></span>
+        <a id="dicaCidadeFonte" class="dica-cidade-fonte" href="https://www.planalto.gov.br/ccivil_03/leis/l9503compilado.htm"
+           target="_blank" rel="noopener noreferrer" hidden>Consultar o Código de Trânsito Brasileiro</a>
+      </div>
     </div>
     <div class="linha">
       <button id="btnPlay" disabled>▶ Reproduzir</button>
       <button type="button" id="btnTeleop" title="WASD ou gamepad — ao vivo">🎮 Teleop</button>
       <input id="slider" type="range" min="0" max="1000" value="0" disabled>
       <select id="vel"><option value="0.5">0,5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+      <output id="tempoPlayback" class="relogio-sim" aria-live="off" title="Relógio da reprodução em segundos simulados: tempo atual / duração real calculada pelo programa">0,0 / 0,0 s simulados</output>
       <label><input id="som" type="checkbox" checked> som</label>
     </div>
     <div class="info" id="resumo">Rode um script pra ver o robô.</div>
@@ -663,7 +717,7 @@ def descrever_api() -> str:
 <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.js"></script>
 
 <!-- 1. Carrega os cenários do arquivo JS externo -->
-<script src="../src/js/cenarios.js?v=cidade-v2"></script>
+<script src="../src/js/cenarios.js?v=cidade-v3"></script>
 <script src="../src/js/exemplos/biblioteca.js"></script>
 
 <!-- 2. Cria o alias global obrigatorio para o SimEV3 e Playback -->
@@ -1047,7 +1101,7 @@ const Sugestoes = (() => {
 </script>
 
 <script type="module">
-import '../src/js/3d/cena3d.mjs?v=cidade-v2';
+import '../src/js/3d/cena3d.mjs?v=ui-camera-v1';
 import * as Campanha from '../src/campanha/index.mjs';
 window.Campanha = Campanha;
 // Sandbox: campanha opcional (não bloqueia)
@@ -1197,6 +1251,7 @@ const Playback = (() => {
   const COR_LED = { VERDE: '#2ecc40', VERMELHO: '#ff4136', AMBAR: '#ff9f1a', DESLIGADO: '#555' };
   let sim = null, tocando = false, t = 0, ultimoRaf = 0, logIdx = 0, evIdx = 0, ultimoT = 0, audio = null;
   let mensagensTerminal = [], idxTerminal = 0, ultimoTerminalT = -1, sincronizarPrints = false;
+  let eventosDicasCidade = [];
   let modo = '2d', vista = null, tipoRobo = 'ev3', modoCam = 'livre', sonda = null, sondaChave = '';
   let cenId = '', cen = null, tapete = null, ESC = 8;
   let inicioRelogioUrbano = performance.now();
@@ -1243,8 +1298,10 @@ const Playback = (() => {
     if (typeof App !== 'undefined' && !App.executando) App.sim = null;
     $('corpo').innerHTML = ''; $('contaPacotes').textContent = ''; logIdx = 0; ultimoT = 0; evIdx = 0;
     mensagensTerminal = []; idxTerminal = 0; ultimoTerminalT = -1; sincronizarPrints = false;
-    const dica = $('dicaCidade'); if (dica) dica.hidden = true;
+    eventosDicasCidade = [];
+    const dica = $('dicaCidade'); if (dica) { dica.hidden = true; delete dica.dataset.dica; }
     $('resumo').textContent = 'Rode um script pra ver o robô.';
+    const relogio = $('tempoPlayback'); if (relogio) relogio.textContent = '0,0 / 0,0 s simulados';
   }
 
   function acharFrame(tt) {
@@ -1294,8 +1351,13 @@ const Playback = (() => {
       g.strokeStyle = 'rgba(0,0,0,.55)'; g.lineWidth = 0.35; g.strokeRect(r.x, r.y, r.w, r.h);
       g.fillStyle = '#fff'; g.font = 'bold 3px sans-serif'; g.textAlign = 'left'; g.fillText('RAMPA +' + r.altura + ' cm', r.x + 1.5, r.y + 3.6);
     }
-    for (const b of cen.caixas) { g.fillStyle = b.cor || '#7a8793'; g.fillRect(b.x, b.y, b.w, b.h);
-      g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 0.4; g.strokeRect(b.x, b.y, b.w, b.h); }
+    for (const b of cen.caixas) {
+      // Prédios da Cidade Educativa já foram pintados, com detalhes e nomes,
+      // na textura do próprio cenário. Não cobrir a arte por um bloco opaco.
+      if (cen.desenhoCaixasNaTextura && String(b.modelo||'').startsWith('cidade')) continue;
+      g.fillStyle = b.cor || '#7a8793'; g.fillRect(b.x, b.y, b.w, b.h);
+      g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 0.4; g.strokeRect(b.x, b.y, b.w, b.h);
+    }
     if (sim && est.i > 0) {
       const F = sim.frames; g.beginPath(); const passo = Math.max(1, Math.floor(est.i / 700));
       for (let k = 0; k <= est.i; k += passo) (k ? g.lineTo : g.moveTo).call(g, F[STRIDE * k + 1], F[STRIDE * k + 2]);
@@ -1328,19 +1390,76 @@ const Playback = (() => {
     desenhar(t);
   }
 
-  function atualizarDicaCidade(est) {
+  // Eventos calculados a partir dos frames reais, nunca a partir da posição
+  // dos edifícios. A reprodução e o slider mostram a MESMA dica no mesmo t.
+  function prepararDicasCidade(s) {
+    eventosDicasCidade = [];
+    const pontos = cen?.pontosEducativos || [];
+    const frames = s?.frames;
+    if (!pontos.length || !frames || frames.length < STRIDE) return;
+    let anterior = null;
+    for (let i = 0; i + STRIDE <= frames.length; i += STRIDE) {
+      const x = frames[i+1], y = frames[i+2], instante = frames[i];
+      let atual = null, menor = Infinity;
+      for (const p of pontos) {
+        const dx = x-p.x, dy = y-p.y, distancia2 = dx*dx+dy*dy;
+        if (distancia2 <= p.raio*p.raio && distancia2 < menor) {
+          atual = p; menor = distancia2;
+        }
+      }
+      if (atual !== anterior && atual) {
+        eventosDicasCidade.push({ t: instante, ponto: atual });
+      }
+      anterior = atual;
+    }
+  }
+
+  function atualizarDicaCidade(est, aoVivo = false) {
     const painel = $('dicaCidade');
     if (!painel) return;
-    if (cen?.id !== 'cidadeEducativa') { painel.hidden = true; return; }
-    const pontos = cen.pontosEducativos || [];
-    let escolhido = null, distancia2 = Infinity;
-    for (const p of pontos) {
-      const dx = est.x - p.x, dy = est.y - p.y, d2 = dx*dx + dy*dy;
-      if (d2 < p.raio*p.raio && d2 < distancia2) { escolhido = p; distancia2 = d2; }
+    const pontos = cen?.pontosEducativos || [];
+    if (!pontos.length) {
+      painel.hidden = true;
+      delete painel.dataset.dica;
+      return;
     }
-    if (!escolhido) { painel.hidden = true; return; }
-    $('dicaCidadeTitulo').textContent = escolhido.titulo;
-    $('dicaCidadeMensagem').textContent = escolhido.mensagem;
+    let escolhido = null;
+    // Em replay, mostra o último evento percorrido por 13 s simulados.
+    // Isso evita flashes de uma dica por apenas um ou dois frames.
+    if (sim && !aoVivo && eventosDicasCidade.length) {
+      let ultimo = null;
+      for (const evento of eventosDicasCidade) {
+        if (evento.t > est.t + 1e-6) break;
+        ultimo = evento;
+      }
+      if (ultimo && est.t - ultimo.t <= 13) escolhido = ultimo.ponto;
+    } else {
+      // Antes de rodar o código ou no modo teleop: leitura direta da posição.
+      let menor = Infinity;
+      for (const ponto of pontos) {
+        const dx = est.x-ponto.x, dy = est.y-ponto.y, d2 = dx*dx+dy*dy;
+        if (d2 <= ponto.raio*ponto.raio && d2 < menor) {
+          escolhido = ponto; menor = d2;
+        }
+      }
+    }
+    if (!escolhido) {
+      painel.hidden = true;
+      delete painel.dataset.dica;
+      return;
+    }
+    // Não reescreve texto e aria-live a cada frame.
+    const chave = escolhido.titulo + '|' + (escolhido.fundamento || '');
+    if (painel.dataset.dica !== chave) {
+      $('dicaCidadeTitulo').textContent = escolhido.titulo;
+      $('dicaCidadeMensagem').textContent = escolhido.mensagem;
+      $('dicaCidadeIcone').textContent = escolhido.icone || '🏙️';
+      const fundamento = $('dicaCidadeFundamento');
+      fundamento.textContent = escolhido.fundamento || '';
+      fundamento.hidden = !escolhido.fundamento;
+      $('dicaCidadeFonte').hidden = !escolhido.fundamento;
+      painel.dataset.dica = chave;
+    }
     painel.hidden = false;
   }
 
@@ -1357,7 +1476,7 @@ const Playback = (() => {
   function desenharEstado(est) {
     if (!est) return;
     atualizarSemaforoVisual(est.t || 0);
-    atualizarDicaCidade(est);
+    atualizarDicaCidade(est, true);
     if (modo === '3d' && vista) {
       vista.aplicar(est);
     } else desenhar2D(est);
@@ -1394,7 +1513,17 @@ const Playback = (() => {
         o.connect(g); g.connect(audio.destination); o.start(); o.stop(audio.currentTime + e.ms / 1000); } }
   }
 
-  function atualizar() { $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0; desenhar(t); sincronizarLog(t); sincronizarTerminal(t); sons(t); }
+  function atualizarRelogio() {
+    const relogio = $('tempoPlayback');
+    if (!relogio) return;
+    const formato = (valor) => Math.max(0, Number(valor) || 0).toFixed(1).replace('.', ',');
+    relogio.textContent = `${formato(t)} / ${formato(sim?.t)} s simulados`;
+  }
+  function atualizar() {
+    $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0;
+    atualizarRelogio();
+    desenhar(t); sincronizarLog(t); sincronizarTerminal(t); sons(t);
+  }
 
   function loop(agora) {
     if (!tocando || !sim) return;
@@ -1485,7 +1614,7 @@ const Playback = (() => {
       btnCarregarArena.disabled = false;
     }
   };
-  $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); };
+  $('cenario').onchange = () => { descartarSimulacao(); aplicarCenario(); desenhar(0); atualizarAvisoMapaExemplo(); };
   $('inicio').onchange = () => {
     descartarSimulacao();
     sonda = null; sondaChave = '';
@@ -1511,6 +1640,7 @@ const Playback = (() => {
     habilitar3D() { const b = $('btn3d'); b.disabled = false; b.title = 'Vista 3D (Three.js)'; },
     carregar(s, mensagens = null) {
       sim = s; t = 0; logIdx = 0; evIdx = 0; ultimoT = 0;
+      prepararDicasCidade(s);
       sincronizarPrints = Array.isArray(mensagens);
       mensagensTerminal = sincronizarPrints ? mensagens.slice().sort((a, b) => a.t - b.t) : [];
       idxTerminal = 0; ultimoTerminalT = -1;
@@ -1940,15 +2070,30 @@ async function rodar() {
   }
 }
 
-// O catálogo externo informa código, cenário e posição de largada de cada programa.
+// A seleção do programa altera SOMENTE o editor. Mapa/câmera/largada são escolhas
+// independentes do aluno. O cenário sugerido pelo exercício é apenas informativo.
+function atualizarAvisoMapaExemplo() {
+  const aviso = $('mapaExemploAviso');
+  const botao = $('btnMapaExemplo');
+  if (!aviso || !botao) return;
+  const exemplo = bibliotecaExemplos.atual;
+  const recomendado = exemplo && CENARIOS[exemplo.cenario];
+  if (!recomendado) {
+    aviso.textContent = exemplo ? 'Mapa sugerido indisponível nesta IDE.' : '';
+    botao.hidden = true;
+    return;
+  }
+  const outroMapa = $('cenario').value !== exemplo.cenario;
+  aviso.textContent = outroMapa
+    ? `Mapa indicado: ${recomendado.nome} (opcional).`
+    : 'Mapa atual mantido.';
+  botao.hidden = !outroMapa;
+}
+
 function aplicarExemplo(exemplo, codigo) {
   if (!App.editor) return;
   App.editor.setValue(codigo);
-  if (CENARIOS[exemplo.cenario]) {
-    Playback.escolher(exemplo.cenario, exemplo.inicio);
-  } else {
-    Terminal.err('Cenário não encontrado para este exemplo: ' + exemplo.cenario);
-  }
+  atualizarAvisoMapaExemplo();
 }
 
 // =====================================================================
@@ -2349,6 +2494,14 @@ async function iniciar() {
   App.editor = ed;
   ed.aoRodar(rodar);
 
+  $('btnMapaExemplo').addEventListener('click', () => {
+    const exemplo = bibliotecaExemplos.atual;
+    if (exemplo && CENARIOS[exemplo.cenario]) {
+      Playback.escolher(exemplo.cenario, exemplo.inicio);
+      atualizarAvisoMapaExemplo();
+    }
+  });
+  atualizarAvisoMapaExemplo();
   if (bibliotecaExemplos.catalogo) {
     bibliotecaExemplos.ativar(
       (exemplo, codigo) => aplicarExemplo(exemplo, codigo),
