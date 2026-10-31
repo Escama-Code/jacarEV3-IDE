@@ -129,8 +129,31 @@ class SimEV3 {
   _colide(x, y) {
     const r = this.cfg.raio;
     if (x < r || y < r || x > this.cen.w - r || y > this.cen.h - r) return true;
-    return this.cen.caixas.some((b) => {          // círculo do robô vs retângulo (quina arredondada)
-      const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
+
+    // A sArena pode ter pisos suspensos, rampas e células vazias. Só testar
+    // a lista de paredes retangulares permitia dirigir no vazio; por outro
+    // lado, testar obstáculos sem nível bloqueava passagens em outro andar.
+    if (typeof this.cen.solidoEm === 'function') {
+      if (!this.cen.solidoEm(x, y)) return true;
+      // Amostra a área ocupada pelo robô, não apenas seu centro.
+      for (let k = 0; k < 8; k++) {
+        const a = (2 * Math.PI * k) / 8;
+        if (!this.cen.solidoEm(x + r * Math.cos(a), y + r * Math.sin(a)))
+          return true;
+      }
+    }
+    if (typeof this.cen.podeTransitar === 'function' &&
+        !this.cen.podeTransitar(this.x, this.y, x, y)) return true;
+
+    const piso = typeof this.cen.alturaEm === 'function'
+      ? this.cen.alturaEm(x, y) : null;
+    return this.cen.caixas.some((b) => {          // círculo do robô vs retângulo
+      // Uma caixa só impede passagem no próprio patamar. Cenários antigos
+      // não têm pisoCm e continuam funcionando com a regra original.
+      if (piso !== null && Number.isFinite(b.pisoCm) &&
+          Math.abs(b.pisoCm - piso) > 3) return false;
+      const cx = Math.max(b.x, Math.min(x, b.x + b.w));
+      const cy = Math.max(b.y, Math.min(y, b.y + b.h));
       return Math.hypot(x - cx, y - cy) < r;
     });
   }
@@ -159,7 +182,11 @@ class SimEV3 {
   ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
     let best = 255;
-    const caixas = this.cen.caixas;
+    const piso = typeof this.cen.alturaEm === 'function'
+      ? this.cen.alturaEm(this.x, this.y) : null;
+    const caixas = this.cen.caixas.filter((b) =>
+      piso === null || !Number.isFinite(b.pisoCm) || Math.abs(b.pisoCm - piso) <= 3
+    );
     for (let k = -3; k <= 3; k++) {
       const a = this.th + k * (15 * Math.PI / 180) / 3, dx = Math.cos(a), dy = Math.sin(a);
       const hit = (x0, y0, x1, y1) => {           // raio vs retângulo (slab)

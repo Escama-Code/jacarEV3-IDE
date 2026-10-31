@@ -183,7 +183,139 @@ const Cenarios = (() => {
     return { z: (f + b + l + r) / 4, pitch: Math.atan2(f - b, 10), roll: Math.atan2(l - r, 12) };      // pitch>0 = nariz pra cima · roll>0 = lado esquerdo mais alto
   }
 
-  const lista = { treino, desvio, fll };
+
+  // ---------------------------------------------------------
+  // Circuito Aurora — cenário ORIGINAL da jacarEV3 (sem arquivos externos).
+  // O Canvas é simultaneamente a textura do piso e a fonte do sensor de cor.
+  // Desafio: seguir linha, contornar curvas, passar pelo zigue-zague e entrar
+  // na estação de objetivos por uma abertura suficientemente larga.
+  // ---------------------------------------------------------
+  const circuitoAurora = {
+    id: 'circuitoAurora',
+    nome: 'Circuito Aurora (Autoral)',
+    w: 260, h: 180, pxPorCm: 5,
+    inicioPadrao: 'partida',
+    inicios: {
+      partida: { rotulo: 'Largada — sobre a linha', x: 28, y: 155, th: -PI / 2 },
+      serpentina: { rotulo: 'Antes do zigue-zague', x: 106, y: 66, th: 0 },
+      estacao: { rotulo: 'Entrada da estação', x: 229, y: 92, th: -PI / 2 },
+    },
+    // Estes retângulos têm colisão no SimEV3 e representação 3D automática.
+    // Passagem de 40 cm (x=209 a 249), garantindo folga para o robô de raio 7 cm.
+    caixas: [
+      { nome: 'Estação - parede norte', x: 191, y: 16, w: 64, h: 2, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede oeste', x: 191, y: 16, w: 2, h: 61, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede leste', x: 253, y: 16, w: 2, h: 61, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede sul esquerda', x: 191, y: 75, w: 18, h: 2, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede sul direita', x: 249, y: 75, w: 6, h: 2, altura: 12, cor: '#778b9d' },
+      { nome: 'Obstáculo central', x: 108, y: 95, w: 10, h: 10, altura: 8, cor: '#e39f5b' },
+      { nome: 'Obstáculo lateral', x: 170, y: 132, w: 8, h: 8, altura: 6, cor: '#637ca7' },
+    ],
+    rampas: [],
+    // Só decoração: as esferas não são obstáculos físicos.
+    decoracoes3d: [
+      { tipo: 'esfera', nome: 'Esfera coral', x: 210, y: 29, raio: 2.3, cor: '#e76e62' },
+      { tipo: 'esfera', nome: 'Esfera azul', x: 224, y: 29, raio: 2.3, cor: '#52a5db' },
+      { tipo: 'esfera', nome: 'Esfera grafite', x: 238, y: 29, raio: 2.3, cor: '#344457' },
+    ],
+    linhaAltaContraste: true,
+    desenhar(ctx, c) {
+      // Piso autoral: tons claros para contraste com o sensor refletivo.
+      ctx.fillStyle = '#fafaf6';
+      ctx.fillRect(0, 0, c.w, c.h);
+
+      // Elementos decorativos que NÃO cobrem a linha do seguidor.
+      ctx.fillStyle = '#eff5f8';
+      ctx.fillRect(193, 18, 60, 57);
+      ctx.fillStyle = '#eef7f6';
+      ctx.fillRect(12, 143, 31, 25);
+      ctx.strokeStyle = '#4a9b9b';
+      ctx.lineWidth = 0.85;
+      ctx.strokeRect(13, 144, 29, 23);
+
+      // Duas bases circulares com cores e identificação próprias.
+      const base = (x, y, cor, rotulo) => {
+        ctx.fillStyle = cor;
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, 2 * PI);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 4px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(rotulo, x, y);
+      };
+      base(206, 50, '#278b79', 'A');
+      base(245, 50, '#d27748', 'B');
+
+      // O percurso inteiro é UM único path: sem emendas entre tiles.
+      ctx.strokeStyle = '#050505';
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(28, 155);
+      ctx.lineTo(28, 130);
+      ctx.bezierCurveTo(28, 117, 37, 111, 50, 111);
+      ctx.lineTo(75, 111);
+      ctx.bezierCurveTo(86, 111, 91, 104, 91, 95);
+      // Retorno aberto: semicírculo de raio ~14 cm em vez da
+      // antiga curva fechada com apenas 15 cm entre as retas.
+      ctx.bezierCurveTo(91, 92, 83, 94, 73, 94);
+      ctx.lineTo(54, 94);
+      // Dois quartos de círculo com tangentes contínuas nas retas.
+      ctx.bezierCurveTo(46.268, 94, 40, 87.732, 40, 80);
+      ctx.bezierCurveTo(40, 72.268, 46.268, 66, 54, 66);
+      ctx.lineTo(112, 66);
+      // Duas ondulações arredondadas, sem cantos de 90 graus:
+      // a linha segue contínua e o sensor lê exatamente o Canvas.
+      ctx.bezierCurveTo(116, 66, 116, 59, 122, 59);
+      ctx.bezierCurveTo(128, 59, 128, 66, 136, 66);
+      ctx.bezierCurveTo(141, 66, 142, 59, 148, 59);
+      ctx.bezierCurveTo(154, 59, 156, 66, 164, 66);
+      ctx.lineTo(169, 66);
+      // Contorna a estação com folga: a versão anterior passava a ~2 cm
+      // da parede oeste (x=191), menor que o raio de colisão do robô (7 cm).
+      ctx.bezierCurveTo(174, 66, 177, 77, 177, 91);
+      ctx.bezierCurveTo(177, 104, 173, 114, 162, 114);
+      ctx.lineTo(148, 114);
+      ctx.bezierCurveTo(136, 114, 128, 121, 128, 132);
+      ctx.bezierCurveTo(128, 143, 137, 150, 151, 150);
+      ctx.lineTo(209, 150);
+      ctx.bezierCurveTo(221, 150, 229, 141, 229, 128);
+      ctx.lineTo(229, 48);
+      ctx.stroke();
+
+      // Alvo final, distante das esferas e das paredes.
+      ctx.fillStyle = '#205e9b';
+      ctx.beginPath();
+      ctx.arc(229, 48, 3.5, 0, 2 * PI);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+
+      // Esferas: mesmas posições em 2D e 3D.
+      for (const bola of c.decoracoes3d) {
+        ctx.fillStyle = bola.cor;
+        ctx.beginPath();
+        ctx.arc(bola.x, bola.y, bola.raio, 0, 2 * PI);
+        ctx.fill();
+      }
+
+      // Legendas longe do caminho e dos obstáculos físicos.
+      ctx.fillStyle = '#577081';
+      ctx.font = 'bold 4px sans-serif';
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
+      ctx.fillText('AURORA', 14, 18);
+      ctx.font = '3px sans-serif';
+      ctx.fillText('ESTAÇÃO', 199, 70);
+      ctx.fillText('INÍCIO', 14, 174);
+    },
+  };
+
+  const lista = { treino, desvio, fll, circuitoAurora };
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
   const inicioDe = (cen, chave) => cen.inicios[chave] || cen.inicios[cen.inicioPadrao];

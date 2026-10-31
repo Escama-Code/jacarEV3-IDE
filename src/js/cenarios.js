@@ -231,6 +231,7 @@ const Cenarios = (() => {
   }
 
   function terreno(cen, x, y, th) {
+    if (typeof cen.terreno === 'function') return cen.terreno(x, y, th);
     if (!cen.rampas || !cen.rampas.length) return { z: 0, pitch: 0, roll: 0 };
     const c = Math.cos(th), s = Math.sin(th);
     const f = alturaEm(cen, x + 5 * c, y + 5 * s), b = alturaEm(cen, x - 5 * c, y - 5 * s);
@@ -468,23 +469,486 @@ tapeteUrbanoInfantil.caixas.push(
   { nome: 'Pinheiro_2_Folhas', x: 212, y: 17, w: 6, h: 6, altura: 14, cor: '#15803d' }
 );
 
-  // =========================================================================
-  // ATENÇÃO: COLOQUE / DECLARE O MODELO DO SEU NOVO MAPA NESTE LOCAL (ANTES DA LISTA)
-  // =========================================================================
+// ---------------------------------------------------------
+// Cenário F — Pista BRT / OBR com rampa e área de resgate
+// Aproximação fiel à imagem, dentro das limitações atuais.
+// ---------------------------------------------------------
+const brt = {
+  id: 'brt',
+  nome: 'Pista BRT (Rampa + Resgate)',
+  w: 240,
+  h: 180,
+  pxPorCm: 4,
 
+  inicioPadrao: 'largadaDireita',
+  inicios: {
+    largadaDireita: { rotulo: 'Largada à direita', x: 218, y: 108, th: Math.PI },
+    resgate: { rotulo: 'Saída da área de resgate', x: 95, y: 96, th: 0 },
+    inferior: { rotulo: 'Trecho inferior', x: 70, y: 145, th: 0 }
+  },
+
+  caixas: [
+    // ---------------------------
+    // Área de resgate (paredes)
+    // ---------------------------
+    { nome: 'Resgate Norte', x: 2, y: 58, w: 88, h: 2, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Oeste', x: 0, y: 60, w: 2, h: 62, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Sul',   x: 2, y: 120, w: 88, h: 2, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Leste 1', x: 88, y: 60, w: 2, h: 26, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Resgate Leste 2', x: 88, y: 100, w: 2, h: 22, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+
+    // divisórias próximas da rampa / ponte
+    { nome: 'Divisória Central 1', x: 86, y: 74, w: 14, h: 2, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+    { nome: 'Divisória Central 2', x: 98, y: 74, w: 2, h: 18, altura: 8, cor: '#d9d9d9', modelo: 'parede' },
+
+    // suportes da ponte
+    { nome: 'Pilar Ponte 1', x: 144, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+    { nome: 'Pilar Ponte 2', x: 156, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+    { nome: 'Pilar Ponte 3', x: 168, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+    { nome: 'Pilar Ponte 4', x: 180, y: 38, w: 3, h: 3, altura: 16, cor: '#b87333', modelo: 'parede' },
+
+    // suporte inferior da rampa curta
+    { nome: 'Pilar Rampa Curta', x: 155, y: 128, w: 3, h: 3, altura: 7, cor: '#b87333', modelo: 'parede' },
+
+    // obstáculo cilíndrico aproximado como bloco
+    { nome: 'Obstáculo Cilíndrico', x: 54, y: 138, w: 10, h: 10, altura: 14, cor: '#dbc8a5', modelo: 'parede' }
+  ],
+
+  rampas: [
+    // subida principal até a parte alta
+    { nome: 'Rampa Principal', x: 96, y: 14, w: 92, h: 26, altura: 18, subida: 52, dir: '+x', cor: '#ddd6c8' },
+
+    // descida / ligação à esquerda
+    { nome: 'Rampa de Saída', x: 92, y: 38, w: 24, h: 52, altura: 18, subida: 30, dir: '+y', cor: '#ddd6c8' },
+
+    // rampa curta da região central-direita
+    { nome: 'Rampa Secundária', x: 146, y: 116, w: 26, h: 18, altura: 7, subida: 18, dir: '+y', cor: '#ddd6c8' }
+  ],
+
+  desenhar(ctx, c) {
+    // ---------------------------
+    // helpers
+    // ---------------------------
+    const grade = 30;
+
+    function disco(x, y, r, cor = '#e6902e') {
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#8a5a1d';
+      ctx.lineWidth = 0.6;
+      ctx.stroke();
+    }
+
+    function marcadorVerde(x, y, w = 4, h = 2) {
+      ctx.fillStyle = '#1f7a34';
+      ctx.fillRect(x, y, w, h);
+    }
+
+    function fitaInicio() {
+      ctx.strokeStyle = '#111111';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'square';
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([]);
+    }
+
+    // ---------------------------
+    // fundo
+    // ---------------------------
+    ctx.fillStyle = '#f2efe6';
+    ctx.fillRect(0, 0, c.w, c.h);
+
+    // grade do piso
+    ctx.strokeStyle = '#c7c1b4';
+    ctx.lineWidth = 0.45;
+    for (let x = 0; x <= c.w; x += grade) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, c.h);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= c.h; y += grade) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(c.w, y);
+      ctx.stroke();
+    }
+
+    // ---------------------------
+    // área de resgate
+    // ---------------------------
+    ctx.fillStyle = '#efede4';
+    ctx.fillRect(2, 60, 88, 60);
+
+    // triângulos coloridos
+    ctx.fillStyle = '#b3322c';
+    ctx.beginPath();
+    ctx.moveTo(5, 63);
+    ctx.lineTo(18, 63);
+    ctx.lineTo(5, 78);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = '#992222';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(17, 64);
+    ctx.lineTo(11, 80);
+    ctx.stroke();
+
+    ctx.fillStyle = '#2f8b4b';
+    ctx.beginPath();
+    ctx.moveTo(5, 118);
+    ctx.lineTo(19, 118);
+    ctx.lineTo(5, 111);
+    ctx.closePath();
+    ctx.fill();
+
+    // bolinhas da área de resgate (2D)
+    for (const [x, y, cor] of [
+      [35, 92, '#d9d9d9'],
+      [52, 96, '#d9d9d9'],
+      [60, 83, '#202020']
+    ]) {
+      ctx.fillStyle = cor;
+      ctx.beginPath();
+      ctx.arc(x, y, 1.8, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#888';
+      ctx.lineWidth = 0.3;
+      ctx.stroke();
+    }
+
+    // ---------------------------
+    // plataformas / rampas (pintura 2D)
+    // ---------------------------
+    ctx.fillStyle = '#ece6d8';
+    ctx.fillRect(96, 14, 92, 26);
+    ctx.fillRect(92, 38, 24, 52);
+    ctx.fillRect(146, 116, 26, 18);
+
+    ctx.strokeStyle = '#b6ae9d';
+    ctx.lineWidth = 0.7;
+    ctx.strokeRect(96, 14, 92, 26);
+    ctx.strokeRect(92, 38, 24, 52);
+    ctx.strokeRect(146, 116, 26, 18);
+
+    // linhas divisórias sobre a rampa/ponte
+    ctx.strokeStyle = '#b8b0a0';
+    ctx.lineWidth = 0.5;
+    for (const x of [126, 156]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 14);
+      ctx.lineTo(x, 40);
+      ctx.stroke();
+    }
+    for (const y of [52, 66]) {
+      ctx.beginPath();
+      ctx.moveTo(92, y);
+      ctx.lineTo(116, y);
+      ctx.stroke();
+    }
+
+    // ---------------------------
+    // fita preta / trajetos
+    // ---------------------------
+    fitaInicio();
+
+    // trecho superior / ponte
+    ctx.beginPath();
+    ctx.moveTo(102, 72);
+    ctx.quadraticCurveTo(104, 60, 112, 48);
+    ctx.lineTo(126, 30);
+    ctx.lineTo(150, 12);
+    ctx.lineTo(172, 12);
+    ctx.quadraticCurveTo(180, 12, 186, 20);
+    ctx.lineTo(194, 28);
+    ctx.lineTo(174, 34);
+    ctx.lineTo(142, 34);
+    ctx.lineTo(118, 50);
+    ctx.quadraticCurveTo(109, 56, 104, 66);
+    ctx.stroke();
+
+    // saída da área de resgate até o centro
+    ctx.beginPath();
+    ctx.moveTo(90, 96);
+    ctx.lineTo(104, 96);
+    ctx.lineTo(104, 88);
+    ctx.lineTo(118, 88);
+    ctx.stroke();
+
+    // curva descendo do centro para a parte inferior
+    ctx.beginPath();
+    ctx.moveTo(116, 88);
+    ctx.quadraticCurveTo(94, 102, 94, 120);
+    ctx.quadraticCurveTo(94, 134, 108, 140);
+    ctx.lineTo(132, 140);
+    ctx.stroke();
+
+    // trecho sinuoso inferior
+    ctx.beginPath();
+    ctx.moveTo(64, 148);
+    ctx.lineTo(82, 148);
+    ctx.bezierCurveTo(90, 148, 92, 138, 100, 138);
+    ctx.bezierCurveTo(108, 138, 110, 148, 118, 148);
+    ctx.bezierCurveTo(126, 148, 128, 138, 136, 138);
+    ctx.bezierCurveTo(144, 138, 146, 148, 154, 148);
+    ctx.stroke();
+
+    // caminho vindo da esquerda para o trecho sinuoso
+    ctx.beginPath();
+    ctx.moveTo(44, 142);
+    ctx.lineTo(44, 160);
+    ctx.lineTo(82, 160);
+    ctx.lineTo(82, 148);
+    ctx.stroke();
+
+    // ligação do sinuoso para o centro
+    ctx.beginPath();
+    ctx.moveTo(154, 148);
+    ctx.quadraticCurveTo(166, 146, 166, 136);
+    ctx.quadraticCurveTo(166, 126, 154, 124);
+    ctx.lineTo(140, 124);
+    ctx.lineTo(132, 140);
+    ctx.stroke();
+
+    // região central direita com cruzamento vermelho
+    ctx.beginPath();
+    ctx.moveTo(138, 108);
+    ctx.lineTo(154, 108);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#b12a2a';
+    ctx.lineWidth = 1.1;
+    ctx.beginPath();
+    ctx.moveTo(132, 102);
+    ctx.lineTo(148, 110);
+    ctx.moveTo(148, 102);
+    ctx.lineTo(132, 110);
+    ctx.stroke();
+
+    // trilha zigue-zague do meio
+    fitaInicio();
+    ctx.beginPath();
+    ctx.moveTo(166, 108);
+    ctx.lineTo(166, 114);
+    ctx.lineTo(176, 114);
+    ctx.lineTo(176, 120);
+    ctx.lineTo(170, 120);
+    ctx.lineTo(170, 126);
+    ctx.lineTo(180, 126);
+    ctx.lineTo(180, 132);
+    ctx.lineTo(168, 132);
+    ctx.stroke();
+
+    // lado direito
+    ctx.beginPath();
+    ctx.moveTo(188, 56);
+    ctx.lineTo(214, 56);
+    ctx.lineTo(214, 108);
+    ctx.lineTo(224, 108);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(182, 80);
+    ctx.lineTo(206, 80);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(150, 66);
+    ctx.lineTo(150, 86);
+    ctx.lineTo(170, 86);
+    ctx.stroke();
+
+    // barras finais estilo "T"
+    ctx.beginPath();
+    ctx.moveTo(206, 56);
+    ctx.lineTo(222, 56);
+    ctx.moveTo(218, 52);
+    ctx.lineTo(218, 60);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(216, 108);
+    ctx.lineTo(230, 108);
+    ctx.moveTo(223, 104);
+    ctx.lineTo(223, 112);
+    ctx.stroke();
+
+    // ---------------------------
+    // marcadores
+    // ---------------------------
+    disco(101, 51, 2.2);
+    disco(109, 122, 2.2);
+    disco(184, 132, 2.2);
+
+    marcadorVerde(103, 136, 4, 2);
+    marcadorVerde(150, 73, 4, 2);
+    marcadorVerde(183, 78, 4, 2);
+    marcadorVerde(154, 73, 3, 2);
+
+    // borda externa leve
+    ctx.strokeStyle = '#8f8b80';
+    ctx.lineWidth = 0.8;
+    ctx.strokeRect(0.8, 0.8, c.w - 1.6, c.h - 1.6);
+  }
+};
+
+
+  // ---------------------------------------------------------
+  // Circuito Aurora — cenário ORIGINAL da jacarEV3 (sem arquivos externos).
+  // O Canvas é simultaneamente a textura do piso e a fonte do sensor de cor.
+  // Desafio: seguir linha, contornar curvas, passar pelo zigue-zague e entrar
+  // na estação de objetivos por uma abertura suficientemente larga.
+  // ---------------------------------------------------------
+  const circuitoAurora = {
+    id: 'circuitoAurora',
+    nome: 'Circuito Aurora (Autoral)',
+    w: 260, h: 180, pxPorCm: 5,
+    inicioPadrao: 'partida',
+    inicios: {
+      partida: { rotulo: 'Largada — sobre a linha', x: 28, y: 155, th: -PI / 2 },
+      serpentina: { rotulo: 'Antes do zigue-zague', x: 106, y: 66, th: 0 },
+      estacao: { rotulo: 'Entrada da estação', x: 229, y: 92, th: -PI / 2 },
+    },
+    // Estes retângulos têm colisão no SimEV3 e representação 3D automática.
+    // Passagem de 40 cm (x=209 a 249), garantindo folga para o robô de raio 7 cm.
+    caixas: [
+      { nome: 'Estação - parede norte', x: 191, y: 16, w: 64, h: 2, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede oeste', x: 191, y: 16, w: 2, h: 61, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede leste', x: 253, y: 16, w: 2, h: 61, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede sul esquerda', x: 191, y: 75, w: 18, h: 2, altura: 12, cor: '#778b9d' },
+      { nome: 'Estação - parede sul direita', x: 249, y: 75, w: 6, h: 2, altura: 12, cor: '#778b9d' },
+      { nome: 'Obstáculo central', x: 108, y: 95, w: 10, h: 10, altura: 8, cor: '#e39f5b' },
+      { nome: 'Obstáculo lateral', x: 170, y: 132, w: 8, h: 8, altura: 6, cor: '#637ca7' },
+    ],
+    rampas: [],
+    // Só decoração: as esferas não são obstáculos físicos.
+    decoracoes3d: [
+      { tipo: 'esfera', nome: 'Esfera coral', x: 210, y: 29, raio: 2.3, cor: '#e76e62' },
+      { tipo: 'esfera', nome: 'Esfera azul', x: 224, y: 29, raio: 2.3, cor: '#52a5db' },
+      { tipo: 'esfera', nome: 'Esfera grafite', x: 238, y: 29, raio: 2.3, cor: '#344457' },
+    ],
+    linhaAltaContraste: true,
+    desenhar(ctx, c) {
+      // Piso autoral: tons claros para contraste com o sensor refletivo.
+      ctx.fillStyle = '#fafaf6';
+      ctx.fillRect(0, 0, c.w, c.h);
+
+      // Elementos decorativos que NÃO cobrem a linha do seguidor.
+      ctx.fillStyle = '#eff5f8';
+      ctx.fillRect(193, 18, 60, 57);
+      ctx.fillStyle = '#eef7f6';
+      ctx.fillRect(12, 143, 31, 25);
+      ctx.strokeStyle = '#4a9b9b';
+      ctx.lineWidth = 0.85;
+      ctx.strokeRect(13, 144, 29, 23);
+
+      // Duas bases circulares com cores e identificação próprias.
+      const base = (x, y, cor, rotulo) => {
+        ctx.fillStyle = cor;
+        ctx.beginPath();
+        ctx.arc(x, y, 8, 0, 2 * PI);
+        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 4px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(rotulo, x, y);
+      };
+      base(206, 50, '#278b79', 'A');
+      base(245, 50, '#d27748', 'B');
+
+      // O percurso inteiro é UM único path: sem emendas entre tiles.
+      ctx.strokeStyle = '#050505';
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(28, 155);
+      ctx.lineTo(28, 130);
+      ctx.bezierCurveTo(28, 117, 37, 111, 50, 111);
+      ctx.lineTo(75, 111);
+      ctx.bezierCurveTo(86, 111, 91, 104, 91, 95);
+      // Retorno aberto: semicírculo de raio ~14 cm em vez da
+      // antiga curva fechada com apenas 15 cm entre as retas.
+      ctx.bezierCurveTo(91, 92, 83, 94, 73, 94);
+      ctx.lineTo(54, 94);
+      // Dois quartos de círculo com tangentes contínuas nas retas.
+      ctx.bezierCurveTo(46.268, 94, 40, 87.732, 40, 80);
+      ctx.bezierCurveTo(40, 72.268, 46.268, 66, 54, 66);
+      ctx.lineTo(112, 66);
+      // Duas ondulações arredondadas, sem cantos de 90 graus:
+      // a linha segue contínua e o sensor lê exatamente o Canvas.
+      ctx.bezierCurveTo(116, 66, 116, 59, 122, 59);
+      ctx.bezierCurveTo(128, 59, 128, 66, 136, 66);
+      ctx.bezierCurveTo(141, 66, 142, 59, 148, 59);
+      ctx.bezierCurveTo(154, 59, 156, 66, 164, 66);
+      ctx.lineTo(169, 66);
+      // Contorna a estação com folga: a versão anterior passava a ~2 cm
+      // da parede oeste (x=191), menor que o raio de colisão do robô (7 cm).
+      ctx.bezierCurveTo(174, 66, 177, 77, 177, 91);
+      ctx.bezierCurveTo(177, 104, 173, 114, 162, 114);
+      ctx.lineTo(148, 114);
+      ctx.bezierCurveTo(136, 114, 128, 121, 128, 132);
+      ctx.bezierCurveTo(128, 143, 137, 150, 151, 150);
+      ctx.lineTo(209, 150);
+      ctx.bezierCurveTo(221, 150, 229, 141, 229, 128);
+      ctx.lineTo(229, 48);
+      ctx.stroke();
+
+      // Alvo final, distante das esferas e das paredes.
+      ctx.fillStyle = '#205e9b';
+      ctx.beginPath();
+      ctx.arc(229, 48, 3.5, 0, 2 * PI);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 0.7;
+      ctx.stroke();
+
+      // Esferas: mesmas posições em 2D e 3D.
+      for (const bola of c.decoracoes3d) {
+        ctx.fillStyle = bola.cor;
+        ctx.beginPath();
+        ctx.arc(bola.x, bola.y, bola.raio, 0, 2 * PI);
+        ctx.fill();
+      }
+
+      // Legendas longe do caminho e dos obstáculos físicos.
+      ctx.fillStyle = '#577081';
+      ctx.font = 'bold 4px sans-serif';
+      ctx.textBaseline = 'alphabetic';
+      ctx.textAlign = 'left';
+      ctx.fillText('AURORA', 14, 18);
+      ctx.font = '3px sans-serif';
+      ctx.fillText('ESTAÇÃO', 199, 70);
+      ctx.fillText('INÍCIO', 14, 174);
+    },
+  };
 
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil };
+  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, brt, circuitoAurora };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }
+
+  // Usado por arenas importadas em runtime: mesmo canvas para o sensor e o 3D.
+  function registrarCenario(cenario, tapete) {
+    if (!cenario || !cenario.id) throw new Error('Cenário sem identificador');
+    lista[cenario.id] = cenario;
+    if (tapete) cache[cenario.id] = tapete;
+    else delete cache[cenario.id];
+    return cenario;
+  }
   const inicioDe = (cen, chave) => cen.inicios[chave] || cen.inicios[cen.inicioPadrao];
 
   // Mantém tudo dentro do IIFE e retorna o objeto Cenarios
   return { 
-    lista, obterTapete, gerarTapete, lerPixel, lerArea, 
+    lista, registrarCenario, obterTapete, gerarTapete, lerPixel, lerArea, 
     intensidade, classificarCor, NOMES_COR, inicioDe, 
     alturaEm, terreno, usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } 
   };
