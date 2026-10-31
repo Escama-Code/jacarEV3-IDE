@@ -172,6 +172,8 @@ export function construirArena(cen, tapete, renderer = null) {
     esfera.receiveShadow = true;
     g.add(esfera);
   }
+  // Textura usada pelo piso e pelas rampas: sua versão muda junto ao semáforo.
+  g.userData.texturaTapete = mapa;
   return g;
 }
 
@@ -204,7 +206,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { cen: null, arena: null, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map() };
+  const S = { cen: null, arena: null, tapete: null, versaoTapete: 0, rig: null, tipo: 'ev3', modo: 'livre', ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map() };
 
   /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
   const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
@@ -244,6 +246,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     scene.background = new THREE.Color(cen.tilesOriginais ? 0x528fa0 : 0xcfd8e2);
     S.ultimo = null; S.snap = true;                 // não herda a pose do cenário anterior; câmera de perseguição reposiciona sem deslizar
     S.arena = construirArena(cen, novoTapete, renderer); scene.add(S.arena);
+    S.tapete = novoTapete; S.versaoTapete = novoTapete?.versao || 0;
     ajustarLuz(); setModoCamera(S.modo);
   }
   function setRobo(tipo) {
@@ -338,7 +341,18 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
       : est;
     if (S.rig) aplicarEstado(S.rig, S.ultimo);
   }
-  function desenhar() { atualizarCamera(); renderer.render(scene, camera); }
+  function desenhar() {
+    // CanvasTexture só atualiza na GPU quando needsUpdate é ativado.
+    // O tapete tem nova versão apenas quando o sinal muda de cor.
+    const versao = S.tapete?.versao || 0;
+    if (versao !== S.versaoTapete) {
+      const textura = S.arena?.userData?.texturaTapete;
+      if (textura) textura.needsUpdate = true;
+      S.versaoTapete = versao;
+    }
+    atualizarCamera();
+    renderer.render(scene, camera);
+  }
   /** acompanha o tamanho do contêiner (janela única): só reenquadra se o formato mudou */
   function redimensionar() {
     const w = Math.max(10, container.clientWidth || 720), h = Math.max(10, container.clientHeight || 480);

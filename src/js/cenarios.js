@@ -59,7 +59,40 @@ const Cenarios = (() => {
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.save(); ctx.scale(k, k); cen.desenhar(ctx, cen); ctx.restore();
     const img = ctx.getImageData(0, 0, W, H);
-    return { id: cen.id, canvas, W, H, k, dados: img.data };       // dados: RGBA, linha 0 = y 0 (topo)
+    return {
+      id: cen.id, canvas, W, H, k, dados: img.data,
+      // A versão muda somente quando um elemento dinâmico altera o tapete.
+      versao: 0, _estadoSemaforo: cen.estadoSemaforoEm ? cen.semaforoEstado : null
+    };
+  }
+
+  /**
+   * Atualiza a pintura dinâmica do tapete usando o TEMPO SIMULADO (segundos).
+   * O Canvas, os pixels dos sensores e a textura 3D permanecem sincronizados.
+   * Não redesenha a cada passo de 10 ms: só quando a fase realmente muda.
+   */
+  function atualizarTapete(cen, tapete, tempoS = 0) {
+    if (!cen || !tapete || typeof cen.estadoSemaforoEm !== 'function') return false;
+    const estado = cen.estadoSemaforoEm(tempoS);
+    if (tapete._estadoSemaforo === estado) {
+      cen.semaforoEstado = estado; // mantém indicador e pixels coerentes após um reset
+      return false;
+    }
+
+    cen.semaforoEstado = estado;
+    const ctx = tapete.canvas.getContext('2d', { willReadFrequently: true });
+    ctx.save();
+    ctx.scale(tapete.k, tapete.k);
+    cen.desenhar(ctx, cen);
+    ctx.restore();
+
+    // Atualiza o MESMO array (evita referências antigas em outros módulos).
+    const pixels = ctx.getImageData(0, 0, tapete.W, tapete.H).data;
+    if (tapete.dados.length === pixels.length) tapete.dados.set(pixels);
+    else tapete.dados = pixels;
+    tapete._estadoSemaforo = estado;
+    tapete.versao = (tapete.versao || 0) + 1;
+    return true;
   }
   /** pixel exato sob (x,y) em cm */
   function lerPixel(t, x, y) {
@@ -330,6 +363,8 @@ const tapeteUrbanoInfantil = {
   w: 240, 
   h: 360,
   pxPorCm: 3,
+  // O semáforo é pintado no mesmo Canvas do sensor e exibido sem alteração pela luz 3D.
+  linhaAltaContraste: true,
   inicioPadrao: 'rotatoria',
   inicios: {
     // Carrinho inicia exatamente posicionado na estrada de baixo
@@ -339,9 +374,28 @@ const tapeteUrbanoInfantil = {
   caixas: [], // Elementos urbanos 3D
   rampas: [],
   
-  // Controle de tempo do semáforo urbano
+  // Semáforos pintados no CHÃO, sobre a própria linha do percurso.
+  // A sequência depende do tempo simulado, nunca de Date.now().
   semaforoEstado: 'VERMELHO',
-  
+  semaforos: [
+    { x: 135, y: 321, w: 5, h: 18 }, // Avenida Sul, antes da travessia
+    { x: 121, y: 50, w: 18, h: 5 }   // Via central, antes da travessia
+  ],
+  cicloSemaforo: [
+    { estado: 'VERMELHO', duracao: 5 },
+    { estado: 'VERDE', duracao: 5 },
+    { estado: 'AMARELO', duracao: 2 }
+  ],
+  estadoSemaforoEm(tempoS = 0) {
+    const total = this.cicloSemaforo.reduce((sum, fase) => sum + fase.duracao, 0);
+    let t = ((Number.isFinite(+tempoS) ? +tempoS : 0) % total + total) % total;
+    for (const fase of this.cicloSemaforo) {
+      if (t < fase.duracao) return fase.estado;
+      t -= fase.duracao;
+    }
+    return 'VERMELHO';
+  },
+
   desenhar(ctx, self) {
     // 1. Fundo do Tapete (Grama Verde Claro)
     ctx.fillStyle = '#87a922';
@@ -424,13 +478,17 @@ const tapeteUrbanoInfantil = {
     for (let x = 50; x <= 70; x += 5) ctx.fillRect(x, 31, 2.5, 18);   // Escola
     for (let y = 110; y <= 130; y += 5) ctx.fillRect(31, y, 18, 2.5);  // Bosque
 
-    // Gatilho Dinâmico do Semáforo
-    const ciclo = Math.floor(Date.now() / 4000) % 2;
-    self.semaforoEstado = ciclo === 0 ? 'VERMELHO' : 'VERDE';
-    ctx.fillStyle = self.semaforoEstado === 'VERMELHO' ? '#ef4444' : '#2ecc40';
-    
-    ctx.fillRect(135, 321, 5, 18); // Semáforo 1
-    ctx.fillRect(121, 50, 18, 5);   // Semáforo 2
+    // A faixa semafórica é parte do piso, não um obstáculo.
+    // Cores reconhecidas pelo sensor EV3: vermelho=5, verde=3, amarelo=4.
+    // Uma ÚNICA geometria para todas as fases. Somente fillStyle é alterado.
+    // Sem camadas 3D exclusivas por cor: Canvas, sensor e chão compartilham pixels.
+    const coresSemaforo = {
+      VERMELHO: '#ef4444', VERDE: '#22c55e', AMARELO: '#facc15'
+    };
+    ctx.save();
+    ctx.fillStyle = coresSemaforo[self.semaforoEstado] || coresSemaforo.VERMELHO;
+    for (const { x, y, w, h } of self.semaforos) ctx.fillRect(x, y, w, h);
+    ctx.restore();
 
     // 5. RENDERIZAÇÃO DAS CAIXAS 3D (Prédios fora do caminho)
     for (const caixa of self.caixas) {
@@ -948,7 +1006,7 @@ const brt = {
 
   // Mantém tudo dentro do IIFE e retorna o objeto Cenarios
   return { 
-    lista, registrarCenario, obterTapete, gerarTapete, lerPixel, lerArea, 
+    lista, registrarCenario, obterTapete, gerarTapete, atualizarTapete, lerPixel, lerArea, 
     intensidade, classificarCor, NOMES_COR, inicioDe, 
     alturaEm, terreno, usarFabricaCanvas(f) { fabricaInjetada = f; for (const k in cache) delete cache[k]; } 
   };
