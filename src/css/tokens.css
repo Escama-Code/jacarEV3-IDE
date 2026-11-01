@@ -1,0 +1,76 @@
+/**
+ * tokens.css — ÚNICA fonte de cores, tipografia e medidas.
+ * Mude aqui para padronizar o app inteiro.
+ *
+ * Uso: <link rel="stylesheet" href="../src/css/tokens.css">
+ *      (sempre o primeiro CSS da página)
+ */
+:root {
+  /* Superfícies */
+  --bg: #0f1117;
+  --bg-elevated: #161b22;
+  --painel: #181c27;
+  --painel-2: #21262d;
+  --header: #1c2129;
+
+  /* Texto */
+  --txt: #e6edf3;
+  --txt-muted: #8b949e;
+  --txt-faint: #6e7681;
+
+  /* Linhas */
+  --borda: #30363d;
+  --borda-forte: #484f58;
+
+  /* Ação / status */
+  --acc: #4aa3ff;
+  --acc-hover: #3b8fef;
+  --acc-deep: #0e639c;
+  --ok: #3fb950;
+  --ok-deep: #238636;
+  --warn: #e3b341;
+  --erro: #f85149;
+  --danger: #ff6b6b;
+
+  /* Marca campanha / OBR */
+  --brand: #3ecf8e;
+  --brand-dim: #2ea86e;
+  --locked: #374151;
+
+  /* Arenas / canvas */
+  --arena-bg: #cfd8e2;
+  --canvas-bg: #f4f3ee;
+
+  /* Tipografia */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  --fs: 14px;
+  --fs-sm: 12px;
+  --fs-xs: 11px;
+  --lh: 1.45;
+
+  /* Forma */
+  --radius: 8px;
+  --radius-sm: 4px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  /* Elevação */
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+
+  /* Layout IDE */
+  --header-h: 48px;
+  --palco-h: 420px;
+  --editor-h: 360px;
+  --terminal-h: 170px;
+
+  /* Aliases legados (páginas antigas) */
+  --surface: var(--painel);
+  --border: var(--borda);
+  --text: var(--txt);
+  --muted: var(--txt-muted);
+  --accent: var(--acc);
+  --accent-h: var(--acc-hover);
+  --green: var(--ok);
+}

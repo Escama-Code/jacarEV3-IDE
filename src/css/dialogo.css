@@ -1,0 +1,102 @@
+/**
+ * dialogo.css — balão de conversa da campanha.
+ * Ordem: tokens → base → dialogo
+ */
+#campDialogoOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 16px 24px;
+  background: linear-gradient(transparent 40%, color-mix(in srgb, var(--bg) 80%, transparent) 100%);
+  pointer-events: none;
+}
+#campDialogoOverlay.ativo { pointer-events: auto; }
+#campDialogoOverlay[hidden] { display: none !important; }
+
+#campDialogoBox {
+  width: min(640px, 100%);
+  background: var(--bg-elevated);
+  border: 2px solid var(--borda);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px 12px;
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px 14px;
+  animation: campDlgIn 0.25s ease;
+}
+@keyframes campDlgIn {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+#campDlgAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: var(--painel-2);
+  border: 2px solid var(--dlg-cor, var(--brand));
+  overflow: hidden;
+}
+#campDlgAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#campDlgMeta { grid-column: 2; }
+#campDlgNome {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--dlg-cor, var(--brand));
+}
+#campDlgTitulo {
+  font-size: 11px;
+  color: var(--txt-muted);
+  margin-left: 8px;
+}
+#campDlgTexto {
+  grid-column: 1 / -1;
+  min-height: 3.2em;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--txt);
+  white-space: pre-wrap;
+}
+#campDlgTexto .cursor {
+  display: inline-block;
+  width: 8px;
+  height: 1em;
+  background: var(--brand);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: campBlink 0.8s step-end infinite;
+}
+@keyframes campBlink { 50% { opacity: 0; } }
+#campDlgActions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+#campDlgActions button {
+  border: 1px solid var(--borda);
+  background: var(--painel-2);
+  color: var(--txt);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+#campDlgNext {
+  background: var(--ok-deep);
+  border-color: var(--ok);
+  color: #fff;
+}
+#campDlgNext:hover,
+#campDlgSkip:hover { filter: brightness(1.1); }

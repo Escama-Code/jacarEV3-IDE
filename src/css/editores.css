@@ -1,0 +1,46 @@
+/**
+ * editores.css — shells dos editores de mapa.
+ * Ordem: tokens → base → editores
+ */
+body.editor-mapas {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--txt);
+}
+
+.editor-topbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background: var(--header);
+  border-bottom: 1px solid var(--borda);
+}
+.editor-topbar a { color: var(--brand); font-weight: 700; }
+.editor-topbar h1 { margin: 0; font-size: 1rem; }
+
+.editor-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 0;
+}
+@media (max-width: 900px) {
+  .editor-layout { grid-template-columns: 1fr; }
+}
+
+.editor-side {
+  background: var(--painel);
+  border-right: 1px solid var(--borda);
+  padding: 12px;
+  overflow: auto;
+}
+.editor-stage {
+  position: relative;
+  background: var(--bg-elevated);
+  min-height: 60vh;
+}

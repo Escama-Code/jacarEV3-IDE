@@ -1,0 +1,109 @@
+/**
+ * base.css — reset e componentes comuns (botão, input, link, kbd).
+ * Depende de tokens.css
+ */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { height: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--txt);
+  font: var(--fs)/var(--lh) var(--font);
+}
+
+a { color: var(--brand); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+h1, h2, h3 { color: var(--txt); }
+h2 {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--txt-muted);
+  margin: 12px 0 6px;
+  font-weight: 600;
+}
+h2:first-child { margin-top: 0; }
+
+[hidden] { display: none !important; }
+
+button, select, input, textarea {
+  background: var(--painel-2);
+  color: var(--txt);
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  font: inherit;
+}
+button { cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--acc); }
+button:disabled { opacity: 0.45; cursor: default; }
+button.principal,
+button.btn-primario {
+  background: var(--acc-deep);
+  border-color: var(--acc);
+  font-weight: 600;
+  color: #fff;
+}
+button.principal:hover:not(:disabled),
+button.btn-primario:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.camp-btn-sec,
+button.camp-btn-sec {
+  background: var(--painel-2);
+  border: 1px solid var(--borda);
+  color: var(--txt);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.camp-btn-sec:hover { border-color: var(--acc); }
+
+input[type="number"] { width: 64px; }
+input[type="text"] { width: 84px; }
+input[type="range"] { flex: 1; min-width: 140px; padding: 0; }
+
+label {
+  color: var(--txt-muted);
+  font-size: var(--fs-sm);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.info { color: var(--txt-muted); font-size: var(--fs-sm); margin-top: 6px; }
+
+kbd {
+  background: var(--painel-2);
+  border: 1px solid var(--borda);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font: 11px/1.4 var(--font-mono);
+}
+
+.linha {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 8px 0 0;
+}
+
+.painel {
+  background: var(--painel);
+  border: 1px solid var(--borda);
+  border-radius: var(--radius);
+  padding: 10px;
+  min-width: 0;
+}
+
+/* Utilitários */
+.u-muted { color: var(--txt-muted); }
+.u-ok { color: var(--ok); }
+.u-erro { color: var(--erro); }
+.u-brand { color: var(--brand); }

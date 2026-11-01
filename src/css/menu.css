@@ -1,0 +1,73 @@
+/**
+ * menu.css — tela inicial (index.html)
+ * Ordem: tokens → base → menu
+ */
+body.menu-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.menu-card {
+  width: min(520px, 100%);
+  background: var(--painel);
+  border: 1px solid var(--borda);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: var(--shadow);
+}
+
+.menu-card h1 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+}
+
+.menu-card .menu-sub {
+  color: var(--txt-muted);
+  margin: 0 0 20px;
+  font-size: 0.95rem;
+}
+
+.menu-modos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menu-modos a,
+.menu-modos button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--borda);
+  background: var(--bg-elevated);
+  color: var(--txt);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.menu-modos a:hover,
+.menu-modos button:hover {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 12%, var(--bg-elevated));
+  text-decoration: none;
+}
+.menu-modos .modo-titulo { display: block; font-size: 1rem; }
+.menu-modos .modo-desc {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--txt-muted);
+  font-weight: 400;
+  margin-top: 4px;
+}
+
+.menu-rodape {
+  margin-top: 18px;
+  font-size: 0.75rem;
+  color: var(--txt-faint);
+  text-align: center;
+}

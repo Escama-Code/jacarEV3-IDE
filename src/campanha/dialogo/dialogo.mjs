@@ -52,69 +52,14 @@ function garantirDOM() {
     };
     return;
   }
-  const css = document.createElement('style');
-  css.id = 'camp-dialogo-css';
-  css.textContent = `
-#campDialogoOverlay {
-  position: fixed; inset: 0; z-index: 120;
-  display: flex; align-items: flex-end; justify-content: center;
-  padding: 0 16px 24px;
-  background: linear-gradient(transparent 40%, #0d1117cc 100%);
-  pointer-events: none;
-}
-#campDialogoOverlay.ativo { pointer-events: auto; }
-#campDialogoOverlay[hidden] { display: none !important; }
-#campDialogoBox {
-  width: min(640px, 100%);
-  background: #161b22;
-  border: 2px solid #30363d;
-  border-radius: 16px;
-  padding: 14px 16px 12px;
-  box-shadow: 0 12px 40px #000a;
-  display: grid;
-  grid-template-columns: 64px 1fr;
-  gap: 12px 14px;
-  animation: campDlgIn .25s ease;
-}
-@keyframes campDlgIn {
-  from { transform: translateY(24px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-#campDlgAvatar {
-  width: 64px; height: 64px; border-radius: 14px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 32px; background: #21262d;
-  border: 2px solid var(--dlg-cor, #3ecf8e);
-}
-#campDlgMeta { grid-column: 2; }
-#campDlgNome { font-weight: 700; font-size: 15px; color: var(--dlg-cor, #3ecf8e); }
-#campDlgTitulo { font-size: 11px; color: #8b949e; margin-left: 8px; }
-#campDlgTexto {
-  grid-column: 1 / -1;
-  min-height: 3.2em;
-  font-size: 15px; line-height: 1.45; color: #e6edf3;
-  white-space: pre-wrap;
-}
-#campDlgTexto .cursor {
-  display: inline-block; width: 8px; height: 1em;
-  background: #3ecf8e; margin-left: 2px; vertical-align: text-bottom;
-  animation: campBlink 0.8s step-end infinite;
-}
-@keyframes campBlink { 50% { opacity: 0; } }
-#campDlgActions {
-  grid-column: 1 / -1;
-  display: flex; justify-content: flex-end; gap: 8px;
-}
-#campDlgActions button {
-  border: 1px solid #30363d; background: #21262d; color: #e6edf3;
-  border-radius: 8px; padding: 8px 14px; cursor: pointer; font-weight: 600;
-}
-#campDlgNext {
-  background: #238636; border-color: #2ea043;
-}
-#campDlgNext:hover, #campDlgSkip:hover { filter: brightness(1.1); }
-`;
-  document.head.appendChild(css);
+  if (!document.getElementById('camp-dialogo-css-file')) {
+    const link = document.createElement('link');
+    link.id = 'camp-dialogo-css-file';
+    link.rel = 'stylesheet';
+    // missao/sandbox: public/ → ../src/css ; fallback absoluto relativo ao módulo
+    link.href = new URL('../../../css/dialogo.css', import.meta.url).href;
+    document.head.appendChild(link);
+  }
 
   const overlay = document.createElement('div');
   overlay.id = 'campDialogoOverlay';
