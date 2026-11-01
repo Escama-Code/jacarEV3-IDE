@@ -1,334 +1,355 @@
 """
-A Jornada de Jofre v4 — circuito serpenteante do Pantanal (520 x 360 cm).
+Jornada de Jofre — seguidor de borda v5.2 (jacarev3 / EV3).
 
-Biblioteca real: jacarev3
-Porta 3: cor/refletância | Porta 4: ultrassônico
-Motores: B (esquerda) e C (direita).
+Fluxo definido pelo estudante:
+ linha -> vermelho -> desvio à esquerda -> linha ->
+ obstáculo 1 -> desvio à direita -> linha ->
+ obstáculo 2 -> desvio à esquerda -> linha ->
+ azul da rodovia -> pausa de 3 s -> linha ->
+ obstáculo 3 -> desvio à direita -> linha -> azul de chegada.
 
-O ultrassônico dispara os desvios; os encoders controlam as manobras.
-O sensor de cor segue a linha. Na rodovia, Jofre PARA 3 s
-e atravessa RETO até detectar a linha preta do outro lado.
-Na região seca, o vermelho indica fogo: parar e contornar o risco.
+Portas: cor ESQ 1, cor DIR 3, ultrassônico 4; motores B e C.
+Não lê coordenadas x/y, curvas ou colisores internos do simulador.
+Giros e distâncias vêm somente dos encoders dos motores.
 
-Este programa foi calibrado para a posição inicial "Lagoa Seca".
+A linha é seguida pela borda usando a refletância da porta 3,
+como nos exemplos treino.py e tapete-fll.py da própria IDE.
+Medidas de cada manobra são parâmetros didáticos a calibrar na arena
+e no robô físico. O segundo contorno encontra a guia durante o avanço.
+Não usa posições x/y.
+Falhas são reportadas e os motores param, sem "teleportar" o robô.
 """
 import math
 import time
 
 from jacarev3 import RoboEV3, protocolo as p
 
-# Configuração do cenário
-COR = 3
-ULTRASSONICO = 4
-LIMIAR_PRETO = 21
-DISTANCIA_ALERTA = 32.0  # cm
-PASSO = 0.08
-TEMPO_LIMITE = 290.0  # s simulados
-TEMPO_PARADA = 3.0
-TEMPO_PARADA_FOGO = 2.0
+COR_ESQ = 1
+COR_DIR = 3
+US = 4
+MOTOR_ESQ = "B"
+MOTOR_DIR = "C"
+
+PRETO = 1
+AZUL = 2
 VERMELHO = 5
 
-# Cinemática do simulador EV3 (diâmetro da roda e bitola em cm)
-CM_POR_GRAU = math.pi * 5.6 / 360.0
-BITOLA = 12.0
+LIMIAR_PRETO = 24
+DISTANCIA_ALERTA = 27
+DISTANCIA_SEGURANCA = 12
+VELOCIDADE_LINHA = 23
+VELOCIDADE_MANOBRA = 15
+VELOCIDADE_BORDA_LENTA = 8
+LIMIAR_BORDA = 30
+PASSO = 0.06
+TEMPO_MAXIMO = 300
 
-# Posição de largada do cenário (cm, radianos)
-X_INICIAL, Y_INICIAL, TH_INICIAL = 60.0, 75.0, -0.149
+DIAMETRO_RODA_CM = 5.6
+BITOLA_CM = 12.0
+CM_POR_GRAU = math.pi * DIAMETRO_RODA_CM / 360.0
+GRAUS_MOTOR_POR_GRAU_ROBO = BITOLA_CM / DIAMETRO_RODA_CM
 
 with RoboEV3("00:16:53:64:F8:B8") as robo:
-    x, y, th = X_INICIAL, Y_INICIAL, TH_INICIAL
-    ultima_b = float(robo.ler_graus_motor("B"))
-    ultima_c = float(robo.ler_graus_motor("C"))
-    ultimo_comando = None
     inicio = time.time()
+    ultimo_comando = None
+    etapa = "ATE_VERMELHO"
+    obstaculos_contornados = 0
+    ultimo_evento = -1000.0
+    erro_fatal = False
 
-    def motores(b, c):
-        """Manda comandos apenas quando a velocidade muda."""
+    def ha_tempo():
+        return time.time() - inicio < TEMPO_MAXIMO
+
+    def motores(esquerda, direita):
         global ultimo_comando
-        b, c = int(round(b)), int(round(c))
-        if ultimo_comando == (b, c):
+        esquerda = int(max(-35, min(35, round(esquerda))))
+        direita = int(max(-35, min(35, round(direita))))
+        if (esquerda, direita) == ultimo_comando:
             return
-        if b == 0:
-            robo.parar_motor("B")
-        else:
-            robo.mover_continuo("B", b)
-        if c == 0:
-            robo.parar_motor("C")
-        else:
-            robo.mover_continuo("C", c)
-        ultimo_comando = (b, c)
+        for porta, velocidade in ((MOTOR_ESQ, esquerda), (MOTOR_DIR, direita)):
+            if velocidade == 0:
+                robo.parar_motor(porta)
+            else:
+                robo.mover_continuo(porta, velocidade)
+        ultimo_comando = (esquerda, direita)
 
-    def atualizar_posicao():
-        """Odometria baseada APENAS nos encoders da biblioteca jacarev3."""
-        global x, y, th, ultima_b, ultima_c
-        atual_b = float(robo.ler_graus_motor("B"))
-        atual_c = float(robo.ler_graus_motor("C"))
-        db = (atual_b - ultima_b) * CM_POR_GRAU
-        dc = (atual_c - ultima_c) * CM_POR_GRAU
-        ultima_b, ultima_c = atual_b, atual_c
+    def parar():
+        motores(0, 0)
 
-        desloc = (db + dc) / 2.0
-        giro = -(dc - db) / BITOLA
-        x += desloc * math.cos(th + giro / 2.0)
-        y += desloc * math.sin(th + giro / 2.0)
-        th = math.atan2(math.sin(th + giro), math.cos(th + giro))
-
-    def luz():
-        return float(robo.ler_sensor(COR, p.MODO_COR_REFLETIDA))
+    def encoder(porta):
+        return float(robo.ler_graus_motor(porta))
 
     def distancia():
-        return float(robo.ler_sensor(ULTRASSONICO, p.MODO_ULTRASSONICO_CM))
+        return float(robo.ler_sensor(US, p.MODO_ULTRASSONICO_CM))
 
-    def cor_detectada():
-        return int(robo.ler_sensor(COR, p.MODO_COR_COR))
+    def cor(porta):
+        return int(robo.ler_sensor(porta, p.MODO_COR_COR))
 
-    def tempo_esgotado():
-        return time.time() - inicio >= TEMPO_LIMITE
+    def refletancia(porta):
+        return float(robo.ler_sensor(porta, p.MODO_COR_REFLETIDA))
 
-    def navegar_para(alvo_x, alvo_y, tolerancia=3.2):
-        """Desvio curto guiado pelos encoders, sem GPS nem funções do Sandbox."""
-        while not tempo_esgotado():
-            atualizar_posicao()
-            dx, dy = alvo_x - x, alvo_y - y
-            restante = math.hypot(dx, dy)
-            if restante <= tolerancia:
-                motores(0, 0)
+    def viu_cor(codigo):
+        """Reconhece tinta da pista, filtrando solo e lagoas por refletância."""
+        for porta in (COR_ESQ, COR_DIR):
+            if cor(porta) != codigo:
+                continue
+            luz = refletancia(porta)
+            if codigo == VERMELHO and luz > 35:
+                continue
+            if codigo == AZUL and luz > 38:
+                continue
+            return True
+        return False
+
+    def viu_preto():
+        # Combina identificação de cor e refletância para evitar
+        # confundir marrom do solo / objetos com a guia preta.
+        for porta in (COR_ESQ, COR_DIR):
+            if refletancia(porta) < LIMIAR_PRETO and cor(porta) == PRETO:
                 return True
+        return False
 
-            desejado = math.atan2(dy, dx)
-            erro = math.atan2(math.sin(desejado - th), math.cos(desejado - th))
+    def seguir_linha():
+        """Seguidor de borda como nos exemplos originais da IDE.
 
-            if abs(erro) > 0.55:
-                # Giro no lugar. Positivo = giro horário no mapa.
-                sinal = 1 if erro > 0 else -1
-                motores(10 * sinal, -10 * sinal)
-            else:
-                velocidade = 15 if restante > 11 else 10
-                ajuste = max(-8, min(8, 12 * erro))
-                motores(velocidade + ajuste, velocidade - ajuste)
+        Um sensor de refletância acompanha a TRANSIÇÃO preto/claro.
+        No preto, curva para um lado; no claro, curva para o outro.
+        Isto é controle reativo: não usa posição, mapa ou odometria.
+        """
+        luz = refletancia(COR_DIR)
+        if luz < LIMIAR_BORDA:
+            motores(VELOCIDADE_LINHA, VELOCIDADE_BORDA_LENTA)
+        else:
+            motores(VELOCIDADE_BORDA_LENTA, VELOCIDADE_LINHA)
 
+    def avancar_cm(cm, velocidade=VELOCIDADE_MANOBRA,
+                   achar_linha=False, ignorar_linha_cm=0,
+                   checar_obstaculo=False, achar_cor=None):
+        """Deslocamento medido nos motores; pode terminar por linha, cor ou obstáculo."""
+        if cm == 0:
+            return "feito"
+        ini_b, ini_c = encoder(MOTOR_ESQ), encoder(MOTOR_DIR)
+        sinal = 1 if cm > 0 else -1
+        motores(sinal * velocidade, sinal * velocidade)
+        while ha_tempo():
+            b = (encoder(MOTOR_ESQ) - ini_b) * CM_POR_GRAU
+            c = (encoder(MOTOR_DIR) - ini_c) * CM_POR_GRAU
+            percorrido = abs((b + c) / 2.0)
+            if checar_obstaculo and sinal > 0 and distancia() <= DISTANCIA_SEGURANCA:
+                parar()
+                return "obstaculo"
+            if achar_linha and percorrido >= ignorar_linha_cm and viu_preto():
+                parar()
+                return "linha"
+            if achar_cor is not None and viu_cor(achar_cor):
+                parar()
+                return "cor"
+            if percorrido >= abs(cm):
+                parar()
+                return "feito"
             time.sleep(PASSO)
+        parar()
+        return "tempo"
 
-        motores(0, 0)
-        return False
-
-    def contornar(nome, pontos, angulo_final):
-        print("ULTRASSÔNICO: obstáculo detectado —", nome)
-        motores(0, 0)
-        for px, py in pontos:
-            if not navegar_para(px, py):
-                return False
-        if not alinhar(angulo_final):
-            return False
-        print("DESVIO: contorno concluído; retomando a linha.")
-        return True
-
-    def fugir_do_fogo():
-        # A área vermelha é pintada sobre a linha preta no primeiro trecho.
-        # A primeira manobra vai para baixo da zona quente (Y crescente).
-        print("FOGO DETECTADO: zona vermelha no caminho!")
-        motores(0, 0)
-        print("SEGURANÇA: Jofre parou antes da queimada.")
-        time.sleep(TEMPO_PARADA_FOGO)
-        print("DESVIO: procurando rota segura longe do fogo.")
-        for px, py in [(87, 38), (134, 39), (140, 63)]:
-            if not navegar_para(px, py):
-                return False
-        if not alinhar(-0.08):
-            return False
-        print("FOGO CONTORNADO: buscando a linha novamente.")
-        return True
-
-    def alinhar(angulo):
-        """Alinha para atravessar a rodovia em linha reta."""
-        while not tempo_esgotado():
-            atualizar_posicao()
-            erro = math.atan2(math.sin(angulo - th), math.cos(angulo - th))
-            if abs(erro) < 0.035:
-                motores(0, 0)
+    def girar(graus, velocidade=14):
+        """Graus negativos = esquerda; positivos = direita."""
+        if graus == 0:
+            return True
+        b0, c0 = encoder(MOTOR_ESQ), encoder(MOTOR_DIR)
+        alvo = abs(graus) * GRAUS_MOTOR_POR_GRAU_ROBO
+        sinal = 1 if graus > 0 else -1
+        motores(sinal * velocidade, -sinal * velocidade)
+        while ha_tempo():
+            b = abs(encoder(MOTOR_ESQ) - b0)
+            c = abs(encoder(MOTOR_DIR) - c0)
+            if (b + c) / 2 >= alvo:
+                parar()
                 return True
-            sinal = 1 if erro > 0 else -1
-            motores(8 * sinal, -8 * sinal)
-            time.sleep(0.05)
+            time.sleep(PASSO)
+        parar()
         return False
 
-    def atravessar_rodovia():
-        print("FAIXA DE FAUNA: aproximando-se da rodovia.")
-        if not navegar_para(238, 180, tolerancia=2.5):
-            return False
-        if not alinhar(0.0):
-            return False
+    def livre(limite=DISTANCIA_SEGURANCA + 7):
+        return distancia() >= limite
 
-        motores(0, 0)
-        print("PARE: aguardando 3 segundos antes de atravessar.")
-        time.sleep(TEMPO_PARADA)
-        print("ATRAVESSANDO: seguindo reto até encontrar a linha.")
-
-        # A linha termina em x=247 e recomeça em x=283.
-        # Só permite reengatar depois de atravessar o trecho sem linha.
-        while not tempo_esgotado():
-            atualizar_posicao()
-            if x >= 277 and luz() < LIMIAR_PRETO:
-                motores(0, 0)
-                print("TRAVESSIA CONCLUÍDA: linha reencontrada.")
-                return True
-
-            if x > 301:
-                motores(0, 0)
-                print("AVISO: linha não encontrada após a faixa. Parada segura.")
-                return False
-
-            motores(14, 14)
-            time.sleep(0.06)
-
+    def procurar_linha(limite_cm, ignorar_cm=6, velocidade=12):
+        """Procura a guia preta com sensores de cor, sem saber onde ela está."""
+        resultado = avancar_cm(limite_cm, velocidade, achar_linha=True,
+                               ignorar_linha_cm=ignorar_cm,
+                               checar_obstaculo=True)
+        if resultado == "linha":
+            print("LINHA: reencontrada pelos sensores de cor.")
+            return True
+        print("LINHA: busca terminou sem encontrar a guia:", resultado)
         return False
 
+    def desvio_vermelho():
+        """ESQUERDA -> RETO -> DIREITA -> RETO -> DIREITA -> RETO até a linha."""
+        print("ETAPA 1: vermelho detectado; parada e contorno pela esquerda.")
+        parar()
+        time.sleep(2)
+        if not girar(-90): return False
+        if avancar_cm(23, 14, checar_obstaculo=True) != "feito": return False
+        if not girar(90): return False
+        if avancar_cm(55, 14, checar_obstaculo=True) != "feito": return False
+        if not girar(90): return False
+        if not procurar_linha(46, ignorar_cm=8):
+            print("QUEIMADA: linha ausente; buscando retorno deslocado.")
+            if avancar_cm(-40, velocidade=12) != "feito": return False
+            if not girar(-90): return False
+            if avancar_cm(24, velocidade=12, checar_obstaculo=True) != "feito": return False
+            if not girar(90): return False
+            if not procurar_linha(44, ignorar_cm=5): return False
+        if avancar_cm(6, 10) != "feito": return False
+        # A linha é cruzada perpendicularmente: realinha o robô para retomá-la.
+        return girar(-90)
 
-    def bezier(p0, p1, p2, p3, segmentos=65):
-        pontos = []
-        for i in range(segmentos + 1):
-            t = i / float(segmentos)
-            u = 1.0 - t
-            a = u*u*u
-            b = 3*u*u*t
-            c = 3*u*t*t
-            d = t*t*t
-            pontos.append((a*p0[0]+b*p1[0]+c*p2[0]+d*p3[0],
-                           a*p0[1]+b*p1[1]+c*p2[1]+d*p3[1]))
-        return pontos
+    def desvio_primeiro():
+        """DIREITA -> RETO -> ESQUERDA (se livre) -> RETO ->
+        ESQUERDA (se livre) -> RETO até a linha.
+        Um bloqueio extra provoca desvio lateral de segurança.
+        """
+        print("ETAPA 2: primeiro obstáculo detectado; contorno pela direita.")
+        parar()
+        if not girar(90): return False
+        if avancar_cm(26, checar_obstaculo=True) != "feito": return False
+        parar()
+        # Primeiro verifica a direção escolhida com o ultrassônico.
+        if not girar(-90): return False
+        if not livre():
+            print("DESVIO 1: esquerda bloqueada; reposicionando à direita.")
+            if not girar(90): return False
+            if avancar_cm(15, checar_obstaculo=True) != "feito": return False
+            if not girar(-90): return False
+        resultado = avancar_cm(78, achar_linha=True, ignorar_linha_cm=45,
+                              checar_obstaculo=True)
+        if resultado == "linha":
+            print("DESVIO 1: guia reencontrada antes da última curva.")
+            return True
+        if resultado != "feito": return False
+        parar()
+        if not girar(-90): return False
+        if not livre():
+            print("DESVIO 1: esquerda bloqueada; direita, pouco avanço, esquerda.")
+            if not girar(90): return False
+            if avancar_cm(14, checar_obstaculo=True) != "feito": return False
+            if not girar(-90): return False
+        if not procurar_linha(51, ignorar_cm=6): return False
+        return girar(90)
 
-    # Mesmas curvas de Bézier do cenarios.js — percurso em serpentina.
-    rota_oeste = (
-        bezier((60,75),(100,69),(143,59),(176,66)) +
-        bezier((176,66),(215,76),(220,114),(203,132))[1:] +
-        bezier((203,132),(170,161),(112,158),(81,153))[1:] +
-        bezier((81,153),(43,150),(39,208),(67,230))[1:] +
-        bezier((67,230),(104,251),(131,282),(168,284))[1:] +
-        bezier((168,284),(203,289),(227,280),(214,252))[1:] +
-        bezier((214,252),(206,216),(222,180),(247,180))[1:]
-    )
-    rota_leste = (bezier((283,180), (320,175), (306,237.5), (350,230)) +
-                  bezier((350,230), (397.5,222.5), (396.5,305), (450,300))[1:])
+    def desvio_segundo():
+        """ESQUERDA -> RETO -> DIREITA -> RETO; se houver novo obstáculo,
+        DIREITA e pequeno deslocamento; caso contrário, procurar a linha.
+        """
+        print("ETAPA 3: segundo obstáculo detectado; contorno pela esquerda.")
+        parar()
+        if not girar(-90): return False
+        resultado = avancar_cm(32, checar_obstaculo=True)
+        if resultado == "obstaculo":
+            print("DESVIO 2: bloqueio na primeira manobra; parada segura.")
+            return False
+        if resultado != "feito": return False
+        if not girar(90): return False
+        resultado = avancar_cm(51, checar_obstaculo=True)
+        if resultado == "obstaculo" or not livre():
+            print("DESVIO 2: novo obstáculo; virando à direita.")
+            if not girar(90): return False
+            if avancar_cm(16, checar_obstaculo=True) != "feito": return False
+            if not girar(-90): return False
+        elif resultado != "feito":
+            return False
+        return procurar_linha(65, ignorar_cm=9)
 
-    def seguir_linha_guiada(rota):
-        """Usa o sensor preto e a odometria para acompanhar as curvas."""
-        sensor_x = x + 5.5*math.cos(th)
-        sensor_y = y + 5.5*math.sin(th)
-        indice = min(range(len(rota)), key=lambda i:
-                     (rota[i][0] - sensor_x)**2 + (rota[i][1] - sensor_y)**2)
+    def atravessar():
+        """AZUL -> PARAR 3 s -> reto até encontrar linha do lado oposto."""
+        print("ETAPA 4: azul da rodovia detectado; parada de 3 segundos.")
+        parar()
+        time.sleep(3)
+        # Marca didática, não é sensor de veículos: confirma apenas a travessia.
+        # O traçado da pista cruza o asfalto aproximadamente na horizontal.
+        if not girar(28): return False
+        return procurar_linha(75, ignorar_cm=38, velocidade=13)
 
-        refletida = luz()
-        no_preto = refletida < LIMIAR_PRETO
-        # Luz identifica a linha; quando a perdemos, a referência
-        # geométrica auxilia a recuperação, sem fazer marcha a ré.
-        olhar_adiante = 9 if no_preto else 5
-        alvo = rota[min(len(rota)-1, indice+olhar_adiante)]
-        angulo = math.atan2(alvo[1]-y, alvo[0]-x)
-        if not no_preto and indice < len(rota) - 1:
-            # Sem preto: o sensor pede uma correção extra em direção
-            # ao centro da linha, estimado com os encoders.
-            frente = rota[indice+1]
-            tangente = math.atan2(frente[1]-rota[indice][1],
-                                  frente[0]-rota[indice][0])
-            lateral = (sensor_y-rota[indice][1])*math.cos(tangente) - (
-                sensor_x-rota[indice][0])*math.sin(tangente)
-            angulo -= max(-0.18, min(0.18, 0.045*lateral))
-        erro = math.atan2(math.sin(angulo-th), math.cos(angulo-th))
-        velocidade = 16 if no_preto else 12
-        ajuste = max(-8, min(8, 13*erro))
-        motores(velocidade+ajuste, velocidade-ajuste)
+    def diagnosticar_falha():
+        """Mostra somente leituras disponíveis no EV3 para facilitar a calibração."""
+        try:
+            print("LEITURAS: ultrassônico", round(distancia(), 1), "cm,",
+                  "cor esquerda", cor(COR_ESQ), "cor direita", cor(COR_DIR),
+                  "refletância esquerda", round(refletancia(COR_ESQ), 1),
+                  "direita", round(refletancia(COR_DIR), 1))
+        except Exception as exc:
+            print("LEITURAS: não foi possível obter os sensores:", str(exc))
 
-    fogo_contornado = False
-    primeiro_desvio = False
-    segundo_desvio = False
-    terceiro_desvio = False
-    rochas_desviadas = False
-    galhos_refugio_desviados = False
-    rodovia_concluida = False
+    def desvio_terceiro():
+        """DIREITA -> RETO -> ESQUERDA -> RETO -> ESQUERDA -> linha."""
+        print("ETAPA 5: terceiro obstáculo; contorno pela direita.")
+        parar()
+        if not girar(90): return False
+        if avancar_cm(25, checar_obstaculo=True) != "feito": return False
+        if not girar(-90): return False
+        if avancar_cm(70, checar_obstaculo=True) != "feito": return False
+        if not girar(-90): return False
+        if not procurar_linha(65, ignorar_cm=10): return False
+        if avancar_cm(5, 10) != "feito": return False
+        return girar(100)
 
-    print("JOFRE: saindo da lagoa seca rumo ao refúgio.")
+    print("JOFRE: início da missão por sensores (sem coordenadas).")
     try:
-        while not tempo_esgotado():
-            atualizar_posicao()
-
-            if x >= 444 and y >= 285:
-                print("MISSÃO CONCLUÍDA! Jofre chegou à lagoa preservada.")
-                break
-
-            # A mancha vermelha representa uma queimada (cor EV3 = 5).
-            # O sensor inicia a parada; o desvio usa apenas os encoders.
-            if not fogo_contornado and 80 < x < 124 and y < 100:
-                if cor_detectada() == VERMELHO:
-                    fogo_contornado = True
-                    if not fugir_do_fogo():
-                        break
-                    continue
-
-            # NÃO usar apenas x para a rodovia: na serpentina o robô
-            # passa diversas vezes pela mesma faixa de coordenadas X.
-            if not rodovia_concluida and x >= 226 and 168 <= y <= 205:
-                if not atravessar_rodovia():
+        while ha_tempo():
+            if etapa == "ATE_VERMELHO" and viu_cor(VERMELHO):
+                if not desvio_vermelho():
+                    print("ERRO: falhou o contorno da queimada.")
+                    erro_fatal = True
                     break
-                rodovia_concluida = True
+                etapa = "ATE_OBSTACULO_1"
+                ultimo_evento = time.time()
+                print("ETAPA 1 CONCLUÍDA.")
                 continue
 
-            # Três bloqueios na área seca. O ultrassônico anuncia
-            # a aproximação; a posição dos encoders é uma proteção extra
-            # contra detecções tardias nas curvas.
-            if not primeiro_desvio and 190 < x < 222 and 80 < y < 113:
-                d = distancia()
-                if d < DISTANCIA_ALERTA or y >= 94:
-                    primeiro_desvio = True
-                    if not contornar("Tronco da Queimada (Norte)",
-                                     [(239, 86), (240, 146), (182, 170)],
-                                     3.04):
+            if etapa == "ATE_RODOVIA" and viu_cor(AZUL):
+                if not atravessar():
+                    print("ERRO: travessia não encontrou a linha oposta.")
+                    erro_fatal = True
+                    break
+                etapa = "ATE_OBSTACULO_3"
+                ultimo_evento = time.time()
+                print("ETAPA 4 CONCLUÍDA.")
+                continue
+
+            if etapa == "ATE_CHEGADA" and viu_cor(AZUL):
+                parar()
+                print("MISSÃO CONCLUÍDA: azul do refúgio identificado.")
+                break
+
+            if etapa in ("ATE_OBSTACULO_1", "ATE_OBSTACULO_2", "ATE_OBSTACULO_3"):
+                if time.time() - ultimo_evento > 2.0 and distancia() < DISTANCIA_ALERTA:
+                    if etapa == "ATE_OBSTACULO_1":
+                        ok = desvio_primeiro()
+                        proxima = "ATE_OBSTACULO_2"
+                    elif etapa == "ATE_OBSTACULO_2":
+                        ok = desvio_segundo()
+                        proxima = "ATE_RODOVIA"
+                    else:
+                        ok = desvio_terceiro()
+                        proxima = "ATE_CHEGADA"
+                    if not ok:
+                        print("ERRO: desvio não concluído na etapa", etapa)
+                        erro_fatal = True
                         break
+                    etapa = proxima
+                    obstaculos_contornados += 1
+                    ultimo_evento = time.time()
+                    print("DESVIO", obstaculos_contornados, "CONCLUÍDO.")
                     continue
 
-            if primeiro_desvio and not segundo_desvio and 145 < x < 190 and 138 < y < 178:
-                d = distancia()
-                if d < DISTANCIA_ALERTA or x <= 164:
-                    segundo_desvio = True
-                    if not contornar("Árvore Derrubada (Centro)",
-                                     [(163, 189), (103, 189), (94, 155)],
-                                     3.10):
-                        break
-                    continue
-
-            if segundo_desvio and not terceiro_desvio and 104 < x < 139 and 241 < y < 284:
-                d = distancia()
-                if d < DISTANCIA_ALERTA or x >= 119:
-                    terceiro_desvio = True
-                    if not contornar("Galhos Carbonizados (Sul)",
-                                     [(120, 239), (177, 238), (197, 281)],
-                                     -0.20):
-                        break
-                    continue
-
-            # Obstáculos restantes no trecho úmido.
-            if rodovia_concluida and not rochas_desviadas and 303 < x < 345:
-                d = distancia()
-                if d < DISTANCIA_ALERTA or x >= 330:
-                    rochas_desviadas = True
-                    if not contornar("Barreira de Rochas",
-                                     [(330, 254), (385, 256), (395, 261)],
-                                     0.98):
-                        break
-                    continue
-
-            if rodovia_concluida and rochas_desviadas and not galhos_refugio_desviados and 396 < x < 417:
-                d = distancia()
-                if d < DISTANCIA_ALERTA or x >= 402:
-                    galhos_refugio_desviados = True
-                    if not contornar("Galhos no Refúgio",
-                                     [(402, 300), (432, 320), (443, 305)],
-                                     0.18):
-                        break
-                    continue
-
-            seguir_linha_guiada(rota_leste if rodovia_concluida else rota_oeste)
-
+            seguir_linha()
             time.sleep(PASSO)
+        else:
+            print("TEMPO: limite de 300 segundos atingido.")
     finally:
-        motores(0, 0)
-        print("Execução encerrada; motores desligados.")
+        parar()
+        if erro_fatal:
+            print("PARADA SEGURA: revise as medidas e o ponto da manobra.")
+            diagnosticar_falha()
+        print("ETAPA FINAL:", etapa)
+        print("Motores desligados.")

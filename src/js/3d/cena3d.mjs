@@ -419,6 +419,80 @@ function construirAmbientacaoPantanal(cen) {
     g.add(segmento([3.5,18.2,0],[7,17.3,0],.4,bico));
     return g;
   }
+
+  // Fauna pantaneira autoral — geometrias procedurais sem modelos externos.
+  // Os animais são decorativos: não entram em cen.caixas nem na física.
+  function tuiuiu() {
+    const g = new THREE.Group();
+    const penas = matC(0xf0eee6), negro = matC(0x292c30);
+    const vermelho = matC(0xb93e3a), bico = matC(0x44403a);
+    const pernas = matC(0x555654);
+    for (const z of [-1.7, 1.7]) {
+      g.add(segmento([-1,0,z],[0,13,z],0.32,pernas));
+      g.add(segmento([0,1,z],[3,1,z],0.27,pernas));
+    }
+    const corpo = sombraC(new THREE.Mesh(new THREE.SphereGeometry(1,16,12),penas));
+    corpo.scale.set(5.7,4.4,3.6);
+    corpo.position.set(0,17,0);
+    g.add(corpo);
+    // Pescoço preto, colar vermelho característico e cabeça.
+    g.add(segmento([3.1,18,0],[4.3,26,0],1.08,negro));
+    g.add(segmento([4.3,26,0],[3.7,31,0],1.10,vermelho));
+    copa(g,3.8,32.5,0,2.05,negro);
+    g.add(segmento([5.6,32.3,0],[11.5,31.6,0],0.72,bico));
+    for (const z of [-1.8,1.8]) {
+      const asa=sombraC(new THREE.Mesh(new THREE.SphereGeometry(1,12,10),penas));
+      asa.scale.set(3.4,1.4,.75);
+      asa.position.set(-.8,17,z);
+      g.add(asa);
+    }
+    return g;
+  }
+
+  function araraAzul() {
+    const g=new THREE.Group();
+    const azul=matC(0x256cb1), asaAzul=matC(0x18518d);
+    const amarelo=matC(0xe6b538), bico=matC(0x292b34), olho=matC(0xf4df8a);
+    const corpo=sombraC(new THREE.Mesh(new THREE.SphereGeometry(1,16,12),azul));
+    corpo.scale.set(3.3,6.1,3.0);
+    corpo.position.set(0,10,0);
+    g.add(corpo);
+    copa(g,0.8,16.4,0,3.0,azul);
+    for (const z of [-2.65,2.65]) {
+      const asa=sombraC(new THREE.Mesh(new THREE.ConeGeometry(3.0,9.5,7),asaAzul));
+      asa.rotation.z=0.32; asa.position.set(-1.1,9.6,z);g.add(asa);
+      const olhoM=new THREE.Mesh(new THREE.SphereGeometry(.36,8,6),olho);
+      olhoM.position.set(2.6,17,z*.65);g.add(olhoM);
+    }
+    g.add(segmento([3.0,15.8,0],[5.2,14.6,0],1.1,bico));
+    g.add(segmento([-1,5.5,0],[-2,0,0],1.0,asaAzul));
+    g.add(segmento([-2,5.5,1],[-3,0,1],.75,azul));
+    return g;
+  }
+
+  function cervoPantaneiro() {
+    const g=new THREE.Group();
+    const pelo=matC(0xb47a45), claro=matC(0xd7ab72);
+    const casco=matC(0x40382e), chifre=matC(0x66503d);
+    const corpo=sombraC(new THREE.Mesh(new THREE.SphereGeometry(1,16,12),pelo));
+    corpo.scale.set(7.0,4.1,3.5);corpo.position.set(0,13,0);g.add(corpo);
+    const peito=sombraC(new THREE.Mesh(new THREE.SphereGeometry(1,12,10),claro));
+    peito.scale.set(2.6,3.2,2.9);peito.position.set(5.0,13,0);g.add(peito);
+    g.add(segmento([5,13,0],[8.5,21,0],1.75,pelo));
+    const cab=sombraC(new THREE.Mesh(new THREE.SphereGeometry(1,12,10),pelo));
+    cab.scale.set(3.2,2.1,2.0);cab.position.set(10,21,0);g.add(cab);
+    for(const z of [-2.3,2.3]) {
+      for(const x of [-4.8,4.6]) {
+        g.add(segmento([x,11,z],[x+1,1.9,z+.25],.72,pelo));
+        g.add(segmento([x+1,1.9,z+.25],[x+1.4,.45,z+.25],.88,casco));
+      }
+      g.add(segmento([8.7,22.7,z*.65],[7.7,28,z],.5,chifre));
+      g.add(segmento([7.7,28,z],[5.9,31,z*1.3],.36,chifre));
+      g.add(segmento([7.7,28,z],[9.1,32,z*1.4],.32,chifre));
+    }
+    return g;
+  }
+
   function placaFauna() {
     const g=new THREE.Group();
     const metal=matC(0x6a6d68), borda=matC(0xe7b53e);
@@ -548,7 +622,7 @@ function construirAmbientacaoPantanal(cen) {
 
   const criadores = {
     arvoreSeca, arvoreVerde, tocoQueimado:toco, arbusto, rochas,
-    lagoa, lagoaSeca, taboas, capivara, garca,
+    lagoa, lagoaSeca, taboas, capivara, garca, tuiuiu, araraAzul, cervoPantaneiro,
     placaFauna, marcoRefugio, focoFogo, fumaca, placaPerigo
   };
 

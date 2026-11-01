@@ -187,8 +187,8 @@
     },
     {
       "id": "jofre_seguidor_desvio_fauna",
-      "nome": "Jofre — linha + ultrassônico + travessia de fauna",
-      "descricao": "Segue a linha do Pantanal, contorna tronco e rochas, espera 3 s na rodovia e alcança a lagoa.",
+      "nome": "Jofre v5.2 — seguidor de borda EV3",
+      "descricao": "Segue a borda preta pelo sensor de refletância na porta 3 (como FLL), reconhece marcas vermelha e azul, desvia pelo ultrassônico e controla os giros com encoders. Calibração necessária no EV3 físico.",
       "categoria": "desafios",
       "dificuldade": "Avançado",
       "cenario": "pantanalEcologico",

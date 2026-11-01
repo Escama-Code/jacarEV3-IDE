@@ -1180,16 +1180,12 @@ const brt = {
     caixas: [
       // Obstáculos físicos; somente estes participam das colisões e do ultrassônico.
       // A rota serpenteia pela parte seca antes de atravessar a rodovia.
-      { nome: 'Tronco da Queimada (Norte)', x: 202, y: 109, w: 18, h: 16,
-        altura: 11, cor: '#3e2723', modelo: 'troncoQueimado' },
       { nome: 'Árvore Derrubada (Centro)', x: 127, y: 148, w: 20, h: 17,
         altura: 12, cor: '#4c3527', modelo: 'troncoQueimado' },
       { nome: 'Galhos Carbonizados (Sul)', x: 137, y: 270, w: 21, h: 17,
         altura: 9, cor: '#342722', modelo: 'troncoQueimado' },
       { nome: 'Barreira de Rochas', x: 345, y: 222, w: 22, h: 15,
         altura: 14, cor: '#62645e', modelo: 'rochaSeca' },
-      { nome: 'Galhos no Refúgio', x: 414, y: 273, w: 14, h: 13,
-        altura: 8, cor: '#49382b', modelo: 'troncoQueimado' },
       // Obstáculos laterais que reforçam a história, sem bloquear o leito inteiro.
       { nome: 'Toco de Desmatamento', x: 231, y: 52, w: 13, h: 13,
         altura: 7, cor: '#46352c', modelo: 'troncoQueimado' },
@@ -1283,6 +1279,26 @@ const brt = {
       { tipo: 'rochas', x: 129, y: 212, escala: 0.92 },
       { tipo: 'rochas', x: 181, y: 337, escala: 0.83 },
       { tipo: 'rochas', x: 17, y: 343, escala: 0.82 },
+      // v5: árvores secas adicionais, decoração sem colisão.
+      { tipo: 'arvoreSeca', x: 24, y: 336, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 195, y: 178, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 112, y: 95, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 173, y: 256, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 21, y: 126, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 42, y: 252, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 230, y: 294, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 137, y: 244, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 237, y: 154, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 172, y: 95, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 82, y: 131, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 80, y: 207, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 110, y: 182, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 71, y: 268, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 159, y: 205, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 156, y: 305, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 185, y: 119, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 105, y: 219, escala: 0.85 },
+      { tipo: 'arvoreSeca', x: 139, y: 187, escala: 0.85 },
       // O incêndio é detectado pelo vermelho no chão; chamas sem colisão.
       { tipo: 'focoFogo', x: 110, y: 67, escala: 0.78 },
       { tipo: 'fumaca', x: 121, y: 38, escala: 0.8 },
@@ -1303,6 +1319,31 @@ const brt = {
       { tipo: 'arvoreVerde', x: 498, y: 343, escala: 0.91 },
       { tipo: 'arvoreVerde', x: 509, y: 134, escala: 1.03 },
       { tipo: 'arvoreVerde', x: 478, y: 184, escala: 0.85 },
+      // v5: vegetação preservada.
+      { tipo: 'arvoreVerde', x: 425, y: 172, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 346, y: 335, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 323, y: 161, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 358, y: 126, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 400, y: 206, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 347, y: 149, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 395, y: 106, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 369, y: 96, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 340, y: 99, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 414, y: 147, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 379, y: 144, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 400, y: 348, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 380, y: 284, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 314, y: 108, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 430, y: 324, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 502, y: 160, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 400, y: 310, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 481, y: 208, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 498, y: 298, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 318, y: 337, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 419, y: 235, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 350, y: 187, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 506, y: 77, escala: 0.85 },
+      { tipo: 'arvoreVerde', x: 445, y: 50, escala: 0.85 },
       { tipo: 'arbusto', x: 316, y: 140, escala: 1.0 },
       { tipo: 'arbusto', x: 379, y: 102, escala: 1.04 },
       { tipo: 'arbusto', x: 496, y: 217, escala: 1.15 },
@@ -1317,6 +1358,16 @@ const brt = {
       { tipo: 'capivara', x: 485, y: 285, escala: 0.86, rotacao: -0.55 },
       { tipo: 'garca', x: 421, y: 85, escala: 1.05 },
       { tipo: 'garca', x: 503, y: 280, escala: 0.87 },
+      // v5: fauna do Pantanal, somente visual.
+      { tipo: 'tuiuiu', x: 413, y: 69, escala: 0.92 },
+      { tipo: 'tuiuiu', x: 435, y: 136, escala: 0.92 },
+      { tipo: 'araraAzul', x: 421, y: 189, escala: 0.83 },
+      { tipo: 'araraAzul', x: 443, y: 343, escala: 0.83 },
+      { tipo: 'cervoPantaneiro', x: 358, y: 298, escala: 0.75 },
+      { tipo: 'cervoPantaneiro', x: 333, y: 347, escala: 0.75 },
+      { tipo: 'capivara', x: 367, y: 258, escala: 0.92 },
+      { tipo: 'garca', x: 359, y: 209, escala: 0.92 },
+      { tipo: 'garca', x: 343, y: 257, escala: 0.92 },
       { tipo: 'marcoRefugio', x: 487, y: 295, escala: 0.82 }
     ],
 
@@ -1420,6 +1471,17 @@ const brt = {
           ctx.moveTo(obj.x-7,obj.y); ctx.lineTo(obj.x+6,obj.y);
           ctx.moveTo(obj.x,obj.y-6); ctx.lineTo(obj.x,obj.y+6);
           ctx.stroke();
+        } else if (obj.tipo==='capivara' || obj.tipo==='cervoPantaneiro') {
+          ctx.fillStyle = obj.tipo==='capivara' ? '#8c6546' : '#ad7749';
+          ctx.beginPath(); ctx.ellipse(obj.x,obj.y,6,3.7,0,0,Math.PI*2); ctx.fill();
+        } else if (obj.tipo==='garca' || obj.tipo==='tuiuiu') {
+          ctx.fillStyle='#f2eee1';
+          ctx.beginPath();ctx.ellipse(obj.x,obj.y,3.6,2.1,-.35,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle=obj.tipo==='tuiuiu'?'#34363a':'#e7c16b';
+          ctx.beginPath();ctx.arc(obj.x+3,obj.y-2,1.6,0,Math.PI*2);ctx.fill();
+        } else if (obj.tipo==='araraAzul') {
+          ctx.fillStyle='#2566ad';
+          ctx.beginPath();ctx.ellipse(obj.x,obj.y,4.1,2.8,.35,0,Math.PI*2);ctx.fill();
         }
       }
 
@@ -1495,6 +1557,17 @@ const brt = {
         ctx.fillStyle='#da6230';
         ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2); ctx.fill();
       }
+
+      // Marca azul na faixa e no refúgio: sensor de cor EV3 reconhece azul.
+      // A primeira marca inicia travessia, a segunda representa a chegada.
+      ctx.fillStyle = '#1659e8';
+      ctx.fillRect(236, 174, 9, 12);
+      ctx.beginPath(); ctx.arc(449, 300, 9, 0, Math.PI*2); ctx.fill();
+
+      // Faixa vermelha de aviso, fisicamente impressa no piso antes do fogo.
+      // O EV3 reconhece vermelho pelo sensor de cor; não é um sensor térmico.
+      ctx.fillStyle = '#ed2923';
+      ctx.fillRect(88, 61, 9, 14);
 
       // Círculos de largada e chegada: contornos apenas.
       ctx.lineWidth = 2;
