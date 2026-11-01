@@ -30,6 +30,54 @@
   body.modo-campanha #inicio,
   body.modo-campanha #exemplo { display: none; }
 
+
+  /* Abas compactas da arena: informações educativas OU telemetria do robô. */
+  .abas-inferiores-arena {
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin:9px 0 5px; padding-bottom:5px;
+    border-bottom:1px solid #46515f;
+  }
+  .abas-inferiores-arena button {
+    font-size:12px; border:1px solid transparent;
+    background:transparent; color:#bdc9d8;
+    border-radius:6px; padding:5px 10px;
+  }
+  .abas-inferiores-arena button[aria-selected="true"] {
+    background:#175565; border-color:#3c97a4; color:#fff;
+  }
+  .abas-inferiores-arena button:focus-visible {
+    outline:2px solid #a2dcfc; outline-offset:2px;
+  }
+  .abas-inferiores-arena [hidden], .informacao-arena[hidden] { display:none !important; }
+  .informacao-educativa-vazia { color:#a9bacb; font-size:12px; padding:5px 3px 8px; }
+  #painelEducacaoArena:has(#dicaCidade:not([hidden])) .informacao-educativa-vazia { display:none; }
+  .monitor-robo {
+    border:1px solid #465a6d; background:#202c3b;
+    border-radius:8px; padding:10px 12px;
+  }
+  .monitor-robo-cabecalho {
+    display:flex; justify-content:space-between; align-items:baseline;
+    flex-wrap:wrap; gap:8px; margin-bottom:9px;
+  }
+  .monitor-robo-cabecalho strong { color:#e6f3fc; font-size:13px; }
+  .monitor-robo-cabecalho output {
+    color:#a8c0cf; font-size:12px; font-variant-numeric:tabular-nums;
+  }
+  .monitor-robo-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+  .monitor-robo-valor {
+    min-width:0; background:#172536; border:1px solid #3a4b5d;
+    border-radius:6px; padding:7px;
+  }
+  .monitor-robo-valor small { display:block; color:#b0bed0; font-size:11px; margin-bottom:3px; }
+  .monitor-robo-valor strong {
+    display:block; color:#fff; font-size:14px;
+    font-variant-numeric:tabular-nums; overflow-wrap:anywhere;
+  }
+  .monitor-robo-nota { color:#a9bacb; font-size:11px; margin:7px 0 0; line-height:1.35; }
+  .monitor-robo-vazio { font-size:12px; color:#a9bacb; }
+  @media(max-width:680px) {
+    .monitor-robo-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
 </style>
 </head>
 <body>
@@ -183,6 +231,12 @@
       <canvas id="cv" class="vista" width="1000" height="667"></canvas>
       <div id="cv3d" class="vista" hidden></div>
     </div>
+    <div class="abas-inferiores-arena" role="tablist" aria-label="Informações da arena">
+      <button id="abaEducacaoArena" type="button" role="tab" aria-selected="true" aria-controls="painelEducacaoArena">Educação no trânsito</button>
+      <button id="abaMonitorArena" type="button" role="tab" aria-selected="false" aria-controls="painelMonitorArena">Monitor do robô</button>
+    </div>
+    <section id="painelEducacaoArena" class="informacao-arena" role="tabpanel" aria-labelledby="abaEducacaoArena">
+      <div class="informacao-educativa-vazia">As dicas de trânsito aparecem aqui durante o percurso.</div>
     <div id="dicaCidade" class="dica-cidade" hidden aria-live="polite" role="status">
       <span id="dicaCidadeIcone" class="dica-cidade-icone" aria-hidden="true">🏙️</span>
       <div class="dica-cidade-texto">
@@ -193,6 +247,23 @@
            target="_blank" rel="noopener noreferrer" hidden>Consultar o Código de Trânsito Brasileiro</a>
       </div>
     </div>
+    </section>
+    <section id="painelMonitorArena" class="informacao-arena" role="tabpanel" aria-labelledby="abaMonitorArena" hidden>
+      <div class="monitor-robo">
+        <div class="monitor-robo-cabecalho">
+          <strong id="monitorMovimento">Aguardando execução</strong>
+          <output id="monitorTempo">—</output>
+        </div>
+        <div class="monitor-robo-cards">
+          <div class="monitor-robo-valor"><small>Cor · porta 3</small><strong id="monitorCor">—</strong></div>
+          <div class="monitor-robo-valor"><small>Luz refletida</small><strong id="monitorRefletida">—</strong></div>
+          <div class="monitor-robo-valor"><small>Motor B · esquerda</small><strong id="monitorMotorB">—</strong></div>
+          <div class="monitor-robo-valor"><small>Motor C · direita</small><strong id="monitorMotorC">—</strong></div>
+        </div>
+        <div id="monitorVazio" class="monitor-robo-vazio">Execute um programa para acompanhar os sensores e motores.</div>
+        <p class="monitor-robo-nota">No replay, as velocidades são estimadas pelos encoders; no Teleop, são os comandos atuais. Cor e luz são medidas no ponto virtual do sensor. Este painel não interpreta o código Python.</p>
+      </div>
+    </section>
     <div class="linha">
       <button id="btnPlay" disabled>▶ Reproduzir</button>
       <button type="button" id="btnTeleop" title="WASD ou gamepad — ao vivo">🎮 Teleop</button>
@@ -753,9 +824,23 @@ if (Campanha.initCampanha) {
 window.dispatchEvent(new Event('campanha-pronta'));
 </script>
 
+<script src="../src/js/monitorRobo.js?v=monitor-robo-atualizado-1"></script>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
+const MonitorRobo = JacarMonitorRobo.criar({
+  abaEducacao: $('abaEducacaoArena'),
+  abaMonitor: $('abaMonitorArena'),
+  painelEducacao: $('painelEducacaoArena'),
+  painelMonitor: $('painelMonitorArena'),
+  movimento: $('monitorMovimento'),
+  tempo: $('monitorTempo'),
+  cor: $('monitorCor'),
+  refletida: $('monitorRefletida'),
+  motorB: $('monitorMotorB'),
+  motorC: $('monitorMotorC'),
+  vazio: $('monitorVazio'),
+});
 
 // =====================================================================
 // Terminal
@@ -941,6 +1026,7 @@ const Playback = (() => {
     $('corpo').innerHTML = ''; $('contaPacotes').textContent = ''; logIdx = 0; ultimoT = 0; evIdx = 0;
     mensagensTerminal = []; idxTerminal = 0; ultimoTerminalT = -1; sincronizarPrints = false;
     eventosDicasCidade = [];
+    MonitorRobo.atualizar(null);
     const dica = $('dicaCidade'); if (dica) { dica.hidden = true; delete dica.dataset.dica; }
     $('resumo').textContent = 'Rode um script pra ver o robô.';
     const relogio = $('tempoPlayback'); if (relogio) relogio.textContent = '0,0 / 0,0 s simulados';
@@ -1118,6 +1204,7 @@ const Playback = (() => {
   function desenharEstado(est) {
     if (!est) return;
     atualizarSemaforoVisual(est.t || 0);
+    MonitorRobo.atualizar(JacarMonitorRobo.estadoAoVivo(App.sim));
     atualizarDicaCidade(est, true);
     if (modo === '3d' && vista) {
       vista.aplicar(est);
@@ -1165,6 +1252,7 @@ const Playback = (() => {
     $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0;
     atualizarRelogio();
     desenhar(t); sincronizarLog(t); sincronizarTerminal(t); sons(t);
+    MonitorRobo.atualizar(JacarMonitorRobo.estadoEm(sim, t));
   }
 
   function loop(agora) {
@@ -1631,6 +1719,7 @@ async function rodar() {
   App.executando = true; btn.disabled = true; btn.textContent = '⏳ Rodando…';
   Terminal.limpar();
   App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+  MonitorRobo.atualizar(null);
   Playback.reiniciarRelogioSemaforo();
   const btnResetSinal = $('btnReiniciarSinal');
   if (btnResetSinal) btnResetSinal.disabled = true;
