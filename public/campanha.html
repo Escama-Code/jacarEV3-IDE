@@ -4,18 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Campanha — Academia jacarev3</title>
+<link rel="stylesheet" href="../src/css/tokens.css">
+<link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/campanha.css">
 <style>
   * { box-sizing: border-box; }
   body {
-    margin: 0;
     min-height: 100vh;
-    font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
     background:
-      radial-gradient(ellipse at 20% 10%, #1a3a2a 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 90%, #1a2a4a 0%, transparent 45%),
-      #0d1117;
-    color: #e6edf3;
+      radial-gradient(ellipse at 20% 10%, color-mix(in srgb, var(--brand) 18%, transparent) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, color-mix(in srgb, var(--acc) 16%, transparent) 0%, transparent 45%),
+      var(--bg);
   }
   .lobby-campanha { position: relative; inset: auto; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: transparent; }
   .erro-load { color: #f85149; padding: 16px; }

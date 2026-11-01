@@ -1,68 +1,104 @@
-  :root { --bg:#1e1e1e; --painel:#252526; --borda:#3c3c3c; --txt:#d4d4d4; --mut:#858585; --ok:#3fb950; --acc:#4aa3ff; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--txt); font:14px/1.45 system-ui, sans-serif; }
-  header { padding:8px 16px; background:#333333; border-bottom:1px solid #000; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:15px; margin:0; font-weight:600; }
-  #status { color:var(--mut); font-size:13px; } #status.ok { color:var(--ok); } #status.erro { color:#ff6b6b; }
-  main {
-    display: grid;
-    grid-template-columns: minmax(380px, 1fr) minmax(400px, 1fr);
-    gap: 10px;
-    padding: 10px;
-    align-items: start;
-  }
-  /* coluna esquerda = código; direita = arena */
-  main > .painel-codigo { order: 1; }
-  main > .painel-arena { order: 2; }
-  @media (max-width:1100px) { main { grid-template-columns:1fr; } }
-  .painel { background:var(--painel); border:1px solid var(--borda); border-radius:6px; padding:10px; min-width:0; }
-  h2 { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--mut); margin:12px 0 6px; font-weight:600; }
-  h2:first-child { margin-top:0; }
-  /* [hidden] precisa vencer qualquer `display:` de autor (flex/block); sem isso o canvas "escondido" continua na tela */
-  [hidden] { display:none !important; }
-  /* Palco com tamanho FIXO — troca de mapa não redimensiona editor/terminal */
-  #palco {
-    position: relative;
-    width: 100%;
-    height: 420px;
-    min-height: 420px;
-    max-height: 420px;
-    border-radius: 4px;
-    overflow: hidden;
-    background: #cfd8e2;
-  }
-  #palco > .vista { position:absolute; inset:0; width:100%; height:100%; display:block; }
-  #cv { background:#f4f3ee; }
-  .linha { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:8px 0 0; }
-  button, select, input { background:#3c3c3c; color:var(--txt); border:1px solid #555; border-radius:4px; padding:5px 10px; font:inherit; }
-  button { cursor:pointer; } button:hover:not(:disabled) { border-color:var(--acc); } button:disabled { opacity:.45; cursor:default; }
-  button.principal { background:#0e639c; border-color:#1177bb; font-weight:600; }
-  input[type=number] { width:64px; } input[type=text] { width:84px; } input[type=range] { flex:1; min-width:140px; padding:0; }
-  label { color:var(--mut); font-size:12px; display:flex; align-items:center; gap:5px; }
-  .info { color:var(--mut); font-size:12px; margin-top:6px; }
-  kbd { background:#3c3c3c; border:1px solid #555; border-radius:3px; padding:0 4px; font-size:11px; }
+/**
+ * main.css — layout da IDE (sandbox / missão).
+ * Ordem: tokens.css → base.css → main.css
+ */
+header {
+  padding: 8px 16px;
+  min-height: var(--header-h);
+  background: var(--header);
+  border-bottom: 1px solid #000;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+header h1 { font-size: 15px; margin: 0; font-weight: 600; }
 
-  /* editor */
-  #editor { height:360px; min-height:360px; max-height:360px; border:1px solid var(--borda); border-radius:4px; overflow:hidden; }
-  #editor textarea { width:100%; height:100%; background:#1e1e1e; color:#d4d4d4; border:0; padding:8px; resize:none; outline:0;
-                     font:13px/1.5 ui-monospace, Menlo, Consolas, monospace; tab-size:4; }
+#status { color: var(--txt-muted); font-size: 13px; }
+#status.ok { color: var(--ok); }
+#status.erro { color: var(--erro); }
 
-  /* terminal */
-  .termbar { display:flex; align-items:center; justify-content:space-between; margin:12px 0 6px; }
-  .termbar h2 { margin:0; }
-  .termbar button { padding:2px 10px; font-size:12px; }
-  #terminal { height:170px; min-height:170px; max-height:170px; overflow:auto; background:#000; border:1px solid var(--borda); border-radius:4px; padding:8px 10px;
-              font:12.5px/1.5 ui-monospace, Menlo, Consolas, monospace; }
-  #terminal div { white-space:pre-wrap; word-break:break-word; }
-  #terminal .out { color:#b9f6ca; }
-  #terminal .sys { color:#7a9fb5; }
-  #terminal .err { color:#ff3b30; font-weight:700; }          /* Traceback + exceção final */
-  #terminal .quadro { color:#ff8a80; font-weight:400; }        /* linhas "File ..." do traceback */
-  #terminal .vazio { color:#555; }
+main {
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) minmax(400px, 1fr);
+  gap: 10px;
+  padding: 10px;
+  align-items: start;
+}
+main > .painel-codigo { order: 1; }
+main > .painel-arena { order: 2; }
+@media (max-width: 1100px) {
+  main { grid-template-columns: 1fr; }
+}
 
-  .seg { display:inline-flex; } .seg button { border-radius:0; } .seg button:first-child { border-radius:4px 0 0 4px; } .seg button:last-child { border-radius:0 4px 4px 0; }
-  .seg button.ativo { background:#0e639c; border-color:#1177bb; }
-  #tabela { max-height:210px; overflow:auto; border:1px solid var(--borda); border-radius:4px; background:#1b1b1b; }
-  table { width:100%; border-collapse:collapse; font:11.5px/1.35 ui-monospace, Menlo, Consolas, monospace; }
-  td { padding:2px 6px; border-bottom:1px solid #2a2a2a; vertical-align:top; }
-  td.t { color:var(--mut); white-space:nowrap; } td.hex { color:#9cdcfe; word-break:break-all; } td.d { white-space:nowrap; }
+#palco {
+  position: relative;
+  width: 100%;
+  height: var(--palco-h);
+  min-height: var(--palco-h);
+  max-height: var(--palco-h);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--arena-bg);
+}
+#palco > .vista { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#cv { background: var(--canvas-bg); }
+
+#editor {
+  height: var(--editor-h);
+  min-height: var(--editor-h);
+  max-height: var(--editor-h);
+  border: 1px solid var(--borda);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+#terminal {
+  height: var(--terminal-h);
+  min-height: var(--terminal-h);
+  max-height: var(--terminal-h);
+  overflow: auto;
+  background: #000;
+  border: 1px solid var(--borda);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font: 12px/1.4 var(--font-mono);
+  color: #d4d4d4;
+}
+#terminal .sys { color: var(--txt-muted); }
+#terminal .err { color: var(--erro); }
+#terminal .ok { color: var(--ok); }
+
+#tabela {
+  max-height: 210px;
+  overflow: auto;
+  border: 1px solid var(--borda);
+  border-radius: var(--radius-sm);
+  background: #1b1b1b;
+}
+#tabela table { width: 100%; border-collapse: collapse; font-size: 12px; }
+#tabela th, #tabela td { padding: 4px 8px; border-bottom: 1px solid var(--borda); text-align: left; }
+td.t { color: var(--txt-muted); white-space: nowrap; }
+td.hex { color: #9cdcfe; word-break: break-all; }
+td.d { white-space: nowrap; }
+
+.btn-menu-modos {
+  margin-left: 10px;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--borda);
+  background: var(--painel-2);
+  color: var(--txt);
+  cursor: pointer;
+}
+.badge-modo {
+  margin-left: 8px;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--ok-deep);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
