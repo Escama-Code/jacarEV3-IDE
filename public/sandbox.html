@@ -1146,6 +1146,13 @@ const Playback = (() => {
     const painel = $('dicaCidade');
     if (!painel) return;
     const pontos = cen?.pontosEducativos || [];
+    const pantanal = cen?.id === 'pantanalEcologico';
+    const aba = $('abaEducacaoArena');
+    if (aba) aba.textContent = pantanal ? 'Educação ambiental' : 'Educação no trânsito';
+    const dicaVazia = document.querySelector('.informacao-educativa-vazia');
+    if (dicaVazia) dicaVazia.textContent = pantanal
+      ? 'As dicas ambientais aparecem aqui durante a jornada de Jofre.'
+      : 'As dicas de trânsito aparecem aqui durante o percurso.';
     if (!pontos.length) {
       painel.hidden = true;
       delete painel.dataset.dica;
@@ -1185,7 +1192,21 @@ const Playback = (() => {
       const fundamento = $('dicaCidadeFundamento');
       fundamento.textContent = escolhido.fundamento || '';
       fundamento.hidden = !escolhido.fundamento;
-      $('dicaCidadeFonte').hidden = !escolhido.fundamento;
+      const fonte = $('dicaCidadeFonte');
+      // Mostrar link legal apenas quando o fundamento for jurídico
+      // e encaminhar à lei pertinente (nunca ao CTB para uma dica ambiental).
+      if (pantanal) {
+        const mataCiliar = /12[.]651\/2012/.test(escolhido.fundamento || '');
+        fonte.hidden = !mataCiliar;
+        if (mataCiliar) {
+          fonte.textContent = 'Consultar a Lei de Proteção da Vegetação Nativa';
+          fonte.href = 'https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12651.htm';
+        }
+      } else {
+        fonte.hidden = !escolhido.fundamento || !/CTB|9[.]503|trânsito/i.test(escolhido.fundamento);
+        fonte.textContent = 'Consultar o Código de Trânsito Brasileiro';
+        fonte.href = 'https://www.planalto.gov.br/ccivil_03/leis/l9503compilado.htm';
+      }
       painel.dataset.dica = chave;
     }
     painel.hidden = false;

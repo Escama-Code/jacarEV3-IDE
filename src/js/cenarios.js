@@ -1157,10 +1157,371 @@ const brt = {
     },
   };
 
+
+
+  // ============================================================
+  // A Jornada de Jofre v4 — S.O.S. Pantanal
+  // 520 × 360 cm. Elementos naturais 3D são somente decorativos;
+  // a física e o ultrassônico consultam exclusivamente "caixas".
+  // ============================================================
+  const pantanalEcologico = {
+    id: 'pantanalEcologico',
+    nome: 'A Jornada de Jofre — S.O.S. Pantanal',
+    w: 520,
+    h: 360,
+    pxPorCm: 3,
+    linhaAltaContraste: true,
+
+    inicioPadrao: 'lagoa_seca',
+    inicios: {
+      lagoa_seca: { x: 60, y: 75, th: -0.149, rotulo: 'Lagoa Seca (Início da Migração)' }
+    },
+
+    caixas: [
+      // Obstáculos físicos; somente estes participam das colisões e do ultrassônico.
+      // A rota serpenteia pela parte seca antes de atravessar a rodovia.
+      { nome: 'Tronco da Queimada (Norte)', x: 202, y: 109, w: 18, h: 16,
+        altura: 11, cor: '#3e2723', modelo: 'troncoQueimado' },
+      { nome: 'Árvore Derrubada (Centro)', x: 127, y: 148, w: 20, h: 17,
+        altura: 12, cor: '#4c3527', modelo: 'troncoQueimado' },
+      { nome: 'Galhos Carbonizados (Sul)', x: 137, y: 270, w: 21, h: 17,
+        altura: 9, cor: '#342722', modelo: 'troncoQueimado' },
+      { nome: 'Barreira de Rochas', x: 345, y: 222, w: 22, h: 15,
+        altura: 14, cor: '#62645e', modelo: 'rochaSeca' },
+      { nome: 'Galhos no Refúgio', x: 414, y: 273, w: 14, h: 13,
+        altura: 8, cor: '#49382b', modelo: 'troncoQueimado' },
+      // Obstáculos laterais que reforçam a história, sem bloquear o leito inteiro.
+      { nome: 'Toco de Desmatamento', x: 231, y: 52, w: 13, h: 13,
+        altura: 7, cor: '#46352c', modelo: 'troncoQueimado' },
+      { nome: 'Rocha do Solo Seco', x: 30, y: 289, w: 17, h: 14,
+        altura: 9, cor: '#78736b', modelo: 'rochaSeca' }
+    ],
+    rampas: [],
+
+    pontosEducativos: [
+      {
+        x: 60, y: 75, raio: 19, icone: '🍂',
+        titulo: 'A lagoa de Jofre secou',
+        mensagem: 'Na estiagem, algumas lagoas diminuem ou secam. Jofre precisa encontrar outro local com água e abrigo.',
+        fundamento: 'Ecologia — sazonalidade das áreas úmidas.'
+      },
+      {
+        x: 110, y: 67, raio: 17, icone: '🔥',
+        titulo: 'Perigo: área de queimada',
+        mensagem: 'O vermelho representa um foco de incêndio. O fogo, o calor e a fumaça ameaçam a fauna e destroem abrigos.',
+        fundamento: 'Educação ambiental — prevenção e impactos dos incêndios.'
+      },
+      {
+        x: 195, y: 115, raio: 20, icone: '🪵',
+        titulo: 'Troncos e perda de habitat',
+        mensagem: 'A derrubada da vegetação fragmenta habitats e deixa animais expostos durante a migração.',
+        fundamento: 'Ecologia — fragmentação de habitats.'
+      },
+      {
+        x: 135, y: 156, raio: 24, icone: '🌳',
+        titulo: 'Por que evitar o desmatamento?',
+        mensagem: 'A vegetação nativa protege o solo, oferece abrigo e ajuda a manter o equilíbrio dos ecossistemas.',
+        fundamento: 'Conservação da biodiversidade e da vegetação nativa.'
+      },
+      {
+        x: 65, y: 211, raio: 23, icone: '🌫️',
+        titulo: 'A fumaça também prejudica',
+        mensagem: 'A fumaça de queimadas pode prejudicar a respiração dos animais e afetar a qualidade do ar.',
+        fundamento: 'Saúde ambiental — poluentes de incêndios florestais.'
+      },
+      {
+        x: 169, y: 284, raio: 20, icone: '🌱',
+        titulo: 'Recuperar áreas queimadas',
+        mensagem: 'Recuperar a vegetação ajuda a restabelecer alimento, sombra e refúgio para os animais.',
+        fundamento: 'Ecologia — restauração de habitats.'
+      },
+      {
+        x: 241, y: 180, raio: 18, icone: '🚧',
+        titulo: 'Travessia segura de fauna',
+        mensagem: 'Rodovias podem separar habitats. Passagens de fauna e direção cuidadosa reduzem o risco de atropelamentos.',
+        fundamento: 'Educação cívica — segurança viária e proteção da fauna.'
+      },
+      {
+        x: 350, y: 230, raio: 22, icone: '🌿',
+        titulo: 'Proteger as margens dos rios',
+        mensagem: 'Matas ciliares diminuem a erosão e ajudam a preservar a água e os habitats aquáticos.',
+        fundamento: 'Lei nº 12.651/2012, art. 4º — áreas de preservação permanente.'
+      },
+      {
+        x: 412, y: 289, raio: 22, icone: '🪵',
+        titulo: 'Os rastros da degradação',
+        mensagem: 'Galhos caídos e vegetação destruída mostram por que prevenir incêndios e recuperar áreas afetadas é importante.',
+        fundamento: 'Educação ambiental — prevenção e recuperação ecológica.'
+      },
+      {
+        x: 450, y: 300, raio: 24, icone: '💧',
+        titulo: 'Jofre encontrou um refúgio',
+        mensagem: 'As áreas úmidas conservadas fornecem água, abrigo e alimento para muitos animais do Pantanal.',
+        fundamento: 'Conservação de áreas úmidas e biodiversidade.'
+      }
+    ],
+
+    // A posição das decorações é em cm. Apenas a lista "caixas"
+    // participa de colisões e leituras de ultrassônico.
+    // Elementos ficam fora da faixa de 4 cm lida pelo sensor.
+    ambientacao3d: [
+      // Região seca: madeira chamuscada, árvores mortas, clareiras e fumaça.
+      { tipo: 'lagoaSeca', x: 85, y: 309, sx: 51, sy: 26 },
+      { tipo: 'arvoreSeca', x: 24, y: 50, escala: 1.05, rotacao: 0.35 },
+      { tipo: 'arvoreSeca', x: 44, y: 109, escala: 1.12 },
+      { tipo: 'arvoreSeca', x: 27, y: 285, escala: 1.21, rotacao: -0.4 },
+      { tipo: 'arvoreSeca', x: 101, y: 332, escala: 1.05 },
+      { tipo: 'arvoreSeca', x: 169, y: 334, escala: 1.17 },
+      { tipo: 'arvoreSeca', x: 231, y: 54, escala: 1.18 },
+      { tipo: 'arvoreSeca', x: 219, y: 333, escala: 1.1 },
+      { tipo: 'tocoQueimado', x: 27, y: 199, escala: 1.13 },
+      { tipo: 'tocoQueimado', x: 105, y: 205, escala: 0.87 },
+      { tipo: 'tocoQueimado', x: 186, y: 207, escala: 1.15 },
+      { tipo: 'tocoQueimado', x: 229, y: 107, escala: 0.94 },
+      { tipo: 'tocoQueimado', x: 35, y: 333, escala: 1.2 },
+      { tipo: 'tocoQueimado', x: 196, y: 17, escala: 0.9 },
+      { tipo: 'rochas', x: 129, y: 212, escala: 0.92 },
+      { tipo: 'rochas', x: 181, y: 337, escala: 0.83 },
+      { tipo: 'rochas', x: 17, y: 343, escala: 0.82 },
+      // O incêndio é detectado pelo vermelho no chão; chamas sem colisão.
+      { tipo: 'focoFogo', x: 110, y: 67, escala: 0.78 },
+      { tipo: 'fumaca', x: 121, y: 38, escala: 0.8 },
+      { tipo: 'fumaca', x: 184, y: 33, escala: 0.85 },
+      // A placa de alerta é retangular e fica fora do corredor do robô.
+      { tipo: 'placaPerigo', x: 25, y: 19, escala: 0.75 },
+
+      // Faixa de passagem de fauna: uma placa lateral legível, sem invadir a guia.
+      { tipo: 'placaFauna', x: 295, y: 114, escala: 0.77, rotacao: 0.15 },
+
+      // Refúgio úmido com fauna e vegetação 3D.
+      { tipo: 'arvoreVerde', x: 305, y: 43, escala: 0.92 },
+      { tipo: 'arvoreVerde', x: 345, y: 56, escala: 1.09 },
+      { tipo: 'arvoreVerde', x: 403, y: 49, escala: 0.91 },
+      { tipo: 'arvoreVerde', x: 479, y: 60, escala: 1.12 },
+      { tipo: 'arvoreVerde', x: 312, y: 307, escala: 0.94 },
+      { tipo: 'arvoreVerde', x: 374, y: 331, escala: 1.16 },
+      { tipo: 'arvoreVerde', x: 498, y: 343, escala: 0.91 },
+      { tipo: 'arvoreVerde', x: 509, y: 134, escala: 1.03 },
+      { tipo: 'arvoreVerde', x: 478, y: 184, escala: 0.85 },
+      { tipo: 'arbusto', x: 316, y: 140, escala: 1.0 },
+      { tipo: 'arbusto', x: 379, y: 102, escala: 1.04 },
+      { tipo: 'arbusto', x: 496, y: 217, escala: 1.15 },
+      { tipo: 'arbusto', x: 408, y: 332, escala: 0.8 },
+      { tipo: 'arbusto', x: 295, y: 270, escala: 0.85 },
+      { tipo: 'lagoa', x: 462, y: 259, sx: 21, sy: 13 },
+      { tipo: 'lagoa', x: 478, y: 329, sx: 22, sy: 14 },
+      { tipo: 'lagoa', x: 446, y: 94, sx: 20, sy: 12 },
+      { tipo: 'taboas', x: 441, y: 246, escala: 1.0 },
+      { tipo: 'taboas', x: 497, y: 315, escala: 1.17 },
+      { tipo: 'taboas', x: 422, y: 96, escala: 0.93 },
+      { tipo: 'capivara', x: 485, y: 285, escala: 0.86, rotacao: -0.55 },
+      { tipo: 'garca', x: 421, y: 85, escala: 1.05 },
+      { tipo: 'garca', x: 503, y: 280, escala: 0.87 },
+      { tipo: 'marcoRefugio', x: 487, y: 295, escala: 0.82 }
+    ],
+
+    desenhar(ctx) {
+      this.desenharPiso(ctx);
+    },
+
+    desenharPiso: function(ctx) {
+      const W = 520, H = 360;
+      ctx.save();
+
+      // 1. Solo: mudança progressiva da estiagem para a área úmida.
+      const solo = ctx.createLinearGradient(0, 0, W, 0);
+      solo.addColorStop(0.00, '#d8c3a7');
+      solo.addColorStop(0.23, '#cdb18a');
+      solo.addColorStop(0.41, '#bdb685');
+      solo.addColorStop(0.56, '#a9bd79');
+      solo.addColorStop(0.76, '#7eb36d');
+      solo.addColorStop(1.00, '#4fa96f');
+      ctx.fillStyle = solo;
+      ctx.fillRect(0, 0, W, H);
+
+      // Manchas orgânicas do solo, desenhadas como áreas planas.
+      for (const [x,y,rx,ry,cor] of [
+        [56,309,76,38,'#c7a77f'], [165,312,61,28,'#b49d78'],
+        [280,50,76,28,'#9ab679'], [370,45,79,35,'#83b974'],
+        [485,164,43,62,'#6bac6b'], [341,307,68,45,'#77a96c']
+      ]) {
+        ctx.fillStyle = cor;
+        ctx.beginPath();
+        ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+        ctx.fill();
+      }
+
+      // Terra rachada da estiagem; traços claros e finos.
+      for (let i = 0; i < 100; i++) {
+        const x = 10 + (i*73)%225, y = 18 + (i*113)%328, r = 3 + i%7;
+        ctx.strokeStyle = i%3===0 ? '#ae9277' : '#c1a78a';
+        ctx.lineWidth = 0.9;
+        ctx.beginPath();
+        ctx.moveTo(x-r,y-r*.4); ctx.lineTo(x,y);
+        ctx.lineTo(x+r*.8,y-r*.55);
+        ctx.moveTo(x,y); ctx.lineTo(x-r*.2,y+r);
+        ctx.stroke();
+      }
+
+      // Lagoa seca — piso ilustrativo.
+      ctx.fillStyle = '#b59c80';
+      ctx.beginPath();
+      ctx.ellipse(85,309,55,29,-0.12,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ddc5a1';
+      ctx.beginPath();
+      ctx.ellipse(85,310,45,22,-0.12,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#a28b70'; ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(58,307); ctx.lineTo(83,315); ctx.lineTo(105,299);
+      ctx.moveTo(83,315); ctx.lineTo(78,327);
+      ctx.moveTo(105,299); ctx.lineTo(119,321);
+      ctx.stroke();
+
+      // Refúgio: manchas de água no solo, fora dos trechos da linha.
+      function lagoa(x,y,rx,ry) {
+        ctx.fillStyle = '#3e9e9c';
+        ctx.beginPath();
+        ctx.ellipse(x,y,rx+3,ry+3,0,0,Math.PI*2); ctx.fill();
+        const azul = ctx.createLinearGradient(x-rx,y-ry,x+rx,y+ry);
+        azul.addColorStop(0,'#8ad9c3');
+        azul.addColorStop(1,'#3ea8a2');
+        ctx.fillStyle = azul;
+        ctx.beginPath();
+        ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2); ctx.fill();
+      }
+      lagoa(462,259,21,13);
+      lagoa(478,329,22,14);
+      lagoa(446,94,20,12);
+      lagoa(369,326,12,8);
+
+      // Arbustos e gramíneas, porém NÃO sobre a linha final.
+      for (let i = 0; i < 135; i++) {
+        const x = 284+(i*71)%226, y = 12+(i*89)%335;
+        const r = 2.5+(i%4);
+        ctx.strokeStyle = i%3===0 ? '#4d925c' : '#70af67';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(x,y); ctx.lineTo(x-r*.6,y-r*1.2);
+        ctx.moveTo(x,y); ctx.lineTo(x+r*.6,y-r*1.25);
+        ctx.stroke();
+      }
+
+      // Os símbolos das árvores no piso auxiliam o modo 2D.
+      // O 3D usa geometrias próprias em "ambientacao3d".
+      for (const obj of this.ambientacao3d) {
+        if (obj.tipo==='arvoreVerde') {
+          ctx.fillStyle = '#427c50';
+          ctx.beginPath(); ctx.arc(obj.x,obj.y,7*(obj.escala||1),0,Math.PI*2); ctx.fill();
+          ctx.fillStyle = '#78ba78';
+          ctx.beginPath(); ctx.arc(obj.x-2,obj.y-2,4*(obj.escala||1),0,Math.PI*2); ctx.fill();
+        } else if (obj.tipo==='arvoreSeca') {
+          ctx.strokeStyle = '#84674c'; ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(obj.x-7,obj.y); ctx.lineTo(obj.x+6,obj.y);
+          ctx.moveTo(obj.x,obj.y-6); ctx.lineTo(obj.x,obj.y+6);
+          ctx.stroke();
+        }
+      }
+
+      // Leito sinuoso do rio seco: 2 trechos, separados pela rodovia.
+      function oeste() {
+        // Percurso em serpentina: norte -> centro -> sul da área seca.
+        // O braço final se alinha horizontalmente à passagem de fauna.
+        ctx.beginPath();
+        ctx.moveTo(60, 75);
+        ctx.bezierCurveTo(100,69,143,59,176,66);
+        ctx.bezierCurveTo(215,76,220,114,203,132);
+        ctx.bezierCurveTo(170,161,112,158,81,153);
+        ctx.bezierCurveTo(43,150,39,208,67,230);
+        ctx.bezierCurveTo(104,251,131,282,168,284);
+        ctx.bezierCurveTo(203,289,227,280,214,252);
+        ctx.bezierCurveTo(206,216,222,180,247,180);
+      }
+      function leste() {
+        ctx.beginPath();
+        ctx.moveTo(283,180);
+        ctx.bezierCurveTo(320,175,306,237.5,350,230);
+        ctx.bezierCurveTo(397.5,222.5,396.5,305,450,300);
+      }
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (const caminho of [oeste,leste]) {
+        caminho(); ctx.lineWidth = 19; ctx.strokeStyle = '#9f9279'; ctx.stroke();
+        caminho(); ctx.lineWidth = 15; ctx.strokeStyle = '#e6d2aa'; ctx.stroke();
+      }
+
+      // Rodovia que atravessa o corredor natural.
+      ctx.fillStyle = '#505b61';
+      ctx.fillRect(250,0,30,H);
+      ctx.fillStyle = '#a4adb1';
+      ctx.fillRect(248.5,0,1.5,H);
+      ctx.fillRect(280,0,1.5,H);
+      ctx.strokeStyle = '#e8c36a';
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([10,8]);
+      ctx.beginPath();
+      ctx.moveTo(265,4); ctx.lineTo(265,151);
+      ctx.moveTo(265,208); ctx.lineTo(265,356);
+      ctx.stroke(); ctx.setLineDash([]);
+
+      // Faixa horizontal de fauna: parada e travessia por programação.
+      // O intervalo x = 247..283 NÃO possui a guia preta.
+      ctx.fillStyle = '#f7f6ea';
+      for (let y=163; y<=195; y+=8) ctx.fillRect(252,y,26,4);
+
+      // Sinalização de travessia fica no 3D, fora da estrada e do leito.
+      // Não desenhamos placas, textos ou caixas sobre pixels do sensor.
+
+      // Círculo translúcido de chegada ANTES do traçado preto.
+      ctx.fillStyle = 'rgba(35,168,82,.23)';
+      ctx.beginPath(); ctx.arc(450,300,24,0,Math.PI*2); ctx.fill();
+
+      // Linha de sensor: #1a1a1a exato, largura física de 4 cm.
+      ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = 4;
+      oeste(); ctx.stroke();
+      leste(); ctx.stroke();
+
+      // 3. ZONA DE INCÊNDIO: sobrepõe a linha no primeiro trecho.
+      // O vermelho é um desafio real para o sensor de cor (código EV3 = 5).
+      // Não redesenhar a guia preta sobre o núcleo vermelho!
+      const fx = 110, fy = 67;
+      ctx.fillStyle = '#6d4336';
+      ctx.beginPath(); ctx.ellipse(fx,fy,17,14,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fa8c20';
+      ctx.beginPath(); ctx.ellipse(fx,fy,13,11,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#ed2923';
+      ctx.beginPath(); ctx.ellipse(fx,fy,11,9,0,0,Math.PI*2); ctx.fill();
+      // Escoriações e brasas fora da região percorrida.
+      for (const [bx,by,br] of [[95,84,3],[122,53,2],[130,88,3],[88,59,2]]) {
+        ctx.fillStyle='#da6230';
+        ctx.beginPath(); ctx.arc(bx,by,br,0,Math.PI*2); ctx.fill();
+      }
+
+      // Círculos de largada e chegada: contornos apenas.
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#83533c';
+      ctx.beginPath(); ctx.arc(60,75,10,0,Math.PI*2); ctx.stroke();
+      ctx.strokeStyle = '#edffe5';
+      ctx.beginPath(); ctx.arc(450,300,14,0,Math.PI*2); ctx.stroke();
+
+      ctx.textAlign='left';
+      ctx.font='bold 14px sans-serif'; ctx.fillStyle='#654b3c';
+      ctx.fillText('A JORNADA DE JOFRE',14,22);
+      ctx.font='9px sans-serif';
+      ctx.fillText('SECA • QUEIMADAS • MIGRAÇÃO',15,35);
+      ctx.fillText('LAGOA SECA',48,348);
+      ctx.fillStyle='#eaffeb';
+      ctx.font='bold 10px sans-serif';
+      ctx.fillText('PANTANAL VIVO',402,23);
+      ctx.font='bold 9px sans-serif';
+      ctx.fillText('REFÚGIO',457,300);
+      ctx.restore();
+    }
+  };
+
   // =========================================================================
   // REGISTRO DOS MAPAS: Adicione a variável do seu mapa aqui na lista
   // =========================================================================
-  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, cidadeEducativa, brt, circuitoAurora };
+  const lista = { treino, desvio, fll, labirinto, obr, tapeteUrbanoInfantil, cidadeEducativa, brt, circuitoAurora, pantanalEcologico };
 
   /** tapete (imagem + pixels) do cenário, gerado uma vez e reaproveitado */
   function obterTapete(id) { if (!cache[id]) cache[id] = gerarTapete(lista[id]); return cache[id]; }

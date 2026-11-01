@@ -184,6 +184,16 @@
       "cenario": "cidadeEducativa",
       "inicio": "rotatoria",
       "arquivo": "transito/seguidor-urbano-completo.py"
+    },
+    {
+      "id": "jofre_seguidor_desvio_fauna",
+      "nome": "Jofre — linha + ultrassônico + travessia de fauna",
+      "descricao": "Segue a linha do Pantanal, contorna tronco e rochas, espera 3 s na rodovia e alcança a lagoa.",
+      "categoria": "desafios",
+      "dificuldade": "Avançado",
+      "cenario": "pantanalEcologico",
+      "inicio": "lagoa_seca",
+      "arquivo": "desafios/jofre-pantanal.py"
     }
   ]
 }
