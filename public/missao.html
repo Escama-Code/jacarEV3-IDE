@@ -122,7 +122,6 @@
 </div>
 <div id="campResultado" class="camp-resultado-float" hidden></div>
 
-<<<<<<< HEAD
 
 <style id="camp-missao-panel-css">
 #campPainelMissao {
@@ -158,8 +157,6 @@ body.modo-campanha main { padding-right: min(320px, 36vw); }
   <p style="margin:10px 0 0;font-size:11px;color:#6e7681">A cada 3 falhas sai uma dica. Referência só com 3★ ou mais.</p>
 </div>
 
-=======
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 <header>
   <h1>🐊 jacarEV3 IDE</h1>
   <button type="button" id="btnMenuModos" class="btn-menu-modos" title="Trocar modo">Menu</button>
@@ -737,14 +734,10 @@ const Sugestoes = (() => {
 <script type="module">
 import '../src/js/3d/cena3d.mjs';
 import * as Campanha from '../src/campanha/index.mjs';
-<<<<<<< HEAD
 import { Dialogo } from '../src/campanha/dialogo/dialogo.mjs';
 window.Campanha = Campanha;
 window.Dialogo = Dialogo;
 Dialogo.init().catch(console.warn);
-=======
-window.Campanha = Campanha;
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 async function bootCatalogo() {
   try {
     const cat = await Campanha.initCampanha();
@@ -1693,7 +1686,6 @@ const MissaoPage = {
     if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
     if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (info.tentativas || 0);
     if ($('campDica')) $('campDica').onclick = () => this.mostrarDica(false);
-<<<<<<< HEAD
     const _bd = document.getElementById('campBtnDica');
     if (_bd) _bd.onclick = () => this.mostrarDica(false);
     const _br = document.getElementById('campBtnRef');
@@ -1752,22 +1744,12 @@ const MissaoPage = {
       ref.innerHTML = '<strong>Código de referência</strong><pre style="white-space:pre-wrap;font-size:11px;background:#0d1117;padding:8px;border-radius:8px;overflow:auto;max-height:220px">' + code + '</pre>';
     }
     if (window.Dialogo) Dialogo.referencia(m).catch(() => {});
-=======
-    if ($('campReabrirLobby')) $('campReabrirLobby').onclick = () => { location.href = 'campanha.html'; };
-    if ($('btnMenuModos')) $('btnMenuModos').onclick = () => { location.href = '../index.html'; };
-    Terminal.sys('📖 Missão: ' + missao.titulo);
-    Terminal.sys('💡 A cada 3 falhas sai uma dica automática.');
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   },
 
   mostrarDica(auto) {
     const missao = this.missaoAtiva;
     if (!missao) return;
-<<<<<<< HEAD
     const dicas = (missao.dicas || []).map((x) => (x && typeof x === 'object' ? (x.texto || x.hint || '') : String(x || ''))).filter(Boolean);
-=======
-    const dicas = missao.dicas || [];
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     if (!dicas.length) { Terminal.sys('Sem dicas nesta missão.'); return; }
     const save = this.ensureSave();
     if (!save.dicasUsadas) save.dicasUsadas = {};
@@ -1775,7 +1757,6 @@ const MissaoPage = {
     const idx = Math.min(n, dicas.length - 1);
     save.dicasUsadas[missao.id] = Math.min(n + 1, dicas.length);
     Campanha.gravarSave(save);
-<<<<<<< HEAD
     const texto = dicas[idx];
     Terminal.sys((auto ? '💡 Dica automática (' : '💡 Dica (') + (idx + 1) + '/' + dicas.length + '): ' + texto);
     const pd = document.getElementById('campPainelDica');
@@ -1783,9 +1764,6 @@ const MissaoPage = {
     if (window.Dialogo) {
       Dialogo.dica(missao, '(' + (idx + 1) + '/' + dicas.length + ') ' + texto).catch(() => {});
     }
-=======
-    Terminal.sys((auto ? '💡 Dica automática (' : '💡 Dica (') + (idx + 1) + '/' + dicas.length + '): ' + dicas[idx]);
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   },
 
   avaliarTentativa(sim, codigo) {
@@ -1806,13 +1784,10 @@ const MissaoPage = {
     const n = this.save.missoes[mid]?.estrelas || 0;
     if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
     if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (this.save.missoes[mid]?.tentativas || 0);
-<<<<<<< HEAD
     this.atualizarPainelCampanha();
     const btnRef = document.getElementById('campBtnRef');
     if (btnRef) btnRef.hidden = (this.save.missoes[mid]?.estrelas || 0) < 3;
 
-=======
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     return r;
   },
 
@@ -1821,12 +1796,9 @@ const MissaoPage = {
     if (!box) return;
     box.hidden = false;
     const missao = this.missaoAtiva;
-<<<<<<< HEAD
     if (window.Dialogo && missao) {
       (r.ok ? Dialogo.sucesso(missao) : Dialogo.fracasso(missao)).catch(() => {});
     }
-=======
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     const falas = r.ok ? (missao.narrativa?.sucesso || []) : (missao.narrativa?.fracasso || []);
     const fala = falas.map((d) => '<p><strong>' + d.personagem + ':</strong> ' + d.texto + '</p>').join('');
     const n = Math.min(5, r.estrelas || 0);
