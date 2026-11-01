@@ -632,17 +632,13 @@
       box.hidden=false;
     }catch(e){aviso(e.message,true);}
   }
-<<<<<<< HEAD
   const PAGINA_DEDICADA = !document.getElementById('btnRodar') && !!document.getElementById('mapEditorCanvas');
   const STORAGE_KEY = 'jacar-mapa-pendente';
 
-=======
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
   async function abrir(){
     if(ativo)return;
     try{
       if(document.body.classList.contains('modo-campanha'))throw Error('Editor disponível no Sandbox.');
-<<<<<<< HEAD
       if(typeof Playback !== 'undefined') Playback.prepararEdicao?.();
       ativo=true;
       const modal=$('mapEditorModal');
@@ -671,15 +667,6 @@
     // Sandbox sem UI do editor: só expõe API de importação
     if (!CANVAS()) return;
 
-=======
-      Playback.prepararEdicao?.();
-      ativo=true;$('mapEditorModal').hidden=false;
-      await mostrarDocumento(copiarAtual());
-    }catch(e){ativo=false;$('mapEditorModal').hidden=true;alert(e.message);}
-  }
-  function fechar(){if(ocupado)return;ativo=false;pointer=null;preview=null;stagedCurve=null;$('mapEditorModal').hidden=true;}
-  function configurar(){
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     document.querySelectorAll('[data-map-tab]').forEach((tab,indice)=>{
       tab.addEventListener('click',()=>selecionarAba(tab.dataset.mapTab));
       tab.addEventListener('keydown',e=>{
@@ -693,12 +680,8 @@
       });
     });
     selecionarAba('desenho');
-<<<<<<< HEAD
     if($('btnEditorMapa')) $('btnEditorMapa').addEventListener('click',abrir);
     if($('mapEditorToIde')) $('mapEditorToIde').addEventListener('click',enviarParaSandbox);
-=======
-    $('btnEditorMapa').addEventListener('click',abrir);
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
     $('mapEditorClose').addEventListener('click',fechar);
     $('mapEditorCancel').addEventListener('click',fechar);
     $('mapEditorBlank').addEventListener('click',()=>mostrarDocumento(M.criarDocumento(doc?.w,doc?.h)));
@@ -746,7 +729,6 @@
     atualizarControlesSala();
     ferramentaSelecionada('caneta');
   }
-<<<<<<< HEAD
   document.addEventListener('DOMContentLoaded', async () => {
     configurar();
     if (PAGINA_DEDICADA) {
@@ -775,8 +757,4 @@
     return cen;
   };
 
-=======
-  document.addEventListener('DOMContentLoaded',configurar);
-  window.JacarEditorMapa={carregar:mostrarDocumento,validar:M.validar};
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
 })();

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Editores de mapas
 
 Dois editores **fora** do Sandbox:
@@ -18,7 +17,6 @@ Dois editores **fora** do Sandbox:
 - Formato `.jmap` / `.jcrv3map` v2 traços
 
 Sandbox só abre os editores e **importa** o arquivo pronto.
-=======
 # Editor visual de mapas — primeira versão
 
 O novo botão **✏️ Editar mapa**, no Sandbox, abre um editor 2D para desenhar pistas autorais diretamente com o mouse ou tela sensível ao toque.
@@ -71,4 +69,3 @@ Ao copiar um cenário nativo, a arte inicial é armazenada como PNG dentro do `.
 Teste de integração em um Canvas real realizado com navegador Chromium: linha desenhada no editor e aplicada ao cenário retornou pixel preto `[5,5,5]` (refletância ≈6,3), versus fundo branco `[255,255,255]` (≈70). Também foram verificados exportação e reimportação `.jmap`.
 
 A integração da página completa com Pyodide, Three.js e scripts Python ainda deve ser conferida manualmente no ambiente da IDE.
->>>>>>> ebe5f226f8c18e9f1d296621ded67aa7bdc8a36e
