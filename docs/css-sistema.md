@@ -34,3 +34,8 @@ Salva e recarrega. IDE, campanha e menu acompanham.
 
 - Novas cores hardcoded (`#3ecf8e`) em HTML/JS — use `var(--brand)`
 - Novo `<style>` gigante na página — extraia para o CSS da feature
+
+## efeitos.css
+
+Animações e avatares. Ver `docs/assets-e-efeitos.md`.
+
