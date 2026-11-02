@@ -14,12 +14,15 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
     while True:
         luz = float(robo.ler_sensor(3, p.MODO_COR_REFLETIDA))
         if luz < LIMIAR - 6:
-            robo.mover_continuo('B', 8)
-            robo.mover_continuo('C', BASE + 8)
-        elif luz > LIMIAR + 10:
+            # Muito no preto → Corrige virando para a DIREITA (sai do preto)
             robo.mover_continuo('B', BASE + 8)
             robo.mover_continuo('C', 8)
+        elif luz > LIMIAR + 10:
+            # Muito no branco → Corrige virando para a ESQUERDA (busca o preto)
+            robo.mover_continuo('B', 8)
+            robo.mover_continuo('C', BASE + 8)
         else:
+            # Na borda ideal → Avança em linha reta
             robo.mover_continuo('B', BASE)
             robo.mover_continuo('C', BASE)
         time.sleep(DT)
