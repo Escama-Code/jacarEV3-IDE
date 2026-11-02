@@ -1,4 +1,3 @@
-// Reexport — fonte única em ../sim.js
 // SimEV3 — EV3 virtual
 // ============================================================
 const OP = {
@@ -100,6 +99,8 @@ class SimEV3 {
     this.frames = [];
     this._gravar();
     this.eventos = []; this.pacotes = []; this.dist = 0;
+    this.tombado = false; this.pitch = 0; this.roll = 0; this.z = 0;
+    this._pitchPrev = 0; this._omegaPitch = 0;
   }
 
   agora() { return this.t; }
@@ -166,6 +167,46 @@ class SimEV3 {
     this.th += dth;
     if (this.th > Math.PI) this.th -= 2 * Math.PI;
     if (this.th < -Math.PI) this.th += 2 * Math.PI;
+
+    // Terreno (rampa): pitch/z + possibilidade de tombar
+    let ter = { z: 0, pitch: 0, roll: 0 };
+    try {
+      if (_Cen && typeof _Cen.terreno === 'function') ter = _Cen.terreno(this.cen, px, py, this.th + dth);
+    } catch (_) {}
+    const pitch = ter.pitch || 0;
+    const roll = ter.roll || 0;
+    this.z = ter.z || 0;
+    // aceleração angular de pitch (borda de rampa / queda)
+    const omegaP = (pitch - (this._pitchPrev || 0)) / (h || 1e-3);
+    this._omegaPitch = 0.7 * (this._omegaPitch || 0) + 0.3 * omegaP;
+    this._pitchPrev = pitch;
+    const velLin = Math.abs(ds) / (h || 1e-3); // cm/s
+    // Tomba se: queda brusca de altura, ou velocidade alta em inclinação forte, ou sai da rampa "voando"
+    const queda = (this._zPrev != null) && ((this._zPrev - this.z) > 1.2) && velLin > 8;
+    const inclinadoRapido = Math.abs(pitch) > 0.28 && velLin > 25;
+    const sacudida = Math.abs(this._omegaPitch) > 12 && velLin > 10;
+    this._zPrev = this.z;
+    if (!this.tombado && (queda || inclinadoRapido || sacudida)) {
+      this.tombado = true;
+      this.roll = (Math.random() > 0.5 ? 1 : -1) * 1.2;
+      this.pitch = pitch + 0.9;
+      for (const p of 'ABCD') {
+        if (this.motores[p]) { this.motores[p].v = 0; this.motores[p].vel = 0; this.motores[p].modo = 'ocioso'; }
+      }
+      this.eventos.push({ t: this.t, tipo: 'tombou' });
+    }
+    if (this.tombado) {
+      // deitado: não anda mais; anima roll
+      this.pitch = Math.min(1.4, (this.pitch || 1) + 0.02);
+      this.roll = (this.roll || 1.2) * 1.01;
+      dth = 0;
+      px = this.x; py = this.y;
+    } else {
+      this.pitch = pitch;
+      this.roll = roll;
+    }
+
+    if (this.tombado) { this.x = px; this.y = py; }
     this.t += h;
     this._gravar();
   }
@@ -202,17 +243,71 @@ class SimEV3 {
     return { drenado: this.t - t0, ligados };
   }
 
-  rgbEm(x, y, th, tempoS = this.t) {
-    // Fonte da verdade: a cor do piso no instante da simulação.
-    // Não usar um Canvas estático: o mesmo tapete alimenta o sensor e o 3D.
-    _Cen.atualizarTapete?.(this.cen, this.tapete, tempoS);
-    const sx = x + 5.5 * Math.cos(th), sy = y + 5.5 * Math.sin(th);
-    return this.cfg.amostragem === 'pixel' ? _Cen.lerPixel(this.tapete, sx, sy) : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
+  _posSensorCor(x, y, th, lateralCm = 0) {
+    const frente = this.cfg.sensorCorFrenteCm != null ? this.cfg.sensorCorFrenteCm : 5.5;
+    const c = Math.cos(th), s = Math.sin(th);
+    return {
+      x: x + frente * c - lateralCm * s,
+      y: y + frente * s + lateralCm * c,
+    };
   }
 
-  refletidaEm(x, y, th, tempoS = this.t) { return _Cen.intensidade(this.rgbEm(x, y, th, tempoS), this.cfg.modoLuz); }
-  corEm(x, y, th, tempoS = this.t) { const [r, g, b] = this.rgbEm(x, y, th, tempoS); return _Cen.classificarCor(r, g, b); }
-  refletida() { return this.refletidaEm(this.x, this.y, this.th); }
+  _lateralPorta(num1a3) {
+    const esp = this.cfg.sensorCorEspacamentoCm != null ? this.cfg.sensorCorEspacamentoCm : 2.2;
+    if (num1a3 === 1) return -esp; // esquerda
+    if (num1a3 === 3) return +esp; // direita
+    return 0;
+  }
+
+  rgbEm(x, y, th, tempoS = this.t, lateralCm = 0) {
+    _Cen.atualizarTapete?.(this.cen, this.tapete, tempoS);
+    const pos = this._posSensorCor(x, y, th, lateralCm);
+    const raio = this.cfg.raioSensorCm != null ? this.cfg.raioSensorCm : 0.4;
+    if (this.cfg.amostragem === 'pixel') return _Cen.lerPixel(this.tapete, pos.x, pos.y);
+    // 3 amostras → menos ruído na curva
+    const offs = [-0.35, 0, 0.35];
+    let R = 0, G = 0, B = 0, n = 0;
+    for (const o of offs) {
+      const q = this._posSensorCor(x, y, th, lateralCm + o);
+      const rgb = _Cen.lerArea(this.tapete, q.x, q.y, raio);
+      if (rgb && rgb.length >= 3) { R += rgb[0]; G += rgb[1]; B += rgb[2]; n++; }
+    }
+    return n ? [R / n, G / n, B / n] : _Cen.lerArea(this.tapete, pos.x, pos.y, raio);
+  }
+
+  refletidaEm(x, y, th, tempoS = this.t, lateralCm = 0) {
+    return _Cen.intensidade(this.rgbEm(x, y, th, tempoS, lateralCm), this.cfg.modoLuz);
+  }
+  corEm(x, y, th, tempoS = this.t, lateralCm = 0) {
+    const [r, g, b] = this.rgbEm(x, y, th, tempoS, lateralCm);
+    return _Cen.classificarCor(r, g, b);
+  }
+  refletida() { return this.refletidaEm(this.x, this.y, this.th, this.t, 0); }
+
+  /**
+   * porta: 0-based no bytecode (0 = sensor 1).
+   * modo EV3 cor: 0=REFLETIDA, 1=AMBIENTE, 2=COR (e variações da lib).
+   */
+  lerSensor(porta, modo) {
+    // porta 0-based no bytecode EV3 (0 → sensor físico 1)
+    const num = (porta | 0) + 1;
+    const tipo = this.cfg.sensores[num];
+    if (!tipo) return null;
+    if (tipo === 'cor') {
+      const lat = this._lateralPorta(num);
+      const m = Number(modo);
+      // REFLETIDA: 0 (oficial), 3/4 (variantes de libs)
+      if (m === 0 || m === 3 || m === 4 || m === 5) {
+        return this.refletidaEm(this.x, this.y, this.th, this.t, lat);
+      }
+      if (m === 1) return 10; // ambiente
+      // COR e demais
+      return this.corEm(this.x, this.y, this.th, this.t, lat);
+    }
+    if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
+    if (tipo === 'ultrassonico') return this.ultrassonico();
+    return this.ultrassonico();
+  }
 
   ultrassonico() {
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
@@ -238,13 +333,6 @@ class SimEV3 {
     return Math.max(0, Math.min(255, best));
   }
 
-  lerSensor(porta, modo) {
-    const tipo = this.cfg.sensores[porta + 1];
-    if (!tipo) return null;
-    if (tipo === 'cor') return modo === 0 ? this.refletida() : modo === 1 ? 10 : this.corEm(this.x, this.y, this.th);
-    if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
-    return this.ultrassonico();
-  }
 
   processar(pacote) {
     const b = pacote instanceof Uint8Array ? pacote : new Uint8Array(pacote);
