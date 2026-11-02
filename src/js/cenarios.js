@@ -1203,12 +1203,15 @@ const brt = {
       },
       {
         x: 110, y: 67, raio: 17, icone: '🔥',
+        // Aviso acionado quando o SENSOR EV3 lê a faixa vermelha (x=88..97).
+        // A ilustração do incêndio permanece em x=110; não é um sensor de calor.
+        gatilhoSensor: { x: 93, y: 68, raio: 13, cor: 5, refletanciaMax: 35 },
         titulo: 'Perigo: área de queimada',
         mensagem: 'O vermelho representa um foco de incêndio. O fogo, o calor e a fumaça ameaçam a fauna e destroem abrigos.',
         fundamento: 'Educação ambiental — prevenção e impactos dos incêndios.'
       },
       {
-        x: 195, y: 115, raio: 20, icone: '🪵',
+        x: 195, y: 115, raio: 20, icone: '🌳',
         titulo: 'Troncos e perda de habitat',
         mensagem: 'A derrubada da vegetação fragmenta habitats e deixa animais expostos durante a migração.',
         fundamento: 'Ecologia — fragmentação de habitats.'
@@ -1244,7 +1247,7 @@ const brt = {
         fundamento: 'Lei nº 12.651/2012, art. 4º — áreas de preservação permanente.'
       },
       {
-        x: 412, y: 289, raio: 22, icone: '🪵',
+        x: 412, y: 289, raio: 22, icone: '🌳',
         titulo: 'Os rastros da degradação',
         mensagem: 'Galhos caídos e vegetação destruída mostram por que prevenir incêndios e recuperar áreas afetadas é importante.',
         fundamento: 'Educação ambiental — prevenção e recuperação ecológica.'

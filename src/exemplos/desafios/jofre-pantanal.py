@@ -35,7 +35,9 @@ AZUL = 2
 VERMELHO = 5
 
 LIMIAR_PRETO = 24
-DISTANCIA_ALERTA = 27
+# O ultrassônico mede a distância até o objeto; reduza ou aumente
+# este limiar com cautela e teste a folga necessária para o giro.
+DISTANCIA_ALERTA = 21  # cm, calibrado para o cenário v5.2
 DISTANCIA_SEGURANCA = 12
 VELOCIDADE_LINHA = 23
 VELOCIDADE_MANOBRA = 15
@@ -322,7 +324,11 @@ with RoboEV3("00:16:53:64:F8:B8") as robo:
                 break
 
             if etapa in ("ATE_OBSTACULO_1", "ATE_OBSTACULO_2", "ATE_OBSTACULO_3"):
-                if time.time() - ultimo_evento > 2.0 and distancia() < DISTANCIA_ALERTA:
+                distancia_atual = (distancia() if time.time() - ultimo_evento > 2.0
+                                  else float("inf"))
+                if distancia_atual < DISTANCIA_ALERTA:
+                    print("ULTRASSÔNICO:", round(distancia_atual, 1), "cm;",
+                          "limiar:", DISTANCIA_ALERTA, "cm; iniciando desvio.")
                     if etapa == "ATE_OBSTACULO_1":
                         ok = desvio_primeiro()
                         proxima = "ATE_OBSTACULO_2"
