@@ -289,21 +289,23 @@ class SimEV3 {
    * modo EV3 cor: 0=REFLETIDA, 1=AMBIENTE, 2=COR (e variações da lib).
    */
   lerSensor(porta, modo) {
+    // porta 0-based no bytecode EV3 (0 → sensor físico 1)
     const num = (porta | 0) + 1;
     const tipo = this.cfg.sensores[num];
     if (!tipo) return null;
     if (tipo === 'cor') {
       const lat = this._lateralPorta(num);
-      const m = modo | 0;
-      // REFLETIDA: 0 ou valores comuns de libs
-      if (m === 0 || m === 3 || m === 4) {
+      const m = Number(modo);
+      // REFLETIDA: 0 (oficial), 3/4 (variantes de libs)
+      if (m === 0 || m === 3 || m === 4 || m === 5) {
         return this.refletidaEm(this.x, this.y, this.th, this.t, lat);
       }
       if (m === 1) return 10; // ambiente
-      // COR (2, etc.)
+      // COR e demais
       return this.corEm(this.x, this.y, this.th, this.t, lat);
     }
     if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
+    if (tipo === 'ultrassonico') return this.ultrassonico();
     return this.ultrassonico();
   }
 

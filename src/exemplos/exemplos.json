@@ -43,7 +43,7 @@
     {
       "id": "semaforo_urbano",
       "nome": "Trânsito — parar no vermelho (Tapete Urbano)",
-      "descricao": "Reconhece a cor do semáforo e para na faixa vermelha.",
+      "descricao": "Reconhece a cor do semáforo e para na faixa vermelha. · Mapa: tapeteUrbanoInfantil/rotatoria",
       "categoria": "transito",
       "dificuldade": "Intermediário",
       "cenario": "tapeteUrbanoInfantil",
@@ -53,7 +53,7 @@
     {
       "id": "semaforo_observar",
       "nome": "Trânsito — observar semáforo por 295 s",
-      "descricao": "Observa as cores do semáforo durante 295 segundos simulados.",
+      "descricao": "Observa as cores do semáforo durante 295 segundos simulados. · Mapa: tapeteUrbanoInfantil/rotatoria",
       "categoria": "transito",
       "dificuldade": "Intermediário",
       "cenario": "tapeteUrbanoInfantil",
@@ -63,7 +63,7 @@
     {
       "id": "linha",
       "nome": "Seguidor de linha — treino",
-      "descricao": "Seguidor 1 sensor no treino; velocidades calibradas para a física com inércia.",
+      "descricao": "Seguidor 1 sensor no treino; velocidades calibradas para a física com inércia. · Mapa: treino/padrao",
       "categoria": "linha",
       "dificuldade": "Iniciante",
       "cenario": "treino",
@@ -73,7 +73,7 @@
     {
       "id": "gamepad",
       "nome": "Controle / teclado — teleop pelo código",
-      "descricao": "Exemplo de teleop com teclado ou controle conectado.",
+      "descricao": "Exemplo de teleop com teclado ou controle conectado. · Mapa: treino/padrao",
       "categoria": "ferramentas",
       "dificuldade": "Intermediário",
       "cenario": "treino",
@@ -83,7 +83,7 @@
     {
       "id": "fll_linha",
       "nome": "Seguidor de linha — tapete FLL (acha a linha e segue a borda)",
-      "descricao": "Segue a borda de uma linha no tapete FLL.",
+      "descricao": "Segue a borda de uma linha no tapete FLL. · Mapa: fll/padrao",
       "categoria": "linha",
       "dificuldade": "Intermediário",
       "cenario": "fll",
@@ -93,7 +93,7 @@
     {
       "id": "cores",
       "nome": "Ler cores (modo COR) — tapete FLL",
-      "descricao": "Mostra as cores reconhecidas pelo sensor no tapete FLL.",
+      "descricao": "Mostra as cores reconhecidas pelo sensor no tapete FLL. · Mapa: fll/padrao",
       "categoria": "sensores",
       "dificuldade": "Iniciante",
       "cenario": "fll",
@@ -103,7 +103,7 @@
     {
       "id": "topico",
       "nome": "Seguidor — array 3 sensores",
-      "descricao": "Seguidor proporcional com 3 sensores (portas 1 e 3).",
+      "descricao": "Seguidor proporcional com 3 sensores (portas 1 e 3). · Mapa: treino/padrao",
       "categoria": "linha",
       "dificuldade": "Intermediário",
       "cenario": "treino",
@@ -113,7 +113,7 @@
     {
       "id": "desvio",
       "nome": "Desvio clássico (recua, gira, segue) — paredes",
-      "descricao": "Usa o ultrassônico para evitar obstáculos.",
+      "descricao": "Usa o ultrassônico para evitar obstáculos. · Mapa: desvio/centro",
       "categoria": "desafios",
       "dificuldade": "Intermediário",
       "cenario": "desvio",
@@ -123,7 +123,7 @@
     {
       "id": "rampa",
       "nome": "Subir a rampa — tapete FLL (use a vista 3D)",
-      "descricao": "Treina a subida de rampa em 3D.",
+      "descricao": "Treina a subida de rampa em 3D. · Mapa: fll/rampa",
       "categoria": "desafios",
       "dificuldade": "Intermediário",
       "cenario": "fll",
@@ -133,7 +133,7 @@
     {
       "id": "basico",
       "nome": "Teste dos comandos (bytes de cada método)",
-      "descricao": "Experimenta diferentes comandos do robô, motores e sensor de luz.",
+      "descricao": "Experimenta diferentes comandos do robô, motores e sensor de luz. · Mapa: treino/padrao",
       "categoria": "inicio",
       "dificuldade": "Iniciante",
       "cenario": "treino",
@@ -143,7 +143,7 @@
     {
       "id": "erro",
       "nome": "Erro de propósito (veja o Traceback em vermelho)",
-      "descricao": "Produz um erro intencional para ensinar a ler o Traceback.",
+      "descricao": "Produz um erro intencional para ensinar a ler o Traceback. · Mapa: treino/padrao",
       "categoria": "ferramentas",
       "dificuldade": "Iniciante",
       "cenario": "treino",
@@ -153,7 +153,7 @@
     {
       "id": "primeiros_movimentos",
       "nome": "Primeiros movimentos com motores",
-      "descricao": "Faz o robô andar, parar e inverter a direção usando mover_continuo.",
+      "descricao": "Faz o robô andar, parar e inverter a direção usando mover_continuo. · Mapa: treino/padrao",
       "categoria": "inicio",
       "dificuldade": "Iniciante",
       "cenario": "treino",
@@ -163,7 +163,7 @@
     {
       "id": "leitura_sensores",
       "nome": "Ler cor, luz e distância",
-      "descricao": "Imprime os valores dos sensores da porta 3 (cor) e 4 (distância).",
+      "descricao": "Imprime os valores dos sensores da porta 3 (cor) e 4 (distância). · Mapa: treino/padrao",
       "categoria": "sensores",
       "dificuldade": "Iniciante",
       "cenario": "treino",
@@ -173,7 +173,7 @@
     {
       "id": "seguidor_urbano_completo",
       "nome": "Seguidor urbano — linha + semáforo + faixas + curvas",
-      "descricao": "Programa testado pelo grupo: segue linha, respeita semáforo, atravessa faixas e recupera curvas sem recuar.",
+      "descricao": "Programa testado pelo grupo: segue linha, respeita semáforo, atravessa faixas e recupera curvas sem recuar. · Mapa: tapeteUrbanoInfantil/rotatoria",
       "categoria": "transito",
       "dificuldade": "Avançado",
       "cenario": "tapeteUrbanoInfantil",
@@ -183,17 +183,17 @@
     {
       "id": "cidade_educativa_demo",
       "nome": "Cidade Educativa — demonstração (linha + trânsito)",
-      "descricao": "Demonstra a cidade educacional: respeita semáforos, cruza faixas e recupera curvas. Use o cenário Cidade Educativa.",
+      "descricao": "Demonstra a cidade educacional: respeita semáforos, cruza faixas e recupera curvas. Use o cenário Cidade Educativa. · Mapa: cidadeEducativa/partida",
       "categoria": "transito",
       "dificuldade": "Avançado",
       "cenario": "cidadeEducativa",
-      "inicio": "rotatoria",
+      "inicio": "partida",
       "arquivo": "transito/seguidor-urbano-completo.py"
     },
     {
       "id": "jofre_seguidor_desvio_fauna",
       "nome": "Jofre v5.2 — seguidor de borda EV3",
-      "descricao": "Segue a borda preta pelo sensor de refletância na porta 3 (como FLL), reconhece marcas vermelha e azul, desvia pelo ultrassônico e controla os giros com encoders. Calibração necessária no EV3 físico.",
+      "descricao": "Segue a borda preta pelo sensor de refletância na porta 3 (como FLL), reconhece marcas vermelha e azul, desvia pelo ultrassônico e controla os giros com encoders. Calibração necessária no EV3 físico. · Mapa: pantanalEcologico/lagoa_seca",
       "categoria": "desafios",
       "dificuldade": "Avançado",
       "cenario": "pantanalEcologico",
@@ -203,7 +203,7 @@
     {
       "id": "obr_array",
       "nome": "OBR — array 3 sensores + verde",
-      "descricao": "Segue linha com portas 1–3 no treino; verde e US quando existirem.",
+      "descricao": "Segue linha com portas 1–3 no treino; verde e US quando existirem. · Mapa: treino/padrao",
       "categoria": "obr",
       "dificuldade": "Intermediário",
       "cenario": "treino",
@@ -213,7 +213,7 @@
     {
       "id": "obr_garra",
       "nome": "OBR — teste da garra (motor A)",
-      "descricao": "Abre e fecha a garra com girar_motor_graus no motor A.",
+      "descricao": "Abre e fecha a garra com girar_motor_graus no motor A. · Mapa: treino/padrao",
       "categoria": "obr",
       "dificuldade": "Iniciante",
       "cenario": "treino",

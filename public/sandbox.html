@@ -1652,8 +1652,8 @@ async function rodar() {
   }
 }
 
-// A seleção do programa altera SOMENTE o editor. Mapa/câmera/largada são escolhas
-// independentes do aluno. O cenário sugerido pelo exercício é apenas informativo.
+// P0: ao escolher um exemplo, o mapa/início recomendados são aplicados
+// para o código funcionar na aula. O aluno ainda pode trocar o mapa depois.
 function atualizarAvisoMapaExemplo() {
   const aviso = $('mapaExemploAviso');
   const botao = $('btnMapaExemplo');
@@ -1665,16 +1665,35 @@ function atualizarAvisoMapaExemplo() {
     botao.hidden = true;
     return;
   }
-  const outroMapa = $('cenario').value !== exemplo.cenario;
-  aviso.textContent = outroMapa
-    ? `Mapa indicado: ${recomendado.nome} (opcional).`
-    : 'Mapa atual mantido.';
-  botao.hidden = !outroMapa;
+  const inicioOk = exemplo.inicio && recomendado.inicios && recomendado.inicios[exemplo.inicio];
+  const mapaOk = $('cenario').value === exemplo.cenario;
+  const inicioAtual = $('inicio') ? $('inicio').value : '';
+  const inicioMatch = !exemplo.inicio || inicioAtual === exemplo.inicio;
+  if (mapaOk && inicioMatch) {
+    aviso.textContent = 'Mapa alinhado ao exemplo.';
+    botao.hidden = true;
+  } else {
+    aviso.textContent = 'Mapa diferente do exemplo — clique para alinhar.';
+    botao.hidden = false;
+  }
 }
 
 function aplicarExemplo(exemplo, codigo) {
   if (!App.editor) return;
   App.editor.setValue(codigo);
+  // Aplica cenário/início recomendados (com fallback seguro)
+  if (exemplo && CENARIOS[exemplo.cenario]) {
+    const cen = CENARIOS[exemplo.cenario];
+    let inicio = exemplo.inicio;
+    if (!cen.inicios || !cen.inicios[inicio]) {
+      inicio = cen.inicioPadrao || Object.keys(cen.inicios || {})[0] || 'padrao';
+    }
+    try {
+      Playback.escolher(exemplo.cenario, inicio);
+    } catch (e) {
+      console.warn('Não foi possível aplicar mapa do exemplo', e);
+    }
+  }
   atualizarAvisoMapaExemplo();
 }
 
