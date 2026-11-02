@@ -14,11 +14,9 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
     while True:
         e = float(robo.ler_sensor(1, p.MODO_COR_REFLETIDA))
         d = float(robo.ler_sensor(3, p.MODO_COR_REFLETIDA))
-        
-        # Refletida: menor = mais preto
-        erro = e - d  # positivo → esquerda na área clara, direita na área escura (preto)
-        
-        # Correção proporcional invertida para garantir convergência ao centro da linha
+
+        erro = e - d
+
         v_esq = max(-60, min(60, int(VEL + K * erro)))
         v_dir = max(-60, min(60, int(VEL - K * erro)))
         
