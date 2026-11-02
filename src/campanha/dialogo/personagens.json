@@ -4,20 +4,23 @@
     "nome": "Instrutor",
     "emoji": "🐊",
     "cor": "#3ecf8e",
-    "titulo": "Mentor jacarEV3"
+    "titulo": "Mentor jacarEV3",
+    "avatar": "../../assets/campanha/avatares/instrutor.svg"
   },
   "assistente": {
     "id": "assistente",
     "nome": "Luz",
     "emoji": "💡",
     "cor": "#e3b341",
-    "titulo": "Dicas"
+    "titulo": "Dicas",
+    "avatar": "../../assets/campanha/avatares/assistente.svg"
   },
   "arbitro": {
     "id": "arbitro",
     "nome": "Árbitro",
     "emoji": "🏁",
     "cor": "#58a6ff",
-    "titulo": "Avaliação"
+    "titulo": "Avaliação",
+    "avatar": "../../assets/campanha/avatares/arbitro.svg"
   }
 }

@@ -185,7 +185,21 @@ function mostrarFala(fala) {
   falaAtual = fala;
   const p = resolverPersonagem(fala.personagem);
   el.overlay.style.setProperty('--dlg-cor', p.cor || '#3ecf8e');
-  el.avatar.textContent = p.emoji || '🐊';
+  // avatar: PNG/SVG se houver, senão emoji
+  el.avatar.innerHTML = '';
+  if (p.avatar) {
+    const img = document.createElement('img');
+    try {
+      img.src = new URL(p.avatar, import.meta.url).href;
+    } catch (_) {
+      img.src = p.avatar;
+    }
+    img.alt = p.nome || '';
+    img.onerror = () => { el.avatar.textContent = p.emoji || '🐊'; };
+    el.avatar.appendChild(img);
+  } else {
+    el.avatar.textContent = p.emoji || '🐊';
+  }
   el.nome.textContent = p.nome || 'Instrutor';
   el.titulo.textContent = p.titulo || '';
   el.texto.innerHTML = '';
