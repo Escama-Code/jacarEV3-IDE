@@ -1,0 +1,71 @@
+{
+  "formato": "jacarev3-mapa",
+  "versao": 2,
+  "modo": "modular-obr",
+  "nome": "Sala resgate intro",
+  "tileCm": 30,
+  "nivelCm": 5,
+  "gridW": 6,
+  "gridH": 4,
+  "niveisMax": 1,
+  "celulas": [
+    {
+      "tipo": "obr-reta",
+      "gx": 0,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 1,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 2,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 3,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    }
+  ],
+  "inicio": {
+    "gx": 0,
+    "gz": 1,
+    "gy": 0,
+    "rot": 0
+  },
+  "w": 180,
+  "h": 120,
+  "pxPorCm": 4,
+  "tracos": [],
+  "caixas": [
+    {
+      "x": 90,
+      "y": 35,
+      "w": 12,
+      "h": 12,
+      "altura": 6,
+      "nome": "obstaculo"
+    }
+  ],
+  "rampas": [],
+  "vitimas": [
+    {
+      "x": 100,
+      "y": 45,
+      "nome": "vitima"
+    }
+  ],
+  "decoracoes3d": [],
+  "basePNG": ""
+}

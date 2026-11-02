@@ -415,3 +415,27 @@ body.lobby-aberto header {
   gap: 8px;
   margin-top: 10px;
 }
+
+/* Camada visual minimalista jacarEV3 */
+.lobby-campanha, .tela-inicio {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(183,223,79,.12), transparent 28rem),
+    radial-gradient(circle at 84% 88%, rgba(45,212,216,.12), transparent 32rem),
+    var(--bg);
+}
+.lobby-card { background: rgba(17,24,33,.92); border-color: var(--borda); border-radius: var(--radius-lg); box-shadow: var(--shadow); }
+.lobby-header { border-bottom: 1px solid rgba(149,166,179,.14); padding-bottom: 20px; }
+.lobby-kicker { color: var(--acc); letter-spacing: .16em; }
+.camp-xp { color: var(--brand); }
+.camp-grid-modulos { gap: 10px; }
+.camp-card-modulo { background: rgba(13,21,29,.72); border-color: var(--borda); border-radius: 14px; padding: 15px; }
+.camp-card-modulo:not(.bloqueado):hover { border-color: var(--acc); transform: translateX(4px); box-shadow: none; }
+.camp-card-modulo.completo { border-color: rgba(183,223,79,.6); }
+.camp-card-num { border-radius: 10px; background: rgba(45,212,216,.10); color: var(--acc); }
+.camp-card-modulo.completo .camp-card-num { background: rgba(183,223,79,.14); color: var(--brand); }
+.camp-card-meta { color: var(--warn); }
+.camp-missao { background: rgba(13,21,29,.72); border-color: var(--borda); }
+.camp-missao.selecionada { border-color: var(--acc); background: rgba(45,212,216,.10); }
+.camp-dialogo, .monitor-robo { background: rgba(13,21,29,.72); border-color: var(--borda); }
+.hud-campanha { background: rgba(17,24,33,.90); border-color: var(--borda); }
+.hud-badge { background: rgba(183,223,79,.16); color: var(--brand); border: 1px solid rgba(183,223,79,.28); }

@@ -1,75 +1,61 @@
 /**
- * tokens.css — Design system jacarEV3 (base: mockup home, verde lima)
- * Única fonte de cor/tipografia/medida do app.
+ * tokens.css — identidade visual jacarEV3 IDE
  */
 :root {
-  /* Fundo e superfícies */
-  --bg: #07090c;
-  --bg-soft: #0c1016;
-  --bg-elevated: #12171f;
-  --painel: #141a22;
-  --painel-2: #1a222d;
-  --header: #0e131a;
+  --bg: #0b0d0c;
+  --bg-elevated: #101411;
+  --painel: #111714;
+  --painel-2: #171d19;
+  --header: #0b0d0c;
 
-  /* Texto */
-  --txt: #f0f3f6;
-  --txt-muted: #8b96a8;
-  --txt-faint: #5c6678;
+  --txt: #f1f0e9;
+  --txt-muted: #879187;
+  --txt-faint: #5e6a60;
 
-  /* Bordas */
-  --borda: #243040;
-  --borda-forte: #334155;
-  --borda-card: rgba(132, 180, 255, 0.12);
+  --borda: rgba(241,240,233,.13);
+  --borda-forte: rgba(241,240,233,.18);
 
-  /* Marca — verde lima do mockup */
-  --brand: #b8f52a;
-  --brand-soft: #9ad922;
-  --brand-dim: #6a9a18;
-  --brand-glow: rgba(184, 245, 42, 0.18);
+  --acc: #ccff3d;
+  --acc-hover: #ddff76;
+  --acc-deep: #3d591c;
+  --ok: #ccff3d;
+  --ok-deep: #30451b;
+  --warn: #f2c45c;
+  --erro: #ff7b72;
+  --danger: #ff7b72;
 
-  /* Ações (secundárias, alinhadas ao verde) */
-  --acc: #b8f52a;
-  --acc-hover: #d0ff5c;
-  --acc-deep: #5a8210;
-  --ok: #b8f52a;
-  --ok-deep: #4d7010;
-  --warn: #e3b341;
-  --erro: #f85149;
-  --danger: #ff6b6b;
+  --brand: #ccff3d;
+  --brand-dim: #829f36;
+  --locked: #252b26;
 
-  /* Arena */
-  --arena-bg: #cfd8e2;
-  --canvas-bg: #f4f3ee;
+  --arena-bg: #cbd7db;
+  --canvas-bg: #f3f5ef;
 
-  /* Tipo */
-  --font: "Segoe UI", system-ui, -apple-system, Roboto, Ubuntu, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Code", Menlo, Consolas, monospace;
+  --font: "Space Grotesk", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, sans-serif;
+  --font-mono: "DM Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --fs: 14px;
   --fs-sm: 12px;
   --fs-xs: 11px;
   --lh: 1.45;
 
-  /* Forma */
   --radius: 12px;
   --radius-sm: 8px;
-  --radius-lg: 16px;
+  --radius-lg: 20px;
   --radius-pill: 999px;
 
-  --shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
-  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow: 0 20px 60px rgba(0, 0, 0, .34);
+  --shadow-sm: 0 6px 20px rgba(0, 0, 0, .22);
 
-  --header-h: 52px;
+  --header-h: 56px;
   --palco-h: 420px;
   --editor-h: 360px;
   --terminal-h: 170px;
 
-  /* Aliases legados */
   --surface: var(--painel);
   --border: var(--borda);
   --text: var(--txt);
   --muted: var(--txt-muted);
-  --accent: var(--brand);
+  --accent: var(--acc);
   --accent-h: var(--acc-hover);
-  --green: var(--brand);
-  --locked: #2a3340;
+  --green: var(--ok);
 }

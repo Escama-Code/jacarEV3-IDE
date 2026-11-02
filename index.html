@@ -1,62 +1,308 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>jacarEV3 IDE — Laboratório de Robótica</title>
-  <link rel="stylesheet" href="src/css/tokens.css">
-  <link rel="stylesheet" href="src/css/base.css">
-  <link rel="stylesheet" href="src/css/efeitos.css">
-  <link rel="stylesheet" href="src/css/menu.css">
-</head>
-<body class="menu-home">
-  <main class="home">
-    <section class="home-brand fx-fade-in">
-      <div class="home-logo-mark" aria-hidden="true">
-        <img src="src/assets/ui/logo-icon.svg" alt="" width="34" height="34">
-      </div>
-      <p class="home-kicker">Laboratório de robótica</p>
-      <h1 class="home-title">
-        jacar<span class="ev3">EV3</span>
-        <span class="home-title-sub">IDE</span>
-      </h1>
-      <p class="home-tagline">Código que ganha rodas.</p>
-      <p class="home-desc">
-        Programe em Python, simule no navegador e descubra como o robô pensa.
-      </p>
-    </section>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0d0c" />
+    <meta name="description" content="jacarEV3 IDE — laboratório de robótica para aprender fazendo." />
+    <link rel="icon" type="image/png" href="public/logo.png" />
+    <script type="importmap">
+      { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js" } }
+    </script>
+    <link rel="stylesheet" href="src/css/tokens.css" />
+    <link rel="stylesheet" href="src/css/base.css" />
+    <link rel="stylesheet" href="src/css/home.css" />
+    <title>jacarEV3 IDE · laboratório de robótica</title>
+  </head>
+  <body>
+    <main class="home-shell">
+      <div class="home-noise" aria-hidden="true"></div>
 
-    <section class="home-panel fx-slide-up">
-      <p class="home-panel-label">Comece por aqui</p>
-      <div class="home-cards">
-        <a class="home-card" href="public/campanha.html">
-          <span class="home-card-num">01</span>
-          <span class="home-card-body">
-            <p class="home-card-title">Campanha</p>
-            <p class="home-card-desc">Missões guiadas, sensores e desafios de trânsito.</p>
-          </span>
-          <span class="home-card-arrow" aria-hidden="true">↗</span>
-        </a>
-        <a class="home-card" href="public/sandbox.html">
-          <span class="home-card-num">02</span>
-          <span class="home-card-body">
-            <p class="home-card-title">Sandbox</p>
-            <p class="home-card-desc">Editor livre, simulador 2D/3D e teleoperação.</p>
-          </span>
-          <span class="home-card-arrow" aria-hidden="true">↗</span>
-        </a>
-      </div>
-      <a class="home-link-sec" href="public/editor-mapas-blocos.html">
-        <span>Editor por blocos OBR</span>
-        <span aria-hidden="true">→</span>
-      </a>
-    </section>
-  </main>
+      <header class="site-header">
+        <div class="site-header__identity">
+          <a class="brand-lockup" href="#top" aria-label="jacarEV3 início">
+            <img class="brand-lockup__logo" src="public/logo.png" alt="jacarEV3" />
+          </a>
+          <div class="header-status">
+            <span class="status-pulse" aria-hidden="true"></span>
+            <span>laboratório aberto</span>
+            <span class="header-status__slash">/</span>
+            <span>v.03</span>
+          </div>
+        </div>
 
-  <footer class="home-footer">
-    <a class="brand-link" href="https://github.com/Escama-Code/jacarEV3-IDE" target="_blank" rel="noopener">jacarev3</a>
-    <span>simulação EV3 no browser</span>
-    <a href="https://github.com/Escama-Code" target="_blank" rel="noopener">Escama Code</a>
-  </footer>
-</body>
+        <nav class="site-nav" aria-label="Navegação principal">
+          <a href="#routes">modos</a>
+          <div class="user-score" aria-label="Pontuação do usuário">
+            <span class="user-score__label">pontuação</span>
+            <strong id="user-xp">0 XP</strong>
+          </div>
+        </nav>
+      </header>
+
+      <div class="header-rule" aria-hidden="true"></div>
+
+      <section class="hero" id="top">
+        <div class="hero-copy">
+          <div class="eyebrow reveal-in">
+            <span>laboratório de robótica</span>
+            <span class="eyebrow__rule" aria-hidden="true"></span>
+            <span>feito para experimentar</span>
+          </div>
+
+          <h1 class="hero-title reveal-in reveal-in--delay-1">
+            <span>código</span>
+            <span class="hero-title__lime">que ganha</span>
+            <span>rodas<span class="hero-title__period">.</span></span>
+          </h1>
+
+          <p class="hero-intro reveal-in reveal-in--delay-2">
+            Um laboratório de robótica para escrever em Python, simular no navegador e descobrir como um robô pensa — com as mãos na massa, mesmo quando a bancada é digital.
+          </p>
+
+          <div class="hero-footnote reveal-in reveal-in--delay-4">
+            <span class="footnote-mark" aria-hidden="true">↳</span>
+            <span>para quem aprende fazendo<br />e não apenas assistindo</span>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal-in reveal-in--delay-2" role="img" aria-label="Ilustração de um robô jacarEV3 em uma bancada digital">
+          <div class="visual-orbit visual-orbit--one" aria-hidden="true"></div>
+          <div class="visual-orbit visual-orbit--two" aria-hidden="true"></div>
+          <div class="visual-cross visual-cross--top" aria-hidden="true"></div>
+          <div class="visual-cross visual-cross--bottom" aria-hidden="true"></div>
+
+          <div class="visual-caption visual-caption--top">
+            <span>objeto 03</span><span class="caption-line" aria-hidden="true"></span><span>em movimento</span>
+          </div>
+
+          <div class="robot-stage" aria-hidden="true">
+            <div class="robot-stage__halo"></div>
+            <canvas class="jacare-model" id="jacare-model" aria-label="Modelo 3D do robô jacaré"></canvas>
+            <div class="robot-stage__shadow"></div>
+          </div>
+
+          <div class="telemetry-card">
+            <div class="telemetry-card__topline">
+              <span>telemetria</span>
+              <span class="telemetry-live"><span class="status-pulse" aria-hidden="true"></span>live</span>
+            </div>
+            <div class="telemetry-card__main"><span>EV3</span><strong>00<span>.42</span></strong></div>
+            <div class="telemetry-bars" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <div class="telemetry-card__footer"><span>motor A+B</span><span>simulação 2D</span></div>
+          </div>
+
+          <div class="hand-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Zm6 11 .9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9L18 14Z" /></svg>
+            <span>feito para testar,<br />errar e tentar melhor</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="routes-section" id="routes">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">01 / escolha seu primeiro gesto</span>
+            <h2 class="routes-heading">comece por aqui</h2>
+          </div>
+        </div>
+
+        <div class="route-stack">
+          <a class="route-panel route-panel--campaign" href="campanha/">
+            <span class="route-panel__number">01</span>
+            <span class="route-panel__copy"><strong>Campanha</strong><span>Missões guiadas, sensores e desafios de trânsito.</span></span>
+            <svg class="route-panel__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg>
+          </a>
+
+          <a class="route-panel route-panel--sandbox" href="sandbox/">
+            <span class="route-panel__number">02</span>
+            <span class="route-panel__copy"><strong>Sandbox</strong><span>Editor livre, simulador 2D/3D e teleoperação.</span></span>
+            <svg class="route-panel__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg>
+          </a>
+
+          <a class="route-inline" href="obr/">
+            <span>Editor por blocos OBR</span>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7" /></svg>
+          </a>
+        </div>
+      </section>
+
+      <section class="method-section" id="method">
+        <div class="method-intro">
+          <span class="section-kicker">02 / o jeito de fazer</span>
+          <h2>menos tutorial.<br /><span>mais descoberta.</span></h2>
+          <p>O jacarEV3 transforma conceitos abstratos em sinais que você pode ver, ajustar e colocar para rodar.</p>
+          <div class="method-signature"><span>jacarEV3</span><span class="signature-line"></span><span>ide 2026</span></div>
+        </div>
+
+        <div class="capabilities-list">
+          <div class="capability is-selected" role="button" tabindex="0" aria-pressed="true">
+            <span class="capability__id">01</span>
+            <div class="capability__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14" /></svg></div>
+            <div class="capability__copy"><h3>Python no centro</h3><p>Aprenda a pensar como quem constrói: escreva, rode, observe e refaça.</p></div>
+            <svg class="capability__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg>
+          </div>
+          <div class="capability" role="button" tabindex="0" aria-pressed="false">
+            <span class="capability__id">02</span>
+            <div class="capability__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4H5v3m11-3h3v3M19 16v3h-3m-8 0H5v-3" /><circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" /></svg></div>
+            <div class="capability__copy"><h3>Simulação sem atrito</h3><p>Teste o comportamento no navegador antes de encostar no robô físico.</p></div>
+            <svg class="capability__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg>
+          </div>
+          <div class="capability" role="button" tabindex="0" aria-pressed="false">
+            <span class="capability__id">03</span>
+            <div class="capability__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5V3m6 2V3M8 7h8l2 3v9H6v-9l2-3ZM9 19v2m6-2v2" /><circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" /></svg></div>
+            <div class="capability__copy"><h3>Robôs para explorar</h3><p>Sensores, rodas e decisões conectados em uma bancada digital viva.</p></div>
+            <svg class="capability__arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg>
+          </div>
+        </div>
+
+        <div class="code-note" id="sandbox">
+          <div class="code-note__top"><span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 5 7 7-7 7M14 17h5" /></svg>sandbox / tentativa-01.py</span><span>● salvo agora</span></div>
+          <pre><code><span class="code-muted"># um robô também aprende por etapas</span>
+<span class="code-keyword">while</span> <span class="code-var">robo</span>.<span class="code-fn">detectou</span>():
+  <span class="code-var">robo</span>.<span class="code-fn">avançar</span>(<span class="code-number">20</span>)
+  <span class="code-keyword">if</span> <span class="code-var">robo</span>.<span class="code-fn">viu</span>(<span class="code-string">"parede"</span>):
+    <span class="code-var">robo</span>.<span class="code-fn">girar</span>(<span class="code-number">90</span>)</code></pre>
+          <div class="code-note__cursor" aria-hidden="true">▮</div>
+        </div>
+      </section>
+
+      <section class="closing-section" id="campaign">
+        <div class="closing-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="#ccff3d" d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z" /></svg></div>
+        <div class="closing-copy">
+          <span class="section-kicker">03 / bancada liberada</span>
+          <h2>agora é<br /><em>sua vez.</em></h2>
+        </div>
+      </section>
+
+      <footer class="site-footer" id="obr">
+        <div class="footer-brand"><span class="footer-brand__name">jacar<span>EV3</span></span><span>laboratório de robótica</span></div>
+        <div class="footer-links"><a href="#top">voltar ao topo <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg></a><span>feito com curiosidade · 2026</span></div>
+        <div class="footer-code"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2" /><rect x="9" y="9" width="6" height="6" rx="1" /><path d="M9 1v4m6-4v4M9 19v4m6-4v4M1 9h4m-4 6h4m14-6h4m-4 6h4" /></svg> OBR / OPEN LAB / 03</div>
+      </footer>
+    </main>
+    <script>
+      (() => {
+        const items = Array.from(document.querySelectorAll(".capability[role='button']"));
+        if (!items.length) return;
+
+        const selectItem = (selectedItem) => {
+          items.forEach((item) => {
+            const selected = item === selectedItem;
+            item.classList.toggle("is-selected", selected);
+            item.setAttribute("aria-pressed", String(selected));
+          });
+        };
+
+        items.forEach((item) => {
+          item.addEventListener("click", () => selectItem(item));
+          item.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter" && event.key !== " ") return;
+            event.preventDefault();
+            selectItem(item);
+          });
+        });
+      })();
+    </script>
+    <script type="module">
+      // XP no header (não bloqueia o 3D se falhar)
+      try {
+        const { carregarXpTotal } = await import("./src/campanha/save.mjs");
+        const score = document.querySelector("#user-xp");
+        const updateScore = () => {
+          if (!score) return;
+          const xp = carregarXpTotal();
+          score.textContent = `${xp} XP`;
+          score.setAttribute("aria-label", `Pontuação do usuário: ${xp} XP`);
+        };
+        updateScore();
+        window.addEventListener("storage", (event) => {
+          if (event.key === "jacar-campanha-save-v2") updateScore();
+        });
+      } catch (e) {
+        console.warn("XP header:", e);
+      }
+
+      // Preview 3D do jacaré (padrão da home)
+      const canvas = document.querySelector("#jacare-model");
+      if (!canvas) {
+        console.warn("canvas #jacare-model ausente");
+      } else try {
+        const THREE = await import("three");
+        const { construirRoboJacare } = await import("./src/js/3d/modelos/jacare.mjs");
+
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.setClearColor(0x000000, 0);
+        if (THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
+        if (THREE.ACESFilmicToneMapping != null) {
+          renderer.toneMapping = THREE.ACESFilmicToneMapping;
+          renderer.toneMappingExposure = 1.18;
+        }
+
+        const scene = new THREE.Scene();
+        scene.add(new THREE.HemisphereLight(0xe8ffdc, 0x243021, 2.1));
+        const keyLight = new THREE.DirectionalLight(0xf0ffd9, 3.2);
+        keyLight.position.set(-12, 20, 24);
+        scene.add(keyLight);
+        const fillLight = new THREE.DirectionalLight(0xb9d5ff, 1.3);
+        fillLight.position.set(14, 9, -12);
+        scene.add(fillLight);
+
+        const jacare = construirRoboJacare();
+        jacare.animar?.({ t: 0, encB: 0, encC: 0, refletida: 0, bip: false });
+        jacare.grupo.scale.setScalar(1.35);
+        jacare.grupo.position.set(0, -1.2, 0);
+        jacare.grupo.rotation.y = -0.35;
+        jacare.grupo.traverse((part) => {
+          if (part.name === "olho_ultrassonico" && part.children[1]?.material) {
+            const lens = part.children[1].material;
+            lens.color.set(0xb9ef41);
+            lens.emissive.set(0x80d820);
+            lens.emissiveIntensity = 1.5;
+          }
+        });
+        scene.add(jacare.grupo);
+
+        const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 200);
+        camera.position.set(18, 14, 32);
+        camera.lookAt(0, 4.5, 0);
+
+        let t0 = performance.now();
+        const tick = (now) => {
+          const t = (now - t0) / 1000;
+          // rotação lenta + leve animação de "vivo"
+          jacare.grupo.rotation.y = -0.35 + t * 0.25;
+          jacare.animar?.({
+            t,
+            encB: t * 120,
+            encC: t * 120,
+            refletida: 20 + 10 * Math.sin(t * 2),
+            bip: false,
+            led: "VERDE",
+          });
+          const { width, height } = canvas.getBoundingClientRect();
+          if (width > 2 && height > 2) {
+            renderer.setSize(width, height, false);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.render(scene, camera);
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+
+        canvas.addEventListener("wheel", (event) => {
+          event.preventDefault();
+          const deltaScale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? canvas.clientHeight : 1;
+          jacare.grupo.rotation.y += event.deltaY * deltaScale * 0.004;
+        }, { passive: false });
+      } catch (error) {
+        console.warn("Não foi possível renderizar o modelo 3D do jacaré.", error);
+      }
+    </script>
+  </body>
 </html>

@@ -14,11 +14,11 @@ with RoboEV3('00:16:53:64:F8:B8') as robo:
     while True:
         luz = float(robo.ler_sensor(3, p.MODO_COR_REFLETIDA))
         if luz < LIMIAR - 6:
-            robo.mover_continuo('B', 8)
-            robo.mover_continuo('C', BASE + 8)
-        elif luz > LIMIAR + 10:
             robo.mover_continuo('B', BASE + 8)
             robo.mover_continuo('C', 8)
+        elif luz > LIMIAR + 10:
+            robo.mover_continuo('B', 8)
+            robo.mover_continuo('C', BASE + 8)
         else:
             robo.mover_continuo('B', BASE)
             robo.mover_continuo('C', BASE)

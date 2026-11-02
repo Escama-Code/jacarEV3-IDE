@@ -3,78 +3,106 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Campanha — Academia jacarev3</title>
+<title>Campanha — Academia jacarEV3</title>
 <link rel="stylesheet" href="../src/css/tokens.css">
+<link rel="stylesheet" href="../src/css/site-chrome.css">
 <link rel="stylesheet" href="../src/css/base.css">
-<link rel="stylesheet" href="../src/css/efeitos.css">
-<link rel="stylesheet" href="../src/css/shell.css">
 <link rel="stylesheet" href="../src/css/campanha.css">
+<link rel="stylesheet" href="../src/css/campaign-page.css">
 <style>
-  * { box-sizing: border-box; }
-  body {
-    min-height: 100vh;
-    background:
-      radial-gradient(ellipse at 20% 10%, color-mix(in srgb, var(--brand) 18%, transparent) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 90%, color-mix(in srgb, var(--acc) 16%, transparent) 0%, transparent 45%),
-      var(--bg);
-  }
-  .lobby-campanha { position: relative; inset: auto; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; background: transparent; }
   .erro-load { color: #f85149; padding: 16px; }
 </style>
 </head>
-<body class="app-shell ">
+<body class="campaign-body">
+<main class="campaign-page">
+  <div class="campaign-noise" aria-hidden="true"></div>
+  <div class="campaign-atmosphere campaign-atmosphere--left" aria-hidden="true"></div>
+  <div class="campaign-atmosphere campaign-atmosphere--right" aria-hidden="true"></div>
 
-<header class="app-header">
-  <a class="app-logo" href="../index.html" title="Menu">
-    <img src="../src/assets/ui/logo-header.svg" alt="jacarEV3 IDE" height="28">
-  </a>
-  <nav class="app-header-nav">
-    <a href="campanha.html" data-nav="campanha" class="is-active">Campanha</a>
-    <a href="sandbox.html" data-nav="sandbox">Sandbox</a>
-    <a href="editor-mapas-blocos.html" data-nav="blocos">Blocos OBR</a>
-    <a href="editor-mapas.html" data-nav="mapas">Mapas</a>
-    <a href="../index.html">Menu</a>
-  </nav>
-  <span id="status" class="app-status">…</span>
-</header>
+  <header class="campaign-topbar">
+    <a class="campaign-brand" href="../index.html" aria-label="Voltar para o início">
+      <img class="campaign-brand__logo" src="logo.png" alt="jacarEV3">
+    </a>
+    <div class="campaign-topbar__status">
+      <span class="campaign-status-pulse" aria-hidden="true"></span>
+      <span>modo campanha</span><span class="campaign-topbar__slash">/</span><span>trilha 01</span>
+    </div>
+    <nav class="campaign-nav" aria-label="Navegação da campanha">
+      <a href="../index.html">início</a>
+      <a href="#modules">módulos</a>
+      <a href="#help">ajuda</a>
+    </nav>
+  </header>
 
-<div id="lobbyCampanha" class="lobby-campanha">
-  <div class="lobby-card">
-    <header class="lobby-header">
-      <div>
-        <p class="lobby-kicker">Modo campanha</p>
-        <h1 id="campTitulo">Academia jacarev3</h1>
-        <p id="campDesc" class="lobby-sub">Escolha o módulo e a missão. A IDE abre em seguida.</p>
+  <div class="campaign-rule" aria-hidden="true"></div>
+
+  <section class="campaign-shell">
+    <header class="campaign-header">
+      <div class="campaign-heading">
+        <div class="campaign-eyebrow">
+          <span class="campaign-eyebrow__index">01</span><span>modo campanha</span>
+          <span class="campaign-eyebrow__line" aria-hidden="true"></span><span>academia jacarEV3</span>
+        </div>
+        <h1 id="campTitulo">Academia <em>jacarEV3</em></h1>
+        <p id="campDesc">Do primeiro LED ao desafio de pista: aprenda a biblioteca e o estilo OBR em missões guiadas.</p>
       </div>
-      <div class="lobby-header-actions">
-        <span id="campXp" class="camp-xp">0 XP</span>
-        <button type="button" id="campSandbox" class="camp-btn-sec">Sandbox</button>
-        <button type="button" id="campInicio" class="camp-btn-sec">Menu</button>
+      <div class="campaign-actions">
+        <div class="campaign-xp-readout"><span>pontuação</span><strong><span id="campXp">0</span><small>XP</small></strong></div>
+        <a class="campaign-action" href="#modules">trilha <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-7-7 7 7-7 7"/></svg></a>
+        <button type="button" id="campSandbox" class="campaign-action campaign-action--quiet">sandbox</button>
+        <button type="button" id="campInicio" class="campaign-action campaign-action--quiet">menu</button>
       </div>
     </header>
 
-    <div id="campViewModulos" class="lobby-view">
-      <p class="camp-hint-mod">Trilha: <strong>Primeiros passos</strong> → <strong>Sensores OBR</strong> → <strong>Trânsito</strong> → <strong>Desafios</strong>. Cada módulo só libera quando o anterior estiver 100% concluído.</p>
-      <div id="campGridModulos" class="camp-grid-modulos"></div>
+    <div class="campaign-divider" aria-hidden="true"></div>
+
+    <div class="path-summary">
+      <div class="path-summary__label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6c4-4 6 12 10 8s4-10 8-6M3 14c4-4 6 12 10 8s4-10 8-6"/></svg>trilha de aprendizagem</div>
+      <p><strong>Primeiros passos</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg><strong>Sensores OBR</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg><strong>Trânsito</strong><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg><strong>Desafios</strong></p>
+      <span>Cada módulo libera quando o anterior estiver 100% concluído.</span>
     </div>
 
-    <div id="campViewMissoes" class="lobby-view" hidden>
-      <button type="button" id="campVoltarModulos" class="camp-btn-sec camp-voltar">← Módulos</button>
-      <h2 id="campModuloTitulo" class="camp-modulo-titulo"></h2>
-      <div class="lobby-missao-layout">
-        <ul id="campListaMissoes" class="camp-lista"></ul>
-        <div class="camp-detalhe">
-          <div id="campDialogo" class="camp-dialogo"></div>
-          <div id="campObjetivos" class="camp-objetivos"></div>
-          <div class="camp-actions">
-            <button type="button" id="campIniciar" class="principal" disabled>Abrir missão na IDE →</button>
+    <div class="campaign-content" id="modules">
+      <div id="campViewModulos" class="campaign-view">
+        <div id="campGridModulos" class="module-list"></div>
+      </div>
+
+      <div id="campViewMissoes" class="campaign-view campaign-missions" hidden>
+        <button type="button" id="campVoltarModulos" class="campaign-back">← voltar aos módulos</button>
+        <h2 id="campModuloTitulo" class="campaign-missions__title"></h2>
+        <div class="lobby-missao-layout">
+          <ul id="campListaMissoes" class="camp-lista"></ul>
+          <div class="campaign-mission-detail">
+            <div id="campDialogo" class="camp-dialogo"></div>
+            <div id="campObjetivos" class="camp-objetivos"></div>
+            <div class="camp-actions"><button type="button" id="campIniciar" class="principal" disabled>Abrir missão na IDE →</button></div>
           </div>
         </div>
       </div>
+
+      <aside class="campaign-sidebar">
+        <div class="campaign-sidebar__card campaign-sidebar__card--signal">
+          <div class="sidebar-card__top"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/></svg><span>próximo sinal</span><span class="sidebar-card__dot"></span></div>
+          <strong>acenda<br>o primeiro LED.</strong>
+          <p>Uma tarefa simples para começar a conversar com o seu robô.</p>
+          <div class="signal-light" aria-hidden="true"><span></span><span></span><span></span></div>
+        </div>
+        <div class="campaign-sidebar__card" id="help">
+          <div class="sidebar-card__top"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.4 2-2.4 4m0 3h.01"/></svg><span>como funciona</span></div>
+          <p>Complete cada missão para liberar novas ferramentas, sensores e desafios.</p>
+          <a href="#modules">ver módulos <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+        </div>
+      </aside>
+      <p id="campLoadErr" class="erro-load" hidden></p>
     </div>
-    <p id="campLoadErr" class="erro-load" hidden></p>
-  </div>
-</div>
+
+    <footer class="campaign-footer">
+      <a href="../index.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6M9 12h11"/></svg>voltar para o início</a>
+      <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5v-12ZM4 17.5A2.5 2.5 0 0 1 6.5 15H20"/></svg>aprenda fazendo · missão 01 de 04</span>
+      <span class="campaign-footer__code">OBR / OPEN LAB / 03</span>
+    </footer>
+  </section>
+</main>
 
 <script type="module">
 import * as Campanha from '../src/campanha/index.mjs';
@@ -93,8 +121,14 @@ function renderModulos() {
   const grid = $('campGridModulos');
   grid.innerHTML = '';
   const s = ensureSave();
-  $('campXp').textContent = (s.xp || 0) + ' XP';
+  $('campXp').textContent = s.xp || 0;
   const temas = Campanha.CAMPANHA.temas || [];
+  const icons = [
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 13h7l-1 9 10-12h-7l1-8Z"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20v-8m0 0a4 4 0 1 0-4-4m4 4a4 4 0 1 1 4-4m-4 4a8 8 0 1 0-8-8m8 8a8 8 0 1 1 8-8"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h5l3 6-3 3-3-3-2 2 4 5 5-1 3-5 5-2M14 3l2 2-2 2m-3 4 4 2 2 5"/></svg>',
+    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8m-4-4v4M7 4h10l-1 8a4 4 0 0 1-8 0L7 4Zm0 2H4v2a4 4 0 0 0 4 4m9-6h3v2a4 4 0 0 1-4 4"/></svg>'
+  ];
   temas.forEach((tema, idx) => {
     const liberado = Campanha.temaLiberado(s, tema, temas, Campanha.MISSOES);
     const completo = Campanha.temaCompleto(s, tema.id, Campanha.MISSOES);
@@ -103,19 +137,59 @@ function renderModulos() {
     for (const m of missoes) sumStars += (s.missoes[m.id]?.estrelas || 0);
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = 'camp-card-modulo' + (liberado ? '' : ' bloqueado') + (completo ? ' completo' : '');
-    const bloqueioMsg = liberado ? '' : '<div class="camp-card-lock">🔒 Conclua o módulo anterior</div>';
-
+    card.className = 'campaign-module campaign-module--' + (completo ? 'complete' : liberado ? 'active' : 'locked');
     card.disabled = !liberado;
-    card.innerHTML =
-      '<div class="camp-card-num">' + (idx + 1) + '</div>' +
-      '<div class="camp-card-body">' +
-        '<div class="camp-card-titulo">' + tema.titulo + '</div>' +
-        '<div class="camp-card-desc">' + (tema.descricao || '') + '</div>' + bloqueioMsg +
-        '<div class="camp-card-meta">' +
-          (liberado ? (completo ? '✓ Concluído · ' : '') + sumStars + '/' + maxStars + ' ★'
-            : '🔒 Conclua o módulo anterior') +
-        '</div></div>';
+    const number = document.createElement('span');
+    number.className = 'campaign-module__number';
+    number.textContent = String(idx + 1).padStart(2, '0');
+
+    const icon = document.createElement('span');
+    icon.className = 'campaign-module__icon';
+    icon.innerHTML = icons[idx] || icons[0];
+
+    const main = document.createElement('span');
+    main.className = 'campaign-module__main';
+    const titleRow = document.createElement('span');
+    titleRow.className = 'campaign-module__title';
+    const title = document.createElement('strong');
+    title.textContent = String(tema.titulo || '').replace(/^\d+\s*[·.)-]\s*/, '');
+    titleRow.appendChild(title);
+    if (liberado) {
+      const status = document.createElement('span');
+      status.className = 'module-live';
+      status.textContent = completo ? 'concluído' : 'disponível';
+      titleRow.appendChild(status);
+    }
+    const copy = document.createElement('span');
+    copy.className = 'campaign-module__copy';
+    copy.textContent = tema.descricao || '';
+    main.append(titleRow, copy);
+
+    if (liberado) {
+      const progress = document.createElement('span');
+      progress.className = 'campaign-module__progress';
+      const track = document.createElement('span');
+      track.className = 'campaign-progress-track';
+      const fill = document.createElement('span');
+      fill.style.width = maxStars ? Math.min(100, sumStars / maxStars * 100) + '%' : '0%';
+      track.appendChild(fill);
+      const progressText = document.createElement('span');
+      progressText.textContent = sumStars + '/' + maxStars + ' ★';
+      progress.append(track, progressText);
+      main.appendChild(progress);
+    } else {
+      const lock = document.createElement('span');
+      lock.className = 'campaign-module__lock';
+      lock.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Conclua o módulo anterior';
+      main.appendChild(lock);
+    }
+
+    const arrow = document.createElement('span');
+    arrow.className = 'campaign-module__arrow';
+    arrow.innerHTML = liberado
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>'
+      : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
+    card.append(number, icon, main, arrow);
     if (liberado) card.onclick = () => abrirModulo(tema.id);
     grid.appendChild(card);
   });
@@ -128,6 +202,7 @@ function abrirModulo(temaId) {
   missaoSelecionada = null;
   $('campViewModulos').hidden = true;
   $('campViewMissoes').hidden = false;
+  document.querySelector('.campaign-content').classList.add('campaign-content--missions');
   $('campModuloTitulo').textContent = tema.titulo;
   $('campIniciar').disabled = true;
   renderLista();
@@ -189,6 +264,7 @@ $('campVoltarModulos').onclick = () => {
   temaAtivo = null;
   $('campViewMissoes').hidden = true;
   $('campViewModulos').hidden = false;
+  document.querySelector('.campaign-content').classList.remove('campaign-content--missions');
   renderModulos();
 };
 $('campIniciar').onclick = irParaIde;
@@ -197,7 +273,20 @@ $('campSandbox').onclick = () => { location.href = 'sandbox.html'; };
 
 try {
   await Campanha.initCampanha();
-  $('campTitulo').textContent = Campanha.CAMPANHA.titulo;
+  const tituloCampanha = Campanha.CAMPANHA.titulo || '';
+  const destaqueMarca = 'jacarEV3';
+  const posicaoMarca = tituloCampanha.indexOf(destaqueMarca);
+  if (posicaoMarca >= 0) {
+    const marca = document.createElement('em');
+    marca.textContent = destaqueMarca;
+    $('campTitulo').replaceChildren(
+      document.createTextNode(tituloCampanha.slice(0, posicaoMarca)),
+      marca,
+      document.createTextNode(tituloCampanha.slice(posicaoMarca + destaqueMarca.length))
+    );
+  } else {
+    $('campTitulo').textContent = tituloCampanha;
+  }
   $('campDesc').textContent = Campanha.CAMPANHA.descricao || $('campDesc').textContent;
   renderModulos();
   console.log('[lobby] missões', Campanha.MISSOES.length);

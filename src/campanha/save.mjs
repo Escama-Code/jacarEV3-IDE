@@ -23,6 +23,21 @@ export function carregarSave(campanhaId) {
   };
 }
 
+
+/** Soma XP de todas as campanhas no localStorage (home / header). */
+export function carregarXpTotal() {
+  try {
+    const all = JSON.parse(localStorage.getItem(KEY) || '{}');
+    let total = 0;
+    for (const s of Object.values(all)) {
+      if (s && typeof s.xp === 'number') total += s.xp;
+    }
+    return total;
+  } catch (_) {
+    return 0;
+  }
+}
+
 export function gravarSave(save) {
   try {
     const all = JSON.parse(localStorage.getItem(KEY) || '{}');

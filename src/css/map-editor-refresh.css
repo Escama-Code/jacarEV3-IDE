@@ -1,0 +1,60 @@
+/* Shared Home-page palette and navigation for the free map editor. */
+body.map-editor-refresh {
+  min-width: 320px;
+  background:
+    radial-gradient(circle at 12% 6%,rgba(204,255,61,.055),transparent 28rem),
+    radial-gradient(circle at 90% 60%,rgba(138,183,255,.04),transparent 30rem),
+    #0b0d0c;
+  color: #f1f0e9;
+  font-family: "Space Grotesk",Inter,system-ui,sans-serif;
+}
+.map-editor-topbar {
+  position: sticky;
+  z-index: 100;
+  top: 0;
+  display: grid;
+  grid-template-columns: minmax(120px,1fr) auto minmax(180px,1fr);
+  min-height: 68px;
+  align-items: center;
+  gap: 18px;
+  padding: 5px max(22px,calc((100vw - 1380px)/2));
+  border-bottom: 1px solid rgba(241,240,233,.12);
+  background: rgba(11,13,12,.95);
+  backdrop-filter: blur(12px);
+}
+.map-editor-brand { display: inline-flex; align-items: center; width: fit-content; }
+.map-editor-brand img { width: 92px; height: 54px; object-fit: cover; }
+.map-editor-status,.map-editor-topbar nav { display: flex; align-items: center; gap: 9px; color: #879187; font: 9px "DM Mono",var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.map-editor-status i { width: 6px; height: 6px; border-radius: 50%; background: #ccff3d; box-shadow: 0 0 0 4px rgba(204,255,61,.1); }
+.map-editor-status b { color: #4b554c; font-weight: 400; }
+.map-editor-topbar nav { justify-content: flex-end; gap: 16px; }
+.map-editor-topbar nav a { color: inherit; }
+.map-editor-topbar nav a:hover { color: #ccff3d; }
+.map-editor-page { min-height: calc(100vh - 68px); padding: 22px max(22px,calc((100vw - 1380px)/2)); }
+.map-editor-window-page { width: 100%; max-width: 1380px; gap: 14px; padding: 18px; border: 1px solid rgba(241,240,233,.13); border-radius: 16px; background: linear-gradient(135deg,rgba(16,23,20,.98),rgba(10,16,15,.98)); box-shadow: 0 22px 60px rgba(0,0,0,.25); }
+.map-editor-window-page .map-editor-head { align-items: center; padding-bottom: 12px; border-bottom: 1px solid rgba(241,240,233,.1); }
+.map-editor-window-page .map-editor-head h2 { color: #f1f0e9; font: 15px "Space Grotesk",Inter,sans-serif; letter-spacing: -.03em; }
+.map-editor-window-page .map-editor-identity { border-color: rgba(241,240,233,.1); color: #96a198; }
+.map-editor-window-page .map-editor-window button,
+.map-editor-window-page button,
+.map-editor-window-page input,
+.map-editor-window-page select { border-color: rgba(241,240,233,.15); border-radius: 7px; background: #111916; color: #cbd5ca; }
+.map-editor-window-page button:hover:not(:disabled) { border-color: #ccff3d; box-shadow: 0 0 0 3px rgba(204,255,61,.07); }
+.map-editor-window-page button.ativo,
+.map-editor-window-page button.map-primary { border-color: #ccff3d; background: #ccff3d; color: #0b1009; }
+.map-editor-window-page .map-editor-tabs [aria-selected="true"] { border-color: rgba(204,255,61,.45); background: rgba(204,255,61,.1); color: #ccff3d; }
+.map-editor-window-page .map-editor-canvas-frame { border: 1px solid rgba(241,240,233,.15); border-radius: 12px; background: #ede9df; }
+.map-editor-window-page .map-editor-hint { color: #8d998f; }
+.map-editor-window-page .map-editor-group-label { color: #ccff3d; }
+.map-editor-window-page .map-editor-link { color: #55dce1; }
+.map-editor-window-page .map-editor-validacao { border-color: rgba(241,240,233,.16); border-radius: 9px; background: #101714; color: #cbd5ca; }
+.map-editor-window-page #mapEditorAviso,.map-editor-window-page #mapEditorStatus { color: #94a198; }
+.map-editor-window-page .map-rule-ok { color: #ccff3d; }
+
+@media (max-width: 760px) {
+  .map-editor-topbar { grid-template-columns: 1fr auto; padding-inline: 17px; }
+  .map-editor-status { display: none; }
+  .map-editor-topbar nav { gap: 10px; font-size: 8px; }
+  .map-editor-page { padding: 14px 12px; }
+  .map-editor-window-page { padding: 12px; }
+}

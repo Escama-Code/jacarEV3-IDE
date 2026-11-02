@@ -1,0 +1,63 @@
+{
+  "formato": "jacarev3-mapa",
+  "versao": 2,
+  "modo": "modular-obr",
+  "nome": "Corredor simples",
+  "tileCm": 30,
+  "nivelCm": 5,
+  "gridW": 5,
+  "gridH": 3,
+  "niveisMax": 1,
+  "celulas": [
+    {
+      "tipo": "obr-reta",
+      "gx": 0,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 1,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 2,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 3,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 4,
+      "gz": 1,
+      "gy": 0,
+      "rot": 0
+    }
+  ],
+  "inicio": {
+    "gx": 0,
+    "gz": 1,
+    "gy": 0,
+    "rot": 0
+  },
+  "w": 150,
+  "h": 90,
+  "pxPorCm": 4,
+  "tracos": [],
+  "caixas": [],
+  "rampas": [],
+  "vitimas": [],
+  "decoracoes3d": [],
+  "basePNG": ""
+}

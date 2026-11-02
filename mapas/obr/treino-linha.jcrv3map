@@ -1,0 +1,70 @@
+{
+  "formato": "jacarev3-mapa",
+  "versao": 2,
+  "modo": "modular-obr",
+  "nome": "Treino linha OBR",
+  "tileCm": 30,
+  "nivelCm": 5,
+  "gridW": 6,
+  "gridH": 4,
+  "niveisMax": 1,
+  "celulas": [
+    {
+      "tipo": "obr-reta",
+      "gx": 0,
+      "gz": 2,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 1,
+      "gz": 2,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 2,
+      "gz": 2,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 3,
+      "gz": 2,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 4,
+      "gz": 2,
+      "gy": 0,
+      "rot": 0
+    },
+    {
+      "tipo": "obr-reta",
+      "gx": 5,
+      "gz": 2,
+      "gy": 0,
+      "rot": 0
+    }
+  ],
+  "inicio": {
+    "gx": 0,
+    "gz": 2,
+    "gy": 0,
+    "rot": 0
+  },
+  "w": 180,
+  "h": 120,
+  "pxPorCm": 4,
+  "tracos": [],
+  "caixas": [],
+  "rampas": [],
+  "vitimas": [],
+  "decoracoes3d": [],
+  "basePNG": ""
+}

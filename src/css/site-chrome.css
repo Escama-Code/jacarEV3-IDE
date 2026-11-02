@@ -1,0 +1,6 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap");
+body.app-shell { font-family: var(--font,"Space Grotesk",system-ui,sans-serif); background: var(--bg,#0b0d0c); color: var(--txt,#f1f0e9); }
+.app-header { display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:72px; padding:8px max(20px,calc((100vw - 1380px)/2)); border-bottom:1px solid var(--borda,rgba(241,240,233,.13)); background:rgba(9,12,10,.94); backdrop-filter:blur(14px); }
+.app-header a { color: var(--txt-muted,#879187); text-decoration:none; }
+.app-header a.is-active, .app-header a:hover { color: var(--brand,#ccff3d); }
+.app-header-nav { display:flex; gap:18px; flex-wrap:wrap; font-size:13px; letter-spacing:.04em; text-transform:lowercase; }
