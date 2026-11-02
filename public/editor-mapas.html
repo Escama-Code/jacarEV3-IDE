@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Editor de mapas — jacarEV3</title>
 <link rel="stylesheet" href="../src/css/tokens.css">
+<link rel="stylesheet" href="../src/css/site-chrome.css">
 <link rel="stylesheet" href="../src/css/base.css">
-<link rel="stylesheet" href="../src/css/efeitos.css">
-<link rel="stylesheet" href="../src/css/shell.css">
 <link rel="stylesheet" href="../src/css/editores.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root { color-scheme: dark; }
 html, body { margin:0; min-height:100%; background:#0b1220; color:#e8eef6; font:14px/1.4 system-ui,sans-serif; }
@@ -225,28 +227,14 @@ body.modo-campanha .painel-arena #cenario {
 .map-editor-page { position:static; background:transparent; }
 .map-editor-window-page { position:relative; }
 </style>
+<link rel="stylesheet" href="../src/css/map-editor-refresh.css">
 </head>
-<body class="app-shell editor-mapas">
-
-<header class="app-header">
-  <a class="app-logo" href="../index.html" title="Menu">
-    <img src="../src/assets/ui/logo-header.svg" alt="jacarEV3 IDE" height="28">
-  </a>
-  <nav class="app-header-nav">
-    <a href="campanha.html" data-nav="campanha">Campanha</a>
-    <a href="sandbox.html" data-nav="sandbox">Sandbox</a>
-    <a href="editor-mapas-blocos.html" data-nav="blocos">Blocos OBR</a>
-    <a href="editor-mapas.html" data-nav="mapas" class="is-active">Mapas</a>
-    <a href="../index.html">Menu</a>
-  </nav>
-  <span id="status" class="app-status">…</span>
+<body class="map-editor-refresh">
+<header class="map-editor-topbar">
+  <a class="map-editor-brand" href="../index.html" aria-label="jacarEV3 início"><img src="logo.png" alt="jacarEV3"></a>
+  <span class="map-editor-status"><i></i> laboratório aberto <b>/</b> editor livre</span>
+  <nav aria-label="Navegação do editor"><a href="sandbox.html">sandbox</a><a href="editor-mapas-blocos.html">editor OBR</a><a href="campanha.html">campanha</a></nav>
 </header>
-
-<div style="padding:10px 16px;background:#101722;border-bottom:1px solid #2a3a52;display:flex;gap:16px;flex-wrap:wrap;align-items:center">
-  <a href="sandbox.html" style="color:#3ecf8e;font-weight:700;text-decoration:none">← Sandbox</a>
-  <a href="editor-mapas-blocos.html" style="color:#3ecf8e;font-weight:700;text-decoration:none">🧱 Editor por blocos (OBR 30×30)</a>
-  <span style="color:#8b9bb0;font-size:12px">Editor livre — traço e objetos</span>
-</div>
 
 <div id="mapEditorModal" class="map-editor-page" role="main" aria-label="Construtor de mapas autorais">
   <section class="map-editor-window map-editor-window-page">

@@ -1,108 +1,74 @@
 /**
- * base.css — reset e componentes comuns (botão, input, link, kbd).
- * Depende de tokens.css
+ * base.css — reset e componentes comuns
  */
 *, *::before, *::after { box-sizing: border-box; }
-
 html { height: 100%; }
-
 body {
   margin: 0;
   min-height: 100%;
   background: var(--bg);
   color: var(--txt);
   font: var(--fs)/var(--lh) var(--font);
+  letter-spacing: .005em;
 }
-
 a { color: var(--brand); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
+a:hover { color: var(--acc-hover); text-decoration: none; }
 h1, h2, h3 { color: var(--txt); }
 h2 {
   font-size: var(--fs-xs);
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: .12em;
   color: var(--txt-muted);
-  margin: 12px 0 6px;
-  font-weight: 600;
+  margin: 14px 0 8px;
+  font-weight: 700;
 }
 h2:first-child { margin-top: 0; }
-
 [hidden] { display: none !important; }
-
 button, select, input, textarea {
   background: var(--painel-2);
   color: var(--txt);
   border: 1px solid var(--borda-forte);
   border-radius: var(--radius-sm);
-  padding: 5px 10px;
+  padding: 7px 11px;
   font: inherit;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease, box-shadow .16s ease;
 }
 button { cursor: pointer; }
-button:hover:not(:disabled) { border-color: var(--acc); }
-button:disabled { opacity: 0.45; cursor: default; }
-button.principal,
-button.btn-primario {
-  background: color-mix(in srgb, var(--brand) 22%, var(--painel-2));
-  border-color: var(--brand);
-  font-weight: 600;
-  color: var(--txt);
+button:hover:not(:disabled) { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(45,212,216,.08); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .42; cursor: default; }
+button.principal, button.btn-primario {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: #072126;
+  font-weight: 800;
 }
-button.principal:hover:not(:disabled),
-button.btn-primario:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-.camp-btn-sec,
-button.camp-btn-sec {
-  background: var(--painel-2);
-  border: 1px solid var(--borda);
+button.principal:hover:not(:disabled), button.btn-primario:hover:not(:disabled) { background: var(--acc-hover); filter: none; }
+.camp-btn-sec, button.camp-btn-sec {
+  background: transparent;
+  border: 1px solid var(--borda-forte);
   color: var(--txt);
-  border-radius: var(--radius);
-  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  padding: 7px 11px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
 }
-.camp-btn-sec:hover { border-color: var(--acc); }
-
+.camp-btn-sec:hover { border-color: var(--acc); background: rgba(45,212,216,.08); }
 input[type="number"] { width: 64px; }
 input[type="text"] { width: 84px; }
-input[type="range"] { flex: 1; min-width: 140px; padding: 0; }
-
-label {
-  color: var(--txt-muted);
-  font-size: var(--fs-sm);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
+input[type="range"] { flex: 1; min-width: 140px; padding: 0; accent-color: var(--acc); }
+label { color: var(--txt-muted); font-size: var(--fs-sm); display: flex; align-items: center; gap: 6px; }
 .info { color: var(--txt-muted); font-size: var(--fs-sm); margin-top: 6px; }
-
-kbd {
-  background: var(--painel-2);
-  border: 1px solid var(--borda);
-  border-radius: 3px;
-  padding: 1px 5px;
-  font: 11px/1.4 var(--font-mono);
-}
-
-.linha {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  margin: 8px 0 0;
-}
-
+kbd { background: #0b1117; border: 1px solid var(--borda); border-radius: 5px; padding: 2px 6px; font: 11px/1.4 var(--font-mono); color: var(--acc-hover); }
+.linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0 0; }
 .painel {
-  background: var(--painel);
+  background: linear-gradient(180deg, rgba(19,28,38,.98), rgba(15,24,33,.98));
   border: 1px solid var(--borda);
   border-radius: var(--radius);
-  padding: 10px;
+  padding: 14px;
   min-width: 0;
+  box-shadow: var(--shadow-sm);
 }
-
-/* Utilitários */
 .u-muted { color: var(--txt-muted); }
 .u-ok { color: var(--ok); }
 .u-erro { color: var(--erro); }
