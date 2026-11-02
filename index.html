@@ -1,177 +1,62 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>jacarEV3 IDE</title>
-<link rel="stylesheet" href="src/css/tokens.css">
-<link rel="stylesheet" href="src/css/base.css">
-<link rel="stylesheet" href="src/css/efeitos.css">
-<link rel="stylesheet" href="src/css/menu.css">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg:       #0f1117;
-    --surface:  #181c27;
-    --border:   #2a2f3d;
-    --text:     #e2e8f0;
-    --muted:    #8892a4;
-    --accent:   #3b82f6;
-    --accent-h: #2563eb;
-    --green:    #22c55e;
-    --locked:   #374151;
-  }
-
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 48px 40px 40px;
-    width: min(460px, 92vw);
-    text-align: center;
-  }
-
-  .logo {
-    font-size: 3rem;
-    line-height: 1;
-    margin-bottom: 16px;
-  }
-
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: -.02em;
-    margin-bottom: 6px;
-  }
-
-  .sub {
-    font-size: .875rem;
-    color: var(--muted);
-    margin-bottom: 36px;
-  }
-
-  .modos {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 32px;
-  }
-
-  .modo-btn {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 18px;
-    cursor: pointer;
-    text-align: left;
-    color: var(--text);
-    width: 100%;
-    font-family: inherit;
-  }
-
-  .modo-btn:not([disabled]):hover {
-    border-color: var(--accent);
-    background: #1a2035;
-  }
-
-  .modo-btn[disabled] {
-    cursor: default;
-    opacity: .5;
-  }
-
-  .modo-icon {
-    font-size: 1.4rem;
-    flex-shrink: 0;
-    width: 32px;
-    text-align: center;
-  }
-
-  .modo-info { flex: 1; }
-
-  .modo-titulo {
-    display: block;
-    font-size: .9rem;
-    font-weight: 600;
-    margin-bottom: 2px;
-  }
-
-  .modo-desc {
-    display: block;
-    font-size: .78rem;
-    color: var(--muted);
-  }
-
-  .modo-badge {
-    font-size: .65rem;
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 4px;
-    background: var(--locked);
-    color: var(--muted);
-    letter-spacing: .04em;
-    text-transform: uppercase;
-    flex-shrink: 0;
-  }
-
-  .rodape {
-    font-size: .75rem;
-    color: var(--border);
-  }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>jacarEV3 IDE — Laboratório de Robótica</title>
+  <link rel="stylesheet" href="src/css/tokens.css">
+  <link rel="stylesheet" href="src/css/base.css">
+  <link rel="stylesheet" href="src/css/efeitos.css">
+  <link rel="stylesheet" href="src/css/menu.css">
 </head>
 <body class="menu-home">
+  <main class="home">
+    <section class="home-brand fx-fade-in">
+      <div class="home-logo-mark" aria-hidden="true">
+        <img src="src/assets/ui/logo-icon.svg" alt="" width="34" height="34">
+      </div>
+      <p class="home-kicker">Laboratório de robótica</p>
+      <h1 class="home-title">
+        jacar<span class="ev3">EV3</span>
+        <span class="home-title-sub">IDE</span>
+      </h1>
+      <p class="home-tagline">Código que ganha rodas.</p>
+      <p class="home-desc">
+        Programe em Python, simule no navegador e descubra como o robô pensa.
+      </p>
+    </section>
 
-<div class="card">
-  <div class="logo">🐊</div>
-  <h1>jacarEV3 IDE</h1>
-  <p class="sub">Aprenda robótica com Python real no navegador</p>
+    <section class="home-panel fx-slide-up">
+      <p class="home-panel-label">Comece por aqui</p>
+      <div class="home-cards">
+        <a class="home-card" href="public/campanha.html">
+          <span class="home-card-num">01</span>
+          <span class="home-card-body">
+            <p class="home-card-title">Campanha</p>
+            <p class="home-card-desc">Missões guiadas, sensores e desafios de trânsito.</p>
+          </span>
+          <span class="home-card-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="home-card" href="public/sandbox.html">
+          <span class="home-card-num">02</span>
+          <span class="home-card-body">
+            <p class="home-card-title">Sandbox</p>
+            <p class="home-card-desc">Editor livre, simulador 2D/3D e teleoperação.</p>
+          </span>
+          <span class="home-card-arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+      <a class="home-link-sec" href="public/editor-mapas-blocos.html">
+        <span>Editor por blocos OBR</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </section>
+  </main>
 
-  <div class="modos">
-    <button class="modo-btn" data-modo="campanha">
-      <span class="modo-icon">📖</span>
-      <span class="modo-info">
-        <span class="modo-titulo">Campanha</span>
-        <span class="modo-desc">Códigos-base e leis de trânsito — aprenda a jacarev3</span>
-      </span>
-    </button>
-
-    <button class="modo-btn" data-modo="sandbox">
-      <span class="modo-icon">🧪</span>
-      <span class="modo-info">
-        <span class="modo-titulo">Sandbox</span>
-        <span class="modo-desc">Editor livre, simulador 2D/3D e teleop</span>
-      </span>
-    </button>
-  </div>
-
-  <p class="rodape">jacarev3 · simulação EV3 no browser</p>
-</div>
-
-<script>
-  document.querySelectorAll('.modo-btn:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const modo = btn.dataset.modo;
-      if (modo === 'campanha') window.location.href = 'public/campanha.html';
-      else if (modo === 'sandbox') window.location.href = 'public/sandbox.html';
-      else window.location.href = 'public/sandbox.html';
-    });
-  });
-</script>
-
-  <p style="text-align:center;margin:1rem"><a href="public/editor-mapas-blocos.html" style="color:#3ecf8e">Editor por blocos OBR</a></p>
+  <footer class="home-footer">
+    <a class="brand-link" href="https://github.com/Escama-Code/jacarEV3-IDE" target="_blank" rel="noopener">jacarev3</a>
+    <span>simulação EV3 no browser</span>
+    <a href="https://github.com/Escama-Code" target="_blank" rel="noopener">Escama Code</a>
+  </footer>
 </body>
 </html>

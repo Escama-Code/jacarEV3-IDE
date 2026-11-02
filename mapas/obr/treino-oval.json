@@ -1,0 +1,8 @@
+{
+  "nome": "Treino oval",
+  "objetivo": "seguidor-iniciante",
+  "w": 120,
+  "h": 90,
+  "inicio": { "x": 60, "y": 70, "th": 0 },
+  "notas": "Linha oval contínua ~2 cm; sem obstáculos."
+}

@@ -1,53 +1,49 @@
-"""OBR Nacional — array de 3 sensores de cor + ultrassônico.
+"""OBR Nacional — array 1–3 + verde no centro + ultrassom.
 
-Portas (perfil padrão do simulador):
-  1 = cor esquerda   |  2 = cor centro  |  3 = cor direita
-  4 = ultrassônico (cm)
-
-Modos de cor:
-  MODO_COR_REFLETIDA (0)  → 0..100 (linha preta baixa)
-  MODO_COR_COR (2)        → id EV3 (3 = verde da marcação de interseção)
-
-Giroscópio virtual: use o ângulo da odometria se a biblioteca expuser
-robo.angulo() / leitura de heading; no Direct Command o th está no estado do sim.
+Use o mapa indicado (treino sem obstáculo) para o seguidor.
+No FLL, a linha é irregular: este código prioriza não se perder.
 """
 import time
 from jacarev3 import RoboEV3, protocolo as p
 
-LIMIAR = 35          # refletida: abaixo = preto
-VEL = 35
-MACHO_VERDE = 3      # id EV3 verde
+VEL = 20
+K = 0.5
+LIMIAR = 40
+VERDE = 3
+DT = 0.04
 
 with RoboEV3('00:16:53:64:F8:B8') as robo:
     robo.led('VERDE')
     while True:
-        e = robo.ler_sensor(1, p.MODO_COR_REFLETIDA)
-        c = robo.ler_sensor(2, p.MODO_COR_REFLETIDA)
-        d = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)
+        e = float(robo.ler_sensor(1, p.MODO_COR_REFLETIDA))
+        c = float(robo.ler_sensor(2, p.MODO_COR_REFLETIDA))
+        d = float(robo.ler_sensor(3, p.MODO_COR_REFLETIDA))
         cor_c = int(robo.ler_sensor(2, p.MODO_COR_COR))
-        dist = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)
+        dist = float(robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM))
 
-        # obstáculo à frente
         if dist < 12:
             robo.parar_motor('B')
             robo.parar_motor('C')
-            time.sleep(0.05)
+            time.sleep(0.3)
             continue
 
-        # marcação verde no centro → decisão de interseção (exemplo: virar à direita)
-        if cor_c == MACHO_VERDE:
-            robo.mover_continuo('B', 25)
-            robo.mover_continuo('C', -10)
-            time.sleep(0.4)
+        if cor_c == VERDE:
+            robo.mover_continuo('B', 24)
+            robo.mover_continuo('C', -6)
+            time.sleep(0.6)
+            robo.parar_motor('B')
+            robo.parar_motor('C')
+            time.sleep(0.25)
             continue
 
-        # seguidor proporcional simples com 3 sensores
-        erro = (d - e)  # positivo = linha mais à esquerda do centro
-        v_esq = max(-100, min(100, int(VEL + 0.4 * erro)))
-        v_dir = max(-100, min(100, int(VEL - 0.4 * erro)))
-        # se os três veem branco, tenta achar linha girando
+        # perdeu a linha (tudo branco) → gira procurando
         if e > LIMIAR and c > LIMIAR and d > LIMIAR:
-            v_esq, v_dir = 20, -20
-        robo.mover_continuo('B', v_esq)
-        robo.mover_continuo('C', v_dir)
-        time.sleep(0.03)
+            robo.mover_continuo('B', 16)
+            robo.mover_continuo('C', -16)
+            time.sleep(DT)
+            continue
+
+        erro = e - d
+        robo.mover_continuo('B', max(-55, min(55, int(VEL - K * erro))))
+        robo.mover_continuo('C', max(-55, min(55, int(VEL + K * erro))))
+        time.sleep(DT)

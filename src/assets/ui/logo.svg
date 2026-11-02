@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" fill="none" role="img" aria-label="jacarEV3 IDE — Laboratório de Robótica">
+  <!-- icon -->
+  <rect x="8" y="28" width="44" height="44" rx="12" stroke="#b8f52a" stroke-width="2.2"/>
+  <circle cx="23" cy="50" r="3.2" fill="#b8f52a"/>
+  <circle cx="37" cy="50" r="3.2" fill="#b8f52a"/>
+  <path d="M44 45h3.5a3.2 3.2 0 0 1 0 10H44" stroke="#b8f52a" stroke-width="2" stroke-linecap="round"/>
+  <!-- kicker -->
+  <text x="68" y="38" font-family="Segoe UI, system-ui, sans-serif" font-size="9" font-weight="700" letter-spacing="0.14em" fill="#b8f52a">LABORATÓRIO DE ROBÓTICA</text>
+  <!-- wordmark -->
+  <text x="68" y="78" font-family="Segoe UI, system-ui, sans-serif" font-size="36" font-weight="800" fill="#ffffff">jacar<tspan fill="#b8f52a">EV3</tspan></text>
+  <text x="68" y="102" font-family="Segoe UI, system-ui, sans-serif" font-size="16" font-weight="700" letter-spacing="0.06em" fill="#ffffff">IDE</text>
+</svg>

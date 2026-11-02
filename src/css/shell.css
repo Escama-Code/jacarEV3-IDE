@@ -1,0 +1,136 @@
+/**
+ * shell.css — chrome comum (fundo, header, nav) em todas as telas internas.
+ * Ordem: tokens → base → shell → (main|campanha|editores…)
+ */
+
+/* Fundo com grade + glow suave (mesmo DNA da home) */
+body.app-shell {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--font);
+  position: relative;
+}
+body.app-shell::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(184, 245, 42, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 245, 42, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+body.app-shell > * { position: relative; z-index: 1; }
+
+/* Header unificado */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-height: var(--header-h);
+  padding: 8px 16px;
+  background: color-mix(in srgb, var(--header) 92%, transparent);
+  border-bottom: 1px solid var(--borda);
+  backdrop-filter: blur(8px);
+}
+.app-header a.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--txt);
+}
+.app-header a.app-logo:hover { text-decoration: none; }
+.app-header .app-logo img,
+.app-header .app-logo svg {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+.app-header .app-logo-text {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.app-header .app-logo-text .ev3 { color: var(--brand); }
+
+.app-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+.app-header-nav a {
+  color: var(--txt-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.app-header-nav a:hover {
+  color: var(--brand);
+  border-color: var(--borda);
+  background: var(--painel-2);
+  text-decoration: none;
+}
+.app-header-nav a.is-active {
+  color: var(--brand);
+  border-color: color-mix(in srgb, var(--brand) 35%, transparent);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+
+.app-header .app-status {
+  font-size: 12px;
+  color: var(--txt-muted);
+}
+.app-header .app-status.ok { color: var(--brand); }
+.app-header .app-status.erro { color: var(--erro); }
+
+/* Página título (campanha / editores) */
+.app-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+.app-page-title {
+  margin: 0 0 6px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.app-page-title .ev3 { color: var(--brand); }
+.app-page-sub {
+  margin: 0 0 24px;
+  color: var(--txt-muted);
+  font-size: 0.95rem;
+}
+
+/* Cards padrão (campanha, listas) */
+.app-card {
+  background: var(--painel);
+  border: 1px solid var(--borda-card);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.app-card:hover {
+  border-color: color-mix(in srgb, var(--brand) 40%, transparent);
+}
+.app-card-title {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #fff;
+}
+.app-card-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--txt-muted);
+}

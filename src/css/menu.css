@@ -1,73 +1,241 @@
 /**
- * menu.css — tela inicial (index.html)
- * Ordem: tokens → base → menu
+ * menu.css — home estilo mockup (dois blocos: marca | atalhos)
  */
+html, body.menu-home {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--font);
+}
+
 body.menu-home {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* grade + glow verde à esquerda */
+body.menu-home::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(184, 245, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184, 245, 42, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+body.menu-home::after {
+  content: "";
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 55vw;
+  height: 80vh;
+  background: radial-gradient(ellipse at center, var(--brand-glow) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.home {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 48px 40px 32px;
+}
+@media (max-width: 860px) {
+  .home {
+    grid-template-columns: 1fr;
+    gap: 36px;
+    padding: 36px 20px 24px;
+  }
+}
+
+/* ---- marca ---- */
+.home-brand {
+  max-width: 420px;
+}
+.home-logo-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 12%, var(--bg-elevated));
+  border: 1px solid color-mix(in srgb, var(--brand) 35%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 24px var(--brand-glow);
 }
-
-.menu-card {
-  width: min(520px, 100%);
-  background: var(--painel);
-  border: 1px solid var(--borda);
-  border-radius: var(--radius-lg);
-  padding: 28px 24px;
-  box-shadow: var(--shadow);
+.home-logo-mark img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
 }
-
-.menu-card h1 {
-  margin: 0 0 8px;
-  font-size: 1.5rem;
+.home-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin: 0 0 10px;
 }
-
-.menu-card .menu-sub {
-  color: var(--txt-muted);
-  margin: 0 0 20px;
-  font-size: 0.95rem;
+.home-title {
+  margin: 0;
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+  color: #fff;
 }
-
-.menu-modos {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.menu-modos a,
-.menu-modos button {
+.home-title .ev3 { color: var(--brand); }
+.home-title-sub {
   display: block;
-  width: 100%;
-  text-align: left;
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--borda);
-  background: var(--bg-elevated);
-  color: var(--txt);
-  font-weight: 600;
-  cursor: pointer;
-  text-decoration: none;
-}
-.menu-modos a:hover,
-.menu-modos button:hover {
-  border-color: var(--acc);
-  background: color-mix(in srgb, var(--acc) 12%, var(--bg-elevated));
-  text-decoration: none;
-}
-.menu-modos .modo-titulo { display: block; font-size: 1rem; }
-.menu-modos .modo-desc {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--txt-muted);
-  font-weight: 400;
+  font-size: 0.42em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #fff;
   margin-top: 4px;
 }
+.home-tagline {
+  margin: 22px 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--txt);
+}
+.home-desc {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--txt-muted);
+  max-width: 34ch;
+}
 
-.menu-rodape {
-  margin-top: 18px;
-  font-size: 0.75rem;
+/* ---- painel direito ---- */
+.home-panel {
+  max-width: 440px;
+  width: 100%;
+  justify-self: end;
+}
+@media (max-width: 860px) {
+  .home-panel { justify-self: stretch; max-width: none; }
+}
+.home-panel-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--txt-faint);
-  text-align: center;
+  margin: 0 0 14px;
+}
+.home-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.home-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, #1a2740 70%, var(--bg-elevated));
+  border: 1px solid var(--borda-card);
+  color: var(--txt);
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.home-card:hover {
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  background: color-mix(in srgb, var(--brand) 8%, var(--bg-elevated));
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+.home-card-num {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.home-card-body { flex: 1; min-width: 0; }
+.home-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 2px;
+  color: #fff;
+}
+.home-card-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--txt-muted);
+  line-height: 1.35;
+}
+.home-card-arrow {
+  color: var(--txt-faint);
+  font-size: 1.1rem;
+  transition: color 0.15s, transform 0.15s;
+}
+.home-card:hover .home-card-arrow {
+  color: var(--brand);
+  transform: translate(2px, -2px);
+}
+
+.home-link-sec {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--borda);
+  color: var(--txt-muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.home-link-sec:hover {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+/* rodapé */
+.home-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  align-items: center;
+  padding: 16px 40px 24px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  border-top: 1px solid color-mix(in srgb, var(--borda) 80%, transparent);
+  font-size: 0.8rem;
+  color: var(--txt-faint);
+}
+.home-footer a {
+  color: var(--txt-muted);
+  text-decoration: none;
+}
+.home-footer a:hover { color: var(--brand); }
+.home-footer .brand-link {
+  color: var(--brand);
+  font-weight: 700;
 }

@@ -2,17 +2,18 @@
  * main.css — layout da IDE (sandbox / missão).
  * Ordem: tokens.css → base.css → main.css
  */
-header {
+/* header legado — preferir .app-header (shell.css) */
+header:not(.app-header) {
   padding: 8px 16px;
   min-height: var(--header-h);
   background: var(--header);
-  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--borda);
   display: flex;
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
 }
-header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+header:not(.app-header) h1 { font-size: 15px; margin: 0; font-weight: 600; }
 
 #status { color: var(--txt-muted); font-size: 13px; }
 #status.ok { color: var(--ok); }
@@ -101,4 +102,315 @@ td.d { white-space: nowrap; }
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+
+/* —— IDE: preencher a tela (sem “buracos”) —— */
+body.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+body.app-shell > main {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(380px, 1fr) minmax(420px, 1.05fr);
+  gap: 12px;
+  padding: 12px;
+  align-items: stretch;
+}
+@media (max-width: 1100px) {
+  body.app-shell > main { grid-template-columns: 1fr; }
+}
+body.app-shell .painel-codigo,
+body.app-shell .painel-arena {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+body.app-shell #editor {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 280px;
+  max-height: none !important;
+}
+body.app-shell #terminal {
+  flex: 0 0 auto;
+  height: 140px;
+  min-height: 120px;
+  max-height: 180px;
+}
+body.app-shell #palco {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 320px;
+  max-height: none !important;
+}
+body.app-shell .abas-inferiores-arena {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--borda);
+}
+body.app-shell .abas-inferiores-arena button {
+  font-size: 12px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--txt-muted);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+body.app-shell .abas-inferiores-arena button[aria-selected="true"] {
+  background: color-mix(in srgb, var(--brand) 16%, var(--painel-2));
+  border-color: color-mix(in srgb, var(--brand) 45%, transparent);
+  color: var(--txt);
+  font-weight: 700;
+}
+body.app-shell .informacao-arena {
+  flex: 0 1 auto;
+  max-height: 220px;
+  overflow: auto;
+}
+body.app-shell .monitor-robo-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+body.app-shell .monitor-robo-valor {
+  background: var(--bg-elevated);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+body.app-shell .monitor-robo-valor small {
+  display: block;
+  color: var(--txt-muted);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+body.app-shell .monitor-robo-valor strong {
+  color: var(--brand);
+  font-size: 15px;
+}
+body.app-shell #tabela {
+  max-height: 160px;
+}
+@media (max-width: 700px) {
+  body.app-shell .monitor-robo-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+
+/* —— Toolbar do editor (sandbox / missão) —— */
+.ide-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--brand) 5%, var(--bg-elevated));
+  border: 1px solid var(--borda);
+  border-radius: var(--radius);
+}
+.ide-toolbar-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ide-toolbar-kicker {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand);
+  margin-bottom: 2px;
+}
+.ide-toolbar-h {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: none;
+  color: var(--txt);
+}
+.ide-toolbar-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--txt-muted);
+}
+.ide-toolbar-grid {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 1.4fr) 100px;
+  gap: 10px;
+  align-items: end;
+}
+@media (max-width: 700px) {
+  .ide-toolbar-grid { grid-template-columns: 1fr; }
+}
+.ide-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+}
+.ide-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--txt-muted);
+  letter-spacing: 0.02em;
+}
+.ide-field select,
+.ide-field input[type="number"],
+.ide-field input[type="text"] {
+  width: 100%;
+  min-height: 34px;
+  background: var(--bg);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  color: var(--txt);
+  padding: 6px 10px;
+}
+.ide-field select:focus,
+.ide-field input:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--borda));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+.ide-exemplo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  padding-top: 2px;
+  border-top: 1px solid color-mix(in srgb, var(--borda) 70%, transparent);
+}
+.ide-exemplo-desc {
+  margin: 0;
+  flex: 1;
+  min-width: 180px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--txt-muted);
+}
+.ide-exemplo-aviso { font-size: 12px; color: var(--warn); }
+.ide-btn-ghost {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--borda);
+  background: transparent;
+  color: var(--brand);
+  cursor: pointer;
+}
+.ide-btn-ghost:hover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.ide-monaco {
+  margin-top: 0;
+  border: 1px solid var(--borda);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.ide-runbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 8px;
+}
+.ide-btn-run {
+  min-height: 36px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.ide-run-hint {
+  font-size: 12px;
+  color: var(--txt-muted);
+}
+.ide-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.ide-field-inline input {
+  width: 88px;
+  min-height: 32px;
+}
+.ide-versao {
+  font-size: 12px;
+  color: var(--txt-faint);
+}
+.ide-foot-hint {
+  margin: 8px 0 0;
+  font-size: 11.5px;
+  color: var(--txt-faint);
+  line-height: 1.4;
+}
+.termbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.termbar h2 {
+  margin: 0;
+  text-transform: none;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--txt-muted);
+}
+
+/* Arena toolbar (paridade visual com o editor) */
+.arena-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
+  background: color-mix(in srgb, var(--brand) 5%, var(--bg-elevated));
+  border: 1px solid var(--borda);
+  border-radius: var(--radius);
+}
+.arena-toolbar-top { display: flex; flex-direction: column; gap: 2px; }
+.arena-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.arena-toolbar select,
+.arena-toolbar button {
+  border-radius: 8px;
+  min-height: 32px;
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.seg button {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--txt-muted);
+  padding: 6px 12px;
+}
+.seg button.ativo {
+  background: color-mix(in srgb, var(--brand) 20%, var(--painel-2));
+  color: var(--txt);
+  font-weight: 700;
 }

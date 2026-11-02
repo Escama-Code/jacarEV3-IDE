@@ -19,6 +19,11 @@
       "descricao": "Do básico às rotinas da biblioteca."
     },
     {
+      "id": "obr",
+      "nome": "OBR Nacional",
+      "descricao": "Array de 3 cores, ultrassom e garra."
+    },
+    {
       "id": "transito",
       "nome": "Educação no trânsito",
       "descricao": "Semáforo, linhas e faixas de pedestres."
@@ -58,7 +63,7 @@
     {
       "id": "linha",
       "nome": "Seguidor de linha — treino",
-      "descricao": "Seguidor simples para começar no cenário de treino.",
+      "descricao": "Seguidor 1 sensor no treino; velocidades calibradas para a física com inércia.",
       "categoria": "linha",
       "dificuldade": "Iniciante",
       "cenario": "treino",
@@ -97,8 +102,8 @@
     },
     {
       "id": "topico",
-      "nome": "Pronto da lib: circuito.seguir_linha — treino",
-      "descricao": "Exemplo da rotina circuito.seguir_linha da biblioteca jacarev3.",
+      "nome": "Seguidor — array 3 sensores",
+      "descricao": "Seguidor proporcional com 3 sensores (portas 1 e 3).",
       "categoria": "linha",
       "dificuldade": "Intermediário",
       "cenario": "treino",
@@ -194,6 +199,26 @@
       "cenario": "pantanalEcologico",
       "inicio": "lagoa_seca",
       "arquivo": "desafios/jofre-pantanal.py"
+    },
+    {
+      "id": "obr_array",
+      "nome": "OBR — array 3 sensores + verde",
+      "descricao": "Segue linha com portas 1–3 no treino; verde e US quando existirem.",
+      "categoria": "obr",
+      "dificuldade": "Intermediário",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "obr-nacional/array-linha-verde.py"
+    },
+    {
+      "id": "obr_garra",
+      "nome": "OBR — teste da garra (motor A)",
+      "descricao": "Abre e fecha a garra com girar_motor_graus no motor A.",
+      "categoria": "obr",
+      "dificuldade": "Iniciante",
+      "cenario": "treino",
+      "inicio": "padrao",
+      "arquivo": "obr-nacional/teste-garra.py"
     }
   ]
 }

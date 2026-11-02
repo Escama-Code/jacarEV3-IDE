@@ -6,6 +6,8 @@
 <title>Editor por blocos OBR — jacarEV3</title>
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
+<link rel="stylesheet" href="../src/css/efeitos.css">
+<link rel="stylesheet" href="../src/css/shell.css">
 <link rel="stylesheet" href="../src/css/editores.css">
 <style>
   :root {
@@ -142,7 +144,22 @@
   }
 </style>
 </head>
-<body>
+<body class="app-shell editor-mapas">
+
+<header class="app-header">
+  <a class="app-logo" href="../index.html" title="Menu">
+    <img src="../src/assets/ui/logo-header.svg" alt="jacarEV3 IDE" height="28">
+  </a>
+  <nav class="app-header-nav">
+    <a href="campanha.html" data-nav="campanha">Campanha</a>
+    <a href="sandbox.html" data-nav="sandbox">Sandbox</a>
+    <a href="editor-mapas-blocos.html" data-nav="blocos" class="is-active">Blocos OBR</a>
+    <a href="editor-mapas.html" data-nav="mapas">Mapas</a>
+    <a href="../index.html">Menu</a>
+  </nav>
+  <span id="status" class="app-status">…</span>
+</header>
+
   <header>
     <div>
       <h1>🧱 Editor por blocos OBR · <span style="color:var(--accent)">.jcrv3map v2</span></h1>
