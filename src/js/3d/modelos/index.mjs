@@ -17,6 +17,6 @@ export { construirRoboEscorpiao } from './escorpiao.mjs';
 export { construirRoboCoruja } from './coruja.mjs';
 export { construirRoboCarroFusca } from './carro-fusca.mjs';
 export { construirRoboOpala } from './Opala.mjs';
-export { construirRoboCorcel } from './Cocel.mjs';
+export { construirRoboCorcel } from './corcel.mjs';
 export { construirRoboCarro } from './carro.mjs';
 export { aplicarEstado } from './aplicar-estado.mjs';

@@ -31,6 +31,71 @@
   body.modo-campanha #inicio,
   body.modo-campanha #exemplo { display: none; }
 
+
+  /* Abas compactas da arena: informações educativas OU telemetria do robô. */
+  .abas-inferiores-arena {
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin:9px 0 5px; padding-bottom:5px;
+    border-bottom:1px solid #46515f;
+  }
+  .abas-inferiores-arena button {
+    font-size:12px; border:1px solid transparent;
+    background:transparent; color:#bdc9d8;
+    border-radius:6px; padding:5px 10px;
+  }
+  .abas-inferiores-arena button[aria-selected="true"] {
+    background:#175565; border-color:#3c97a4; color:#fff;
+  }
+  .abas-inferiores-arena button:focus-visible {
+    outline:2px solid #a2dcfc; outline-offset:2px;
+  }
+  .abas-inferiores-arena [hidden], .informacao-arena[hidden] { display:none !important; }
+  /* Dicas ambientais: ícone, título, conteúdo e fundamento com separação legível. */
+  .dica-cidade {
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px 12px; margin-top:6px;
+    background:#1c2735; border:1px solid #344a5a; border-radius:8px;
+  }
+  .dica-cidade[hidden] { display:none !important; }
+  .dica-cidade-icone {
+    flex:none; min-width:24px; text-align:center; line-height:1.3;
+    font-size:19px; font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif;
+  }
+  .dica-cidade-texto { min-width:0; display:flex; flex-direction:column; gap:5px; }
+  .dica-cidade-texto strong { display:block; color:#f3f8fd; font-size:13px; line-height:1.4; }
+  .dica-cidade-texto > span { display:block; font-size:12px; line-height:1.5; color:#d7e1ec; }
+  .dica-cidade-texto .dica-cidade-lei { color:#a4c5d1; font-size:11px; }
+  .dica-cidade-texto .dica-cidade-fonte { font-size:11px; }
+  .nota-tempo-virtual { display:block; color:#aab8c8; font-size:11px; line-height:1.4; margin:3px 0 6px; }
+  .informacao-educativa-vazia { color:#a9bacb; font-size:12px; padding:5px 3px 8px; }
+  #painelEducacaoArena:has(#dicaCidade:not([hidden])) .informacao-educativa-vazia { display:none; }
+  .monitor-robo {
+    border:1px solid #465a6d; background:#202c3b;
+    border-radius:8px; padding:10px 12px;
+  }
+  .monitor-robo-cabecalho {
+    display:flex; justify-content:space-between; align-items:baseline;
+    flex-wrap:wrap; gap:8px; margin-bottom:9px;
+  }
+  .monitor-robo-cabecalho strong { color:#e6f3fc; font-size:13px; }
+  .monitor-robo-cabecalho output {
+    color:#a8c0cf; font-size:12px; font-variant-numeric:tabular-nums;
+  }
+  .monitor-robo-cards { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+  .monitor-robo-valor {
+    min-width:0; background:#172536; border:1px solid #3a4b5d;
+    border-radius:6px; padding:7px;
+  }
+  .monitor-robo-valor small { display:block; color:#b0bed0; font-size:11px; margin-bottom:3px; }
+  .monitor-robo-valor strong {
+    display:block; color:#fff; font-size:14px;
+    font-variant-numeric:tabular-nums; overflow-wrap:anywhere;
+  }
+  .monitor-robo-nota { color:#a9bacb; font-size:11px; margin:7px 0 0; line-height:1.35; }
+  .monitor-robo-vazio { font-size:12px; color:#a9bacb; }
+  @media(max-width:680px) {
+    .monitor-robo-cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
 </style>
 </head>
 <body>
@@ -132,6 +197,7 @@
         <select id="exemplo" aria-label="Programa de exemplo" disabled></select>
       </label>
       <label title="Esse valor é o máximo permitido, não o tempo obrigatório de execução.">limite máximo <input id="limite" type="number" value="300" min="1" max="300" step="1" title="O programa pode terminar antes de 300 s"> s <span class="info" style="margin:0">(o programa pode terminar antes)</span></label>
+      <small class="nota-tempo-virtual">300 s é o teto. O tempo final depende do código executado, incluindo pausas, motores e leituras dos sensores; 2×/4× altera só a reprodução.</small>
     </div>
     <div class="linha linha-mapa-exemplo">
       <span id="descricaoExemplo" class="info" aria-live="polite">Carregando biblioteca de exemplos…</span>
@@ -184,6 +250,12 @@
       <canvas id="cv" class="vista" width="1000" height="667"></canvas>
       <div id="cv3d" class="vista" hidden></div>
     </div>
+    <div class="abas-inferiores-arena" role="tablist" aria-label="Informações da arena">
+      <button id="abaEducacaoArena" type="button" role="tab" aria-selected="true" aria-controls="painelEducacaoArena">Educação no trânsito</button>
+      <button id="abaMonitorArena" type="button" role="tab" aria-selected="false" aria-controls="painelMonitorArena">Monitor do robô</button>
+    </div>
+    <section id="painelEducacaoArena" class="informacao-arena" role="tabpanel" aria-labelledby="abaEducacaoArena">
+      <div class="informacao-educativa-vazia">As dicas de trânsito aparecem aqui durante o percurso.</div>
     <div id="dicaCidade" class="dica-cidade" hidden aria-live="polite" role="status">
       <span id="dicaCidadeIcone" class="dica-cidade-icone" aria-hidden="true">🏙️</span>
       <div class="dica-cidade-texto">
@@ -194,6 +266,23 @@
            target="_blank" rel="noopener noreferrer" hidden>Consultar o Código de Trânsito Brasileiro</a>
       </div>
     </div>
+    </section>
+    <section id="painelMonitorArena" class="informacao-arena" role="tabpanel" aria-labelledby="abaMonitorArena" hidden>
+      <div class="monitor-robo">
+        <div class="monitor-robo-cabecalho">
+          <strong id="monitorMovimento">Aguardando execução</strong>
+          <output id="monitorTempo">—</output>
+        </div>
+        <div class="monitor-robo-cards">
+          <div class="monitor-robo-valor"><small>Cor · porta 3</small><strong id="monitorCor">—</strong></div>
+          <div class="monitor-robo-valor"><small>Luz refletida</small><strong id="monitorRefletida">—</strong></div>
+          <div class="monitor-robo-valor"><small>Motor B · esquerda</small><strong id="monitorMotorB">—</strong></div>
+          <div class="monitor-robo-valor"><small>Motor C · direita</small><strong id="monitorMotorC">—</strong></div>
+        </div>
+        <div id="monitorVazio" class="monitor-robo-vazio">Execute um programa para acompanhar os sensores e motores.</div>
+        <p class="monitor-robo-nota">No replay, as velocidades são estimadas pelos encoders; no Teleop, são os comandos atuais. Cor e luz são medidas no ponto virtual do sensor. Este painel não interpreta o código Python.</p>
+      </div>
+    </section>
     <div class="linha">
       <button id="btnPlay" disabled>▶ Reproduzir</button>
       <button type="button" id="btnTeleop" title="WASD ou gamepad — ao vivo">🎮 Teleop</button>
@@ -754,9 +843,23 @@ if (Campanha.initCampanha) {
 window.dispatchEvent(new Event('campanha-pronta'));
 </script>
 
+<script src="../src/js/monitorRobo.js?v=monitor-robo-atualizado-1"></script>
 <script>
 'use strict';
 const $ = (id) => document.getElementById(id);
+const MonitorRobo = JacarMonitorRobo.criar({
+  abaEducacao: $('abaEducacaoArena'),
+  abaMonitor: $('abaMonitorArena'),
+  painelEducacao: $('painelEducacaoArena'),
+  painelMonitor: $('painelMonitorArena'),
+  movimento: $('monitorMovimento'),
+  tempo: $('monitorTempo'),
+  cor: $('monitorCor'),
+  refletida: $('monitorRefletida'),
+  motorB: $('monitorMotorB'),
+  motorC: $('monitorMotorC'),
+  vazio: $('monitorVazio'),
+});
 
 // =====================================================================
 // Terminal
@@ -942,6 +1045,7 @@ const Playback = (() => {
     $('corpo').innerHTML = ''; $('contaPacotes').textContent = ''; logIdx = 0; ultimoT = 0; evIdx = 0;
     mensagensTerminal = []; idxTerminal = 0; ultimoTerminalT = -1; sincronizarPrints = false;
     eventosDicasCidade = [];
+    MonitorRobo.atualizar(null);
     const dica = $('dicaCidade'); if (dica) { dica.hidden = true; delete dica.dataset.dica; }
     $('resumo').textContent = 'Rode um script pra ver o robô.';
     const relogio = $('tempoPlayback'); if (relogio) relogio.textContent = '0,0 / 0,0 s simulados';
@@ -1033,8 +1137,37 @@ const Playback = (() => {
     desenhar(t);
   }
 
-  // Eventos calculados a partir dos frames reais, nunca a partir da posição
-  // dos edifícios. A reprodução e o slider mostram a MESMA dica no mesmo t.
+  // Eventos educativos vêm dos frames da execução, não de um roteiro pronto.
+  // Na queimada o sensor de cor ativa a dica na faixa vermelha impressa:
+  // o robô pode enxergar a faixa ANTES de seu centro alcançar o fogo ilustrado.
+  function distanciaDicaEducativa(p, x, y, th, instante, simulador) {
+    const g = p.gatilhoSensor;
+    if (!g) {
+      const dx = x - p.x, dy = y - p.y;
+      const d2 = dx*dx + dy*dy;
+      return d2 <= p.raio*p.raio ? d2 : Infinity;
+    }
+    if (!simulador || typeof simulador.corEm !== 'function'
+        || typeof simulador.refletidaEm !== 'function') return Infinity;
+    const cfg = simulador.cfg || {};
+    const frente = Number(cfg.sensorCorFrenteCm ?? 5.5);
+    const espaco = Number(cfg.sensorCorEspacamentoCm ?? 2);
+    const laterais = [-espaco, espaco]; // portas 1 e 3 da configuração atual.
+    let menor = Infinity;
+    for (const lateral of laterais) {
+      const sx = x + frente * Math.cos(th) - lateral * Math.sin(th);
+      const sy = y + frente * Math.sin(th) + lateral * Math.cos(th);
+      const dx = sx - g.x, dy = sy - g.y, d2 = dx*dx + dy*dy;
+      if (d2 > g.raio*g.raio) continue;
+      if (simulador.corEm(x, y, th, instante, lateral) !== g.cor) continue;
+      if (simulador.refletidaEm(x, y, th, instante, lateral) > g.refletanciaMax) continue;
+      menor = Math.min(menor, d2);
+    }
+    return menor;
+  }
+
+  // Uma dica aparece quando os sensores ou o corpo do robô alcançam seu
+  // gatilho; os eventos são associados aos timestamps reais da simulação.
   function prepararDicasCidade(s) {
     eventosDicasCidade = [];
     const pontos = cen?.pontosEducativos || [];
@@ -1042,13 +1175,11 @@ const Playback = (() => {
     if (!pontos.length || !frames || frames.length < STRIDE) return;
     let anterior = null;
     for (let i = 0; i + STRIDE <= frames.length; i += STRIDE) {
-      const x = frames[i+1], y = frames[i+2], instante = frames[i];
+      const x = frames[i+1], y = frames[i+2], th = frames[i+3], instante = frames[i];
       let atual = null, menor = Infinity;
       for (const p of pontos) {
-        const dx = x-p.x, dy = y-p.y, distancia2 = dx*dx+dy*dy;
-        if (distancia2 <= p.raio*p.raio && distancia2 < menor) {
-          atual = p; menor = distancia2;
-        }
+        const distancia2 = distanciaDicaEducativa(p, x, y, th, instante, s);
+        if (distancia2 < menor) { atual = p; menor = distancia2; }
       }
       if (atual !== anterior && atual) {
         eventosDicasCidade.push({ t: instante, ponto: atual });
@@ -1061,6 +1192,13 @@ const Playback = (() => {
     const painel = $('dicaCidade');
     if (!painel) return;
     const pontos = cen?.pontosEducativos || [];
+    const pantanal = cen?.id === 'pantanalEcologico';
+    const aba = $('abaEducacaoArena');
+    if (aba) aba.textContent = pantanal ? 'Educação ambiental' : 'Educação no trânsito';
+    const dicaVazia = document.querySelector('.informacao-educativa-vazia');
+    if (dicaVazia) dicaVazia.textContent = pantanal
+      ? 'As dicas ambientais aparecem aqui durante a jornada de Jofre.'
+      : 'As dicas de trânsito aparecem aqui durante o percurso.';
     if (!pontos.length) {
       painel.hidden = true;
       delete painel.dataset.dica;
@@ -1079,9 +1217,10 @@ const Playback = (() => {
     } else {
       // Antes de rodar o código ou no modo teleop: leitura direta da posição.
       let menor = Infinity;
+      const modelo = simSensor();
       for (const ponto of pontos) {
-        const dx = est.x-ponto.x, dy = est.y-ponto.y, d2 = dx*dx+dy*dy;
-        if (d2 <= ponto.raio*ponto.raio && d2 < menor) {
+        const d2 = distanciaDicaEducativa(ponto, est.x, est.y, est.th, est.t, modelo);
+        if (d2 < menor) {
           escolhido = ponto; menor = d2;
         }
       }
@@ -1100,7 +1239,21 @@ const Playback = (() => {
       const fundamento = $('dicaCidadeFundamento');
       fundamento.textContent = escolhido.fundamento || '';
       fundamento.hidden = !escolhido.fundamento;
-      $('dicaCidadeFonte').hidden = !escolhido.fundamento;
+      const fonte = $('dicaCidadeFonte');
+      // Mostrar link legal apenas quando o fundamento for jurídico
+      // e encaminhar à lei pertinente (nunca ao CTB para uma dica ambiental).
+      if (pantanal) {
+        const mataCiliar = /12[.]651\/2012/.test(escolhido.fundamento || '');
+        fonte.hidden = !mataCiliar;
+        if (mataCiliar) {
+          fonte.textContent = 'Consultar a Lei de Proteção da Vegetação Nativa';
+          fonte.href = 'https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2012/lei/l12651.htm';
+        }
+      } else {
+        fonte.hidden = !escolhido.fundamento || !/CTB|9[.]503|trânsito/i.test(escolhido.fundamento);
+        fonte.textContent = 'Consultar o Código de Trânsito Brasileiro';
+        fonte.href = 'https://www.planalto.gov.br/ccivil_03/leis/l9503compilado.htm';
+      }
       painel.dataset.dica = chave;
     }
     painel.hidden = false;
@@ -1119,6 +1272,7 @@ const Playback = (() => {
   function desenharEstado(est) {
     if (!est) return;
     atualizarSemaforoVisual(est.t || 0);
+    MonitorRobo.atualizar(JacarMonitorRobo.estadoAoVivo(App.sim));
     atualizarDicaCidade(est, true);
     if (modo === '3d' && vista) {
       vista.aplicar(est);
@@ -1166,6 +1320,7 @@ const Playback = (() => {
     $('slider').value = sim.t ? Math.round(t / sim.t * 1000) : 0;
     atualizarRelogio();
     desenhar(t); sincronizarLog(t); sincronizarTerminal(t); sons(t);
+    MonitorRobo.atualizar(JacarMonitorRobo.estadoEm(sim, t));
   }
 
   function loop(agora) {
@@ -1632,6 +1787,7 @@ async function rodar() {
   App.executando = true; btn.disabled = true; btn.textContent = '⏳ Rodando…';
   Terminal.limpar();
   App.sim = new SimEV3($('cenario').value, { inicio: $('inicio').value });
+  MonitorRobo.atualizar(null);
   Playback.reiniciarRelogioSemaforo();
   const btnResetSinal = $('btnReiniciarSinal');
   if (btnResetSinal) btnResetSinal.disabled = true;
