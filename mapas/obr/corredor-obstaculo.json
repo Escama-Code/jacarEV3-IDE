@@ -1,0 +1,9 @@
+{
+  "nome": "Corredor com obstáculo",
+  "objetivo": "ultrassom-desvio",
+  "w": 160,
+  "h": 80,
+  "inicio": { "x": 20, "y": 40, "th": 0 },
+  "obstaculos": [{ "x": 90, "y": 30, "w": 15, "h": 20 }],
+  "notas": "Caixa central; desviar e retomar linha."
+}

@@ -5,9 +5,16 @@
 import { DEG, COR_LED } from './helpers.mjs';
 
 export function aplicarEstado(rig, est) {
-  rig.grupo.position.set(est.x, est.z || 0, est.y);             // sim (x,y) → mundo (X,Z); z = altura do terreno (rampa)
-  rig.grupo.rotation.order = 'YXZ';                             // 1º rumo (Y), depois inclinação e rolagem nos eixos do próprio robô
-  rig.grupo.rotation.set(-(est.pitch || 0), Math.PI / 2 - est.th, est.roll || 0);   // +Z local → (cosθ, 0, sinθ); pitch>0 = nariz pra cima; roll>0 = lado esquerdo mais alto
+  const z = Number(est.z) || 0;
+  let pitch = Number(est.pitch) || 0;
+  let roll = Number(est.roll) || 0;
+  const LIM = 0.45;
+  if (pitch > LIM) pitch = LIM; if (pitch < -LIM) pitch = -LIM;
+  if (roll > LIM) roll = LIM; if (roll < -LIM) roll = -LIM;
+  // leve offset: base do chassi acima do chão
+  rig.grupo.position.set(est.x, z + 0.15, est.y);
+  rig.grupo.rotation.order = 'YXZ';
+  rig.grupo.rotation.set(-pitch, Math.PI / 2 - est.th, roll);
   rig.rodaB.rotation.x = est.encB * DEG;                        // encoder REAL do sim.js
   rig.rodaC.rotation.x = est.encC * DEG;
   const base = String(est.led || 'DESLIGADO').split('_')[0];

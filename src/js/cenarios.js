@@ -256,9 +256,22 @@ const Cenarios = (() => {
   function alturaEm(cen, x, y) {
     let h = 0;
     for (const r of cen.rampas || []) {
-      if (x < r.x || x > r.x + r.w || y < r.y || y > r.y + r.h) continue;
-      const u = r.dir === '+x' ? x - r.x : r.dir === '-x' ? r.x + r.w - x : r.dir === '+y' ? y - r.y : r.y + r.h - y;
-      h = Math.max(h, r.altura * Math.max(0, Math.min(1, u / r.subida)));
+      // margem externa de 1 cm: transição suave (evita z 4→0 em um passo)
+      const m = 1.2;
+      if (x < r.x - m || x > r.x + r.w + m || y < r.y - m || y > r.y + r.h + m) continue;
+      let u = r.dir === '+x' ? x - r.x
+            : r.dir === '-x' ? r.x + r.w - x
+            : r.dir === '+y' ? y - r.y
+            : r.y + r.h - y;
+      const sub = Math.max(1, r.subida || r.w || 1);
+      let along = Math.max(0, Math.min(1, u / sub));
+      // fora da caixa da rampa (só na margem): desce suavemente
+      let lateral = 1;
+      if (x < r.x) lateral = Math.max(0, 1 - (r.x - x) / m);
+      else if (x > r.x + r.w) lateral = Math.max(0, 1 - (x - (r.x + r.w)) / m);
+      if (y < r.y) lateral = Math.min(lateral, Math.max(0, 1 - (r.y - y) / m));
+      else if (y > r.y + r.h) lateral = Math.min(lateral, Math.max(0, 1 - (y - (r.y + r.h)) / m));
+      h = Math.max(h, (r.altura || 0) * along * lateral);
     }
     return h;
   }
@@ -267,9 +280,20 @@ const Cenarios = (() => {
     if (typeof cen.terreno === 'function') return cen.terreno(x, y, th);
     if (!cen.rampas || !cen.rampas.length) return { z: 0, pitch: 0, roll: 0 };
     const c = Math.cos(th), s = Math.sin(th);
-    const f = alturaEm(cen, x + 5 * c, y + 5 * s), b = alturaEm(cen, x - 5 * c, y - 5 * s);
-    const l = alturaEm(cen, x + 6 * s, y - 6 * c), r = alturaEm(cen, x - 6 * s, y + 6 * c);
-    return { z: (f + b + l + r) / 4, pitch: Math.atan2(f - b, 10), roll: Math.atan2(l - r, 12) };
+    // Amostras mais curtas = menos "tombo" falso na borda da rampa
+    const f = alturaEm(cen, x + 3.5 * c, y + 3.5 * s);
+    const b = alturaEm(cen, x - 3.5 * c, y - 3.5 * s);
+    const l = alturaEm(cen, x + 4 * s, y - 4 * c);
+    const r = alturaEm(cen, x - 4 * s, y + 4 * c);
+    let pitch = Math.atan2(f - b, 7);
+    let roll = Math.atan2(l - r, 8);
+    // Robô EV3 não escala parede: limita inclinação visual/física
+    const LIM = 0.42; // ~24°
+    if (pitch > LIM) pitch = LIM;
+    if (pitch < -LIM) pitch = -LIM;
+    if (roll > LIM) roll = LIM;
+    if (roll < -LIM) roll = -LIM;
+    return { z: (f + b + l + r) / 4, pitch, roll };
   }
 
   // ---------------------------------------------------------

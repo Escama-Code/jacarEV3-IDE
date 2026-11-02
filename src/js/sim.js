@@ -1,7 +1,4 @@
-// ============================================================
-// SimEV3 — EV3 virtual. Recebe os bytes REAIS (Direct Commands) que a
-// jacarev3 gerou, decodifica o bytecode e move um robô 2D.
-// Não depende de DOM: roda no navegador e no Node (testes).
+// SimEV3 — EV3 virtual
 // ============================================================
 const OP = {
   SOUND: 0x94, UI_WRITE: 0x82, INPUT_DEVICE: 0x99,
@@ -11,7 +8,7 @@ const OP = {
   OUT_STEP_SYNC: 0xB0, OUT_TIME_SYNC: 0xB1,
   OUT_CLR_COUNT: 0xB2, OUT_GET_COUNT: 0xB3,
 };
-// opcode -> [nome, quantidade de parâmetros codificados]
+
 const OPCODES = {
   [OP.SOUND]: ['som', 4], [OP.UI_WRITE]: ['LED', 2], [OP.INPUT_DEVICE]: ['sensor ler', 7],
   [OP.OUT_RESET]: ['motor reset', 2], [OP.OUT_STOP]: ['motor parar', 3],
@@ -21,10 +18,8 @@ const OPCODES = {
   [OP.OUT_STEP_SYNC]: ['base graus', 6], [OP.OUT_TIME_SYNC]: ['base tempo', 6],
   [OP.OUT_CLR_COUNT]: ['encoder zerar', 2], [OP.OUT_GET_COUNT]: ['encoder ler', 3],
 };
-const CORES_LED = ['DESLIGADO', 'VERDE', 'VERMELHO', 'AMBAR', 'VERDE_PISCA',
-  'VERMELHO_PISCA', 'AMBAR_PISCA', 'VERDE_PULSA', 'VERMELHO_PULSA', 'AMBAR_PULSA'];
+const CORES_LED = ['DESLIGADO', 'VERDE', 'VERMELHO', 'AMBAR', 'VERDE_PISCA', 'VERMELHO_PISCA', 'AMBAR_PISCA', 'VERDE_PULSA', 'VERMELHO_PULSA', 'AMBAR_PULSA'];
 
-// ---- decodificação de parâmetros (formato LC0/LC1/LC2/LC4/LCS/GV0) ----
 function lerParam(b, i) {
   const x = b[i];
   if ((x & 0x80) === 0) {
@@ -37,11 +32,11 @@ function lerParam(b, i) {
     case 0x81: return { tipo: 'const', valor: dv.getInt8(i + 1), prox: i + 2 };
     case 0x82: return { tipo: 'const', valor: dv.getInt16(i + 1, true), prox: i + 3 };
     case 0x83: return { tipo: 'const', valor: dv.getInt32(i + 1, true), prox: i + 5 };
-    case 0x84: { let j = i + 1, s = ''; while (b[j] !== 0) s += String.fromCharCode(b[j++]);
-      return { tipo: 'str', valor: s, prox: j + 1 }; }
+    case 0x84: { let j = i + 1, s = ''; while (b[j] !== 0) s += String.fromCharCode(b[j++]); return { tipo: 'str', valor: s, prox: j + 1 }; }
     default: throw new Error('parâmetro desconhecido 0x' + x.toString(16));
   }
 }
+
 function decodificar(pacote) {
   const b = pacote instanceof Uint8Array ? pacote : new Uint8Array(pacote);
   const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
@@ -59,118 +54,188 @@ function decodificar(pacote) {
   }
   return r;
 }
+
 const hex = (b) => Array.from(b, (x) => x.toString(16).padStart(2, '0')).join(' ');
 const MASK_PORTAS = (m) => ['A', 'B', 'C', 'D'].filter((_, k) => m & (1 << k));
 
-// ---- cenários: vêm de cenarios.js (navegador: global `Cenarios`; Node: require) ----
-const _Cen = (typeof Cenarios !== 'undefined') ? Cenarios : require('./cenarios.js');
-const CENARIOS = _Cen.lista;                   // { treino, fll } — cada um com w, h (cm), caixas, inicios
-const STRIDE = 8;                              // frames: [t, x, y, th, encA, encB, encC, encD] (enc em graus)
+const _Cen = (typeof Cenarios !== 'undefined') ? Cenarios : (typeof require !== 'undefined' ? require('./cenarios.js') : null);
+if (!_Cen) throw new Error('Cenarios não carregado — inclua cenarios.js antes de sim.js');
+const CENARIOS = _Cen.lista;
+const STRIDE = 8;
 
 class SimEV3 {
-  /** cenario: 'treino' | 'fll'. cfg.inicio: chave de CENARIOS[...].inicios (null = inicioPadrao do cenário) */
   constructor(cenario = 'treino', cfg = {}) {
     this.cfg = Object.assign({
-      grausPorPct: 10,          // 100% ≈ 1000 °/s (motor grande EV3)
-      cmPorGrau: Math.PI * 5.6 / 360,  // roda de 5,6 cm
+      grausPorPct: 10,
+      cmPorGrau: Math.PI * 5.6 / 360,
       bitola: 12, raio: 7, passo: 0.01,
-      latEnvio: 0.005, latResposta: 0.02,   // tempo virtual gasto por pacote (Bluetooth)
-      // Perfil OBR Nacional (Rescue): 3× cor + ultrassônico
-      // Portas: 1=esq · 2=centro · 3=dir · 4=US  |  giro = odometria integrada
-      sensores: { 1: 'cor', 2: 'cor', 3: 'cor', 4: 'ultrassonico' },
-      inicio: null,             // null = o início padrão do cenário
-      amostragem: 'area',       // 'area' (média 3×3 num quadrado de ±raioSensorCm) | 'pixel' (1 pixel exato)
+      latEnvio: 0.005, latResposta: 0.02,
+      sensores: { 1: 'cor', 2: 'toque', 3: 'cor', 4: 'ultrassonico' },
+      inicio: null,
+      amostragem: 'area',
       raioSensorCm: 0.35,
-      modoLuz: 'luminancia',    // 'luminancia' (Rec.709) | 'vermelho' (LED vermelho do sensor real)
-      // Layout físico dos sensores de cor (cm no referencial do robô)
-      sensorCorFrenteCm: 5.5,   // à frente do centro
-      sensorCorEspacamentoCm: 2.0, // distância lateral entre esq/centro/dir
-      perfilRobo: 'obr-nacional',
+
+      // Física mais realista (robô diferencial, não GTA)
+      acelMotor: 280,          // % de potência por segundo (sobe/desce até o comando)
+      freioMotor: 420,         // %/s ao parar (ocioso) — freio um pouco mais firme
+      atritoLin: 0.18,         // perda de avanço por atrito (adimensional / s leve)
+      maxOmega: 4.2,           // rad/s máximo de guinada (~240°/s)
+      escorregaCurva: 0.32,    // reduz avanço em curva fechada (0=sem, 1=muito)
+      modoLuz: 'luminancia',
     }, cfg);
     this.reset(cenario);
   }
+
   reset(cenario = this.cenarioNome) {
     if (!CENARIOS[cenario]) throw new Error('cenário desconhecido: ' + cenario);
     this.cenarioNome = cenario; this.cen = CENARIOS[cenario];
-    this.tapete = _Cen.obterTapete(cenario);      // imagem + pixels (a mesma que o aluno vê)
-    // Ao reiniciar, o semáforo também retorna ao início do ciclo virtual.
+    this.tapete = _Cen.obterTapete(cenario);
+    // O Sandbox embute seu próprio SimEV3: ele também deve reiniciar o semáforo.
     _Cen.atualizarTapete?.(this.cen, this.tapete, 0);
     const s = _Cen.inicioDe(this.cen, this.cfg.inicio);
     this.x = s.x; this.y = s.y; this.th = s.th; this.t = 0;
-    this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, modo: 'ocioso', rest: 0, enc: 0 };
+    this.motores = {}; for (const p of 'ABCD') this.motores[p] = { v: 0, setv: 0, vel: 0, modo: 'ocioso', rest: 0, enc: 0 };
     this.led = 'DESLIGADO';
     this.frames = [];
     this._gravar();
     this.eventos = []; this.pacotes = []; this.dist = 0;
+    this.tombado = false; this.pitch = 0; this.roll = 0; this.z = 0;
+    this._pitchPrev = 0; this._omegaPitch = 0;
   }
+
   agora() { return this.t; }
 
-  // ---------- física ----------
   avancar(dt) {
     let falta = dt; const h = this.cfg.passo;
     while (falta > 1e-9) { const d = Math.min(h, falta); this._passo(d); falta -= d; }
   }
+
   _passo(h) {
     const c = this.cfg, dm = {};
+    const acel = (c.acelMotor != null ? c.acelMotor : 280) * h;
+    const freio = (c.freioMotor != null ? c.freioMotor : 420) * h;
     for (const p of 'ABCD') {
-      const m = this.motores[p]; let d = 0;
+      const m = this.motores[p];
+      if (m.vel == null) m.vel = 0;
+      let alvo = 0;
+      let dAtivo = h;
       if (m.modo !== 'ocioso') {
-        d = m.modo === 'tempo' ? Math.min(h, Math.max(m.rest, 0)) : h;
-        const graus = m.v * c.grausPorPct * d; m.enc += graus; dm[p] = graus * c.cmPorGrau;
-        if (m.modo === 'tempo') { m.rest -= h; if (m.rest <= 1e-9) { m.v = 0; m.modo = 'ocioso'; } }
-      } else dm[p] = 0;
+        alvo = m.v;
+        dAtivo = m.modo === 'tempo' ? Math.min(h, Math.max(m.rest, 0)) : h;
+      }
+      const maxStep = (m.modo === 'ocioso' || alvo === 0) ? freio : acel;
+      if (m.vel < alvo) m.vel = Math.min(alvo, m.vel + maxStep);
+      else if (m.vel > alvo) m.vel = Math.max(alvo, m.vel - maxStep);
+      if (Math.abs(m.vel) < 0.4 && alvo === 0) m.vel = 0;
+      const graus = m.vel * c.grausPorPct * dAtivo;
+      m.enc += graus;
+      dm[p] = graus * c.cmPorGrau;
+      if (m.modo === 'tempo') {
+        m.rest -= h;
+        if (m.rest <= 1e-9) { m.v = 0; m.modo = 'ocioso'; }
+      }
     }
-    const dl = dm.B, dr = dm.C, ds = (dl + dr) / 2, dth = -(dr - dl) / c.bitola;
-    const nx = this.x + ds * Math.cos(this.th + dth / 2);
-    const ny = this.y + ds * Math.sin(this.th + dth / 2);
-    // colisão com deslizamento: se bater, tenta andar só em x ou só em y (resvala na quina/parede)
+    let dl = dm.B || 0, dr = dm.C || 0;
+    const sumAbs = Math.abs(dl) + Math.abs(dr);
+    const curv = sumAbs > 1e-9 ? Math.abs(dr - dl) / sumAbs : 0;
+    const slip = Math.max(0, Math.min(1, c.escorregaCurva != null ? c.escorregaCurva : 0.32));
+    let ds = (dl + dr) / 2 * (1 - slip * curv * 0.85);
+    let dth = -(dr - dl) / c.bitola;
+    const maxOm = c.maxOmega != null ? c.maxOmega : 4.2;
+    const om = dth / (h || 1e-9);
+    if (Math.abs(om) > maxOm) {
+      const k = maxOm / Math.abs(om);
+      dth *= k;
+      ds *= 0.92 + 0.08 * k;
+    }
+    const atr = c.atritoLin != null ? c.atritoLin : 0.18;
+    if (Math.abs(ds) > 0) ds *= Math.max(0, 1 - atr * h);
+    const midTh = this.th + dth / 2;
+    const nx = this.x + ds * Math.cos(midTh);
+    const ny = this.y + ds * Math.sin(midTh);
     let px = nx, py = ny;
-    if (this._colide(px, py)) { if (!this._colide(nx, this.y)) py = this.y; else if (!this._colide(this.x, ny)) px = this.x; else { px = this.x; py = this.y; } }
-    this.dist += Math.hypot(px - this.x, py - this.y); this.x = px; this.y = py;
-    this.th += dth; this.t += h;
+    if (this._colide(px, py)) {
+      if (!this._colide(nx, this.y)) py = this.y;
+      else if (!this._colide(this.x, ny)) px = this.x;
+      else { px = this.x; py = this.y; }
+      if (this.motores.B) this.motores.B.vel *= 0.35;
+      if (this.motores.C) this.motores.C.vel *= 0.35;
+      dth *= 0.4;
+    }
+    this.dist += Math.hypot(px - this.x, py - this.y);
+    this.x = px; this.y = py;
+    this.th += dth;
+    if (this.th > Math.PI) this.th -= 2 * Math.PI;
+    if (this.th < -Math.PI) this.th += 2 * Math.PI;
+
+    // Terreno (rampa): pitch/z + possibilidade de tombar
+    let ter = { z: 0, pitch: 0, roll: 0 };
+    try {
+      if (_Cen && typeof _Cen.terreno === 'function') ter = _Cen.terreno(this.cen, px, py, this.th + dth);
+    } catch (_) {}
+    const pitch = ter.pitch || 0;
+    const roll = ter.roll || 0;
+    this.z = ter.z || 0;
+    // aceleração angular de pitch (borda de rampa / queda)
+    const omegaP = (pitch - (this._pitchPrev || 0)) / (h || 1e-3);
+    this._omegaPitch = 0.7 * (this._omegaPitch || 0) + 0.3 * omegaP;
+    this._pitchPrev = pitch;
+    const velLin = Math.abs(ds) / (h || 1e-3); // cm/s
+    // Tomba se: queda brusca de altura, ou velocidade alta em inclinação forte, ou sai da rampa "voando"
+    const queda = (this._zPrev != null) && ((this._zPrev - this.z) > 1.2) && velLin > 8;
+    const inclinadoRapido = Math.abs(pitch) > 0.28 && velLin > 25;
+    const sacudida = Math.abs(this._omegaPitch) > 12 && velLin > 10;
+    this._zPrev = this.z;
+    if (!this.tombado && (queda || inclinadoRapido || sacudida)) {
+      this.tombado = true;
+      this.roll = (Math.random() > 0.5 ? 1 : -1) * 1.2;
+      this.pitch = pitch + 0.9;
+      for (const p of 'ABCD') {
+        if (this.motores[p]) { this.motores[p].v = 0; this.motores[p].vel = 0; this.motores[p].modo = 'ocioso'; }
+      }
+      this.eventos.push({ t: this.t, tipo: 'tombou' });
+    }
+    if (this.tombado) {
+      // deitado: não anda mais; anima roll
+      this.pitch = Math.min(1.4, (this.pitch || 1) + 0.02);
+      this.roll = (this.roll || 1.2) * 1.01;
+      dth = 0;
+      px = this.x; py = this.y;
+    } else {
+      this.pitch = pitch;
+      this.roll = roll;
+    }
+
+    if (this.tombado) { this.x = px; this.y = py; }
+    this.t += h;
     this._gravar();
   }
-  _gravar() {                                     // um quadro por passo: pose + encoders reais
+
+  _gravar() {
     const M = this.motores;
     this.frames.push(this.t, this.x, this.y, this.th, M.A.enc, M.B.enc, M.C.enc, M.D.enc);
   }
+
   _colide(x, y) {
     const r = this.cfg.raio;
     if (x < r || y < r || x > this.cen.w - r || y > this.cen.h - r) return true;
-
-    // A sArena pode ter pisos suspensos, rampas e células vazias. Só testar
-    // a lista de paredes retangulares permitia dirigir no vazio; por outro
-    // lado, testar obstáculos sem nível bloqueava passagens em outro andar.
     if (typeof this.cen.solidoEm === 'function') {
+      // Testa toda a área circular de apoio, não só o centro do veículo.
+      // Impede que metade do robô ultrapasse a borda de uma plataforma.
       if (!this.cen.solidoEm(x, y)) return true;
-      // Amostra a área ocupada pelo robô, não apenas seu centro.
       for (let k = 0; k < 8; k++) {
-        const a = (2 * Math.PI * k) / 8;
-        if (!this.cen.solidoEm(x + r * Math.cos(a), y + r * Math.sin(a)))
-          return true;
+        const a = k * Math.PI / 4;
+        if (!this.cen.solidoEm(x + r * Math.cos(a), y + r * Math.sin(a))) return true;
       }
     }
     if (typeof this.cen.podeTransitar === 'function' &&
         !this.cen.podeTransitar(this.x, this.y, x, y)) return true;
-
-    const piso = typeof this.cen.alturaEm === 'function'
-      ? this.cen.alturaEm(x, y) : null;
-    return this.cen.caixas.some((b) => {          // círculo do robô vs retângulo
-      // Uma caixa só impede passagem no próprio patamar. Cenários antigos
-      // não têm pisoCm e continuam funcionando com a regra original.
-      if (piso !== null && Number.isFinite(b.pisoCm) &&
-          Math.abs(b.pisoCm - piso) > 3) return false;
-      const cx = Math.max(b.x, Math.min(x, b.x + b.w));
-      const cy = Math.max(b.y, Math.min(y, b.y + b.h));
+    return this.cen.caixas.some((b) => {
+      const cx = Math.max(b.x, Math.min(x, b.x + b.w)), cy = Math.max(b.y, Math.min(y, b.y + b.h));
       return Math.hypot(x - cx, y - cy) < r;
     });
   }
 
-  /**
-   * Chamado quando o script Python termina. Num EV3 real, fechar a conexão NÃO para os motores:
-   * comandos por tempo/graus terminam sozinhos; mover_continuo segue ligado. Aqui terminamos os
-   * temporizados e avisamos quais motores ficaram ligados.
-   */
   concluirComandos(maxS = 30) {
     const t0 = this.t;
     while (Object.values(this.motores).some((m) => m.modo === 'tempo') && this.t - t0 < maxS) this.avancar(0.05);
@@ -178,30 +243,38 @@ class SimEV3 {
     return { drenado: this.t - t0, ligados };
   }
 
-  // ---------- sensores (perfil OBR Nacional) ----------
-  // 3 sensores de cor na barra frontal: esq / centro / dir
-  // lateralCm: negativo = esquerda do robô, positivo = direita
-  posSensorCor(x, y, th, lateralCm = 0) {
-    const f = this.cfg.sensorCorFrenteCm ?? 5.5;
-    // frente ao longo de th; lateral perpendicular (esquerda = -sin, +cos em Y)
-    const sx = x + f * Math.cos(th) - lateralCm * Math.sin(th);
-    const sy = y + f * Math.sin(th) + lateralCm * Math.cos(th);
-    return [sx, sy];
+  _posSensorCor(x, y, th, lateralCm = 0) {
+    const frente = this.cfg.sensorCorFrenteCm != null ? this.cfg.sensorCorFrenteCm : 5.5;
+    const c = Math.cos(th), s = Math.sin(th);
+    return {
+      x: x + frente * c - lateralCm * s,
+      y: y + frente * s + lateralCm * c,
+    };
   }
-  lateralDaPorta(porta1a4) {
-    const e = this.cfg.sensorCorEspacamentoCm ?? 2.0;
-    // porta 1 = esquerda, 2 = centro, 3 = direita
-    if (porta1a4 === 1) return -e;
-    if (porta1a4 === 3) return e;
+
+  _lateralPorta(num1a3) {
+    const esp = this.cfg.sensorCorEspacamentoCm != null ? this.cfg.sensorCorEspacamentoCm : 2.2;
+    if (num1a3 === 1) return -esp; // esquerda
+    if (num1a3 === 3) return +esp; // direita
     return 0;
   }
+
   rgbEm(x, y, th, tempoS = this.t, lateralCm = 0) {
     _Cen.atualizarTapete?.(this.cen, this.tapete, tempoS);
-    const [sx, sy] = this.posSensorCor(x, y, th, lateralCm);
-    return this.cfg.amostragem === 'pixel'
-      ? _Cen.lerPixel(this.tapete, sx, sy)
-      : _Cen.lerArea(this.tapete, sx, sy, this.cfg.raioSensorCm);
+    const pos = this._posSensorCor(x, y, th, lateralCm);
+    const raio = this.cfg.raioSensorCm != null ? this.cfg.raioSensorCm : 0.4;
+    if (this.cfg.amostragem === 'pixel') return _Cen.lerPixel(this.tapete, pos.x, pos.y);
+    // 3 amostras → menos ruído na curva
+    const offs = [-0.35, 0, 0.35];
+    let R = 0, G = 0, B = 0, n = 0;
+    for (const o of offs) {
+      const q = this._posSensorCor(x, y, th, lateralCm + o);
+      const rgb = _Cen.lerArea(this.tapete, q.x, q.y, raio);
+      if (rgb && rgb.length >= 3) { R += rgb[0]; G += rgb[1]; B += rgb[2]; n++; }
+    }
+    return n ? [R / n, G / n, B / n] : _Cen.lerArea(this.tapete, pos.x, pos.y, raio);
   }
+
   refletidaEm(x, y, th, tempoS = this.t, lateralCm = 0) {
     return _Cen.intensidade(this.rgbEm(x, y, th, tempoS, lateralCm), this.cfg.modoLuz);
   }
@@ -210,26 +283,37 @@ class SimEV3 {
     return _Cen.classificarCor(r, g, b);
   }
   refletida() { return this.refletidaEm(this.x, this.y, this.th, this.t, 0); }
-  /** Ângulo integrado (odometria) — substitui giroscópio EV3 no treino OBR. Graus. */
-  giroscopioGraus() {
-    // th em radianos no simulador; 0° alinhado ao eixo +X do mapa
-    let g = (this.th * 180) / Math.PI;
-    // normaliza -180..180 como o sensor EV3 em modo ângulo
-    while (g > 180) g -= 360;
-    while (g < -180) g += 360;
-    return g;
+
+  /**
+   * porta: 0-based no bytecode (0 = sensor 1).
+   * modo EV3 cor: 0=REFLETIDA, 1=AMBIENTE, 2=COR (e variações da lib).
+   */
+  lerSensor(porta, modo) {
+    const num = (porta | 0) + 1;
+    const tipo = this.cfg.sensores[num];
+    if (!tipo) return null;
+    if (tipo === 'cor') {
+      const lat = this._lateralPorta(num);
+      const m = modo | 0;
+      // REFLETIDA: 0 ou valores comuns de libs
+      if (m === 0 || m === 3 || m === 4) {
+        return this.refletidaEm(this.x, this.y, this.th, this.t, lat);
+      }
+      if (m === 1) return 10; // ambiente
+      // COR (2, etc.)
+      return this.corEm(this.x, this.y, this.th, this.t, lat);
+    }
+    if (tipo === 'toque') return this.ultrassonico() < 1.5 ? 1 : 0;
+    return this.ultrassonico();
   }
-  ultrassonico() {                                // feixe de ~30°: menor distância entre 7 raios
+
+  ultrassonico() {
     const ox = this.x + 7 * Math.cos(this.th), oy = this.y + 7 * Math.sin(this.th);
     let best = 255;
-    const piso = typeof this.cen.alturaEm === 'function'
-      ? this.cen.alturaEm(this.x, this.y) : null;
-    const caixas = this.cen.caixas.filter((b) =>
-      piso === null || !Number.isFinite(b.pisoCm) || Math.abs(b.pisoCm - piso) <= 3
-    );
+    const caixas = this.cen.caixas;
     for (let k = -3; k <= 3; k++) {
       const a = this.th + k * (15 * Math.PI / 180) / 3, dx = Math.cos(a), dy = Math.sin(a);
-      const hit = (x0, y0, x1, y1) => {           // raio vs retângulo (slab)
+      const hit = (x0, y0, x1, y1) => {
         let tmin = 0, tmax = Infinity;
         for (const [o, dd, lo, hi] of [[ox, dx, x0, x1], [oy, dy, y0, y1]]) {
           if (Math.abs(dd) < 1e-9) { if (o < lo || o > hi) return Infinity; }
@@ -239,44 +323,26 @@ class SimEV3 {
         return tmin;
       };
       for (const b of caixas) best = Math.min(best, hit(b.x, b.y, b.x + b.w, b.y + b.h));
-      const ts = [];                              // paredes da arena = ponto de saída do raio
+      const ts = [];
       if (dx > 1e-9) ts.push((this.cen.w - ox) / dx); if (dx < -1e-9) ts.push(-ox / dx);
       if (dy > 1e-9) ts.push((this.cen.h - oy) / dy); if (dy < -1e-9) ts.push(-oy / dy);
       best = Math.min(best, ...ts);
     }
     return Math.max(0, Math.min(255, best));
   }
-  lerSensor(porta, modo) {
-    // porta aqui é 0..3 (índice EV3); cfg.sensores usa 1..4
-    const n = porta + 1;
-    const tipo = this.cfg.sensores[n];
-    if (!tipo) return null;
-    if (tipo === 'cor') {
-      const lat = this.lateralDaPorta(n);
-      if (modo === 0) return this.refletidaEm(this.x, this.y, this.th, this.t, lat); // refletida 0-100
-      if (modo === 1) return 10; // ambiente (fixo no sim)
-      return this.corEm(this.x, this.y, this.th, this.t, lat); // id EV3 0-7
-    }
-    if (tipo === 'toque') {
-      // toque frontal por proximidade (parede/obstáculo muito perto)
-      return this.ultrassonico() < 2.0 ? 1 : 0;
-    }
-    if (tipo === 'giroscopio') return this.giroscopioGraus();
-    return this.ultrassonico(); // cm
-  }
 
-  // ---------- recebe um pacote Direct Command real ----------
+
   processar(pacote) {
     const b = pacote instanceof Uint8Array ? pacote : new Uint8Array(pacote);
     const dec = decodificar(b);
-    this.pacotes.push({ t: this.t, hex: hex(b), desc: dec.ops.map((o) => this._descrever(o)).join(' + '),
-      resposta: dec.resposta });
+    this.pacotes.push({ t: this.t, hex: hex(b), desc: dec.ops.map((o) => this._descrever(o)).join(' + '), resposta: dec.resposta });
     let saida = dec.resposta ? new Uint8Array(dec.bytesGlobais) : null;
     let erro = false;
     for (const o of dec.ops) { const r = this._executar(o, saida); if (r === 'erro') erro = true; }
     this.avancar(this.cfg.latEnvio + (dec.resposta ? this.cfg.latResposta : 0));
-    return erro ? false : saida;                  // false -> resposta de erro; null -> sem resposta
+    return erro ? false : saida;
   }
+
   _descrever(o) {
     const q = o.params, P = (m) => MASK_PORTAS(m).join('');
     switch (o.op) {
@@ -295,6 +361,7 @@ class SimEV3 {
       default: return o.nome;
     }
   }
+
   _executar(o, saida) {
     const q = o.params, M = this.motores, c = this.cfg;
     const dv = saida ? new DataView(saida.buffer) : null;
@@ -305,13 +372,12 @@ class SimEV3 {
       case OP.OUT_STOP: portas(q[1]).forEach((p) => { M[p].v = 0; M[p].modo = 'ocioso'; }); break;
       case OP.OUT_RESET: case OP.OUT_CLR_COUNT: portas(q[1]).forEach((p) => { M[p].enc = 0; }); break;
       case OP.OUT_TIME_SPEED: case OP.OUT_STEP_SPEED: {
-        const v = q[2], rest = o.op === OP.OUT_TIME_SPEED ? q[4] / 1000
-          : (v === 0 ? 0 : q[4] / (Math.abs(v) * c.grausPorPct));
+        const v = q[2], rest = o.op === OP.OUT_TIME_SPEED ? q[4] / 1000 : (v === 0 ? 0 : q[4] / (Math.abs(v) * c.grausPorPct));
         portas(q[1]).forEach((p) => { Object.assign(M[p], { v, modo: 'tempo', rest }); }); break;
       }
       case OP.OUT_TIME_SYNC: case OP.OUT_STEP_SYNC: {
         const ps = portas(q[1]); if (ps.length !== 2) break;
-        const v = q[2], t = q[3];                 // o menor porta é a esquerda (firmware)
+        const v = q[2], t = q[3];
         const vl = t < 0 ? v * (1 + t / 100) : v, vr = t > 0 ? v * (1 - t / 100) : v;
         const vmax = Math.max(Math.abs(vl), Math.abs(vr));
         const rest = o.op === OP.OUT_TIME_SYNC ? q[4] / 1000 : (vmax === 0 ? 0 : q[4] / (vmax * c.grausPorPct));
@@ -331,4 +397,14 @@ class SimEV3 {
     return 'ok';
   }
 }
+
 if (typeof module !== 'undefined') module.exports = { SimEV3, decodificar, hex, CENARIOS, STRIDE };
+
+// Browser global (IDE)
+if (typeof globalThis !== 'undefined') {
+  globalThis.SimEV3 = SimEV3;
+  globalThis.decodificar = decodificar;
+  globalThis.hex = hex;
+  globalThis.STRIDE = STRIDE;
+  if (typeof CENARIOS !== 'undefined') globalThis.CENARIOS = CENARIOS;
+}

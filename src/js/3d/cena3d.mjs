@@ -728,7 +728,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI / 2 - 0.04; controls.minDistance = 15;
 
-  const S = { cen: null, arena: null, tapete: null, versaoTapete: 0, rig: null, tipo: 'ev3', modo: 'livre', cameraLivreInicializada: false, poseLivre: null, ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map() };
+  const S = { cen: null, arena: null, tapete: null, versaoTapete: 0, rig: null, tipo: 'ev3', modo: 'livre', cameraLivreInicializada: false, poseLivre: null, ultimo: null, snap: true, ativo: false, raf: 0, alvoCam: new THREE.Vector3(), dist: 100, seguirDist: 30, seguirAlt: 20, peers: new Map(), terrenoSuave: { z: 0, pitch: 0, roll: 0 } };
 
   /** estimativa inicial (câmera de topo): distância pra a arena caber no fov */
   const distanciaAjustada = () => Math.max(S.cen.h / 2, S.cen.w / (2 * camera.aspect)) / TAN_FOV2 * 1.06;
@@ -767,7 +767,7 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
     }
     S.cen = cen; centro.set(cen.w / 2, 0, cen.h / 2);
     scene.background = new THREE.Color(cen.id === 'pantanalEcologico' ? 0xc8d8cf : (cen.tilesOriginais ? 0x528fa0 : 0xcfd8e2));
-    S.ultimo = null; S.snap = true;                 // não herda a pose do cenário anterior; câmera de perseguição reposiciona sem deslizar
+    S.ultimo = null; S.snap = true; S.terrenoSuave = { z: 0, pitch: 0, roll: 0 };                 // não herda a pose do cenário anterior; câmera de perseguição reposiciona sem deslizar
     S.arena = construirArena(cen, novoTapete, renderer); scene.add(S.arena);
     S.tapete = novoTapete; S.versaoTapete = novoTapete?.versao || 0;
     S.cameraLivreInicializada = false; S.poseLivre = null;
@@ -878,11 +878,29 @@ export function criarVista(container, { cenario, tapete, renderer: rInjetado = n
   }
   function aplicar(est) {
     if (!est) return;
-    // A geometria e o robô consultam a MESMA função de altura.
-    // Cobre tanto playback quanto teleop e chamadas diretas da vista 3D.
-    S.ultimo = S.cen?.tilesOriginais
-      ? { ...est, ...S.cen.terreno(est.x, est.y, est.th || 0) }
-      : est;
+    // SEMPRE consulta o terreno (rampas clássicas e mapas modulares).
+    // Antes só cenários com tilesOriginais recebiam z/pitch — o robô
+    // ficava no z=0 enquanto a malha da rampa subia → parecia "cair".
+    let ter = { z: 0, pitch: 0, roll: 0 };
+    try {
+      if (S.cen) {
+        if (typeof S.cen.terreno === 'function') {
+          ter = S.cen.terreno(est.x, est.y, est.th || 0);
+        } else if (typeof globalThis !== 'undefined' && globalThis.Cenarios?.terreno) {
+          ter = globalThis.Cenarios.terreno(S.cen, est.x, est.y, est.th || 0);
+        } else if (S.cen.tilesOriginais && typeof S.cen.alturaEm === 'function') {
+          ter = { z: Number(S.cen.alturaEm(est.x, est.y)) || 0, pitch: 0, roll: 0 };
+        }
+      }
+    } catch (_) {}
+
+    const a = S.snap ? 1 : 0.28;
+    const ts = S.terrenoSuave || (S.terrenoSuave = { z: 0, pitch: 0, roll: 0 });
+    ts.z += ((ter.z || 0) - ts.z) * a;
+    ts.pitch += ((ter.pitch || 0) - ts.pitch) * a;
+    ts.roll += ((ter.roll || 0) - ts.roll) * a;
+
+    S.ultimo = { ...est, z: ts.z, pitch: ts.pitch, roll: ts.roll };
     if (S.rig) aplicarEstado(S.rig, S.ultimo);
   }
   function desenhar() {

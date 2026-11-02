@@ -12,7 +12,7 @@ import time
 from jacarev3 import RoboEV3, protocolo as p
 
 NOMES = {1: "preto", 3: "verde", 4: "amarelo", 5: "vermelho", 6: "branco"}
-VEL = 20
+VEL = 18
 
 with RoboEV3("00:16:53:64:F8:B8") as robo:
     andando = False
@@ -32,6 +32,7 @@ with RoboEV3("00:16:53:64:F8:B8") as robo:
                 robo.parar_motor("B")
                 robo.parar_motor("C")
                 andando = False
+                time.sleep(0.25)  # freio físico
                 print("PARE: aguarde o verde.")
 
         elif cor == 3:  # verde: avançar

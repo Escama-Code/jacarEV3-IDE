@@ -94,20 +94,26 @@
   }
 
   function criar(els) {
-    let aba = 'educacao';
-    const { abaEducacao, abaMonitor, painelEducacao, painelMonitor,
+    let aba = 'monitor';
+    const { abaEducacao, abaMonitor, abaBytes, painelEducacao, painelMonitor, painelBytes,
       movimento: elMovimento, tempo: elTempo, cor: elCor,
       refletida: elRefletida, motorB: elB, motorC: elC, vazio } = els;
 
     function mudarAba(proxima) {
-      aba = proxima === 'monitor' ? 'monitor' : 'educacao';
-      const ativaMonitor = aba === 'monitor';
-      abaMonitor.setAttribute('aria-selected', String(ativaMonitor));
-      abaEducacao.setAttribute('aria-selected', String(!ativaMonitor));
-      abaMonitor.tabIndex = ativaMonitor ? 0 : -1;
-      abaEducacao.tabIndex = ativaMonitor ? -1 : 0;
-      painelMonitor.hidden = !ativaMonitor;
-      painelEducacao.hidden = ativaMonitor;
+      const permitidas = ['monitor', 'educacao', 'bytes'];
+      aba = permitidas.includes(proxima) ? proxima : 'monitor';
+      const setAba = (btn, nome) => {
+        if (!btn) return;
+        const on = aba === nome;
+        btn.setAttribute('aria-selected', String(on));
+        btn.tabIndex = on ? 0 : -1;
+      };
+      setAba(abaMonitor, 'monitor');
+      setAba(abaEducacao, 'educacao');
+      setAba(abaBytes, 'bytes');
+      if (painelMonitor) painelMonitor.hidden = aba !== 'monitor';
+      if (painelEducacao) painelEducacao.hidden = aba !== 'educacao';
+      if (painelBytes) painelBytes.hidden = aba !== 'bytes';
     }
 
     function fmt(valor, casas = 0) {
@@ -135,9 +141,10 @@
       elC.textContent = fmt(estado.motorC, 0) + '%';
     }
 
-    abaEducacao.addEventListener('click', () => mudarAba('educacao'));
-    abaMonitor.addEventListener('click', () => mudarAba('monitor'));
-    mudarAba('educacao');
+    if (abaEducacao) abaEducacao.addEventListener('click', () => mudarAba('educacao'));
+    if (abaMonitor) abaMonitor.addEventListener('click', () => mudarAba('monitor'));
+    if (abaBytes) abaBytes.addEventListener('click', () => mudarAba('bytes'));
+    mudarAba('monitor');
     atualizar(null);
     return { mudarAba, atualizar, abaAtual: () => aba };
   }

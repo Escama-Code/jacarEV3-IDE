@@ -43,10 +43,10 @@ button:hover:not(:disabled) { border-color: var(--acc); }
 button:disabled { opacity: 0.45; cursor: default; }
 button.principal,
 button.btn-primario {
-  background: var(--acc-deep);
-  border-color: var(--acc);
+  background: color-mix(in srgb, var(--brand) 22%, var(--painel-2));
+  border-color: var(--brand);
   font-weight: 600;
-  color: #fff;
+  color: var(--txt);
 }
 button.principal:hover:not(:disabled),
 button.btn-primario:hover:not(:disabled) {

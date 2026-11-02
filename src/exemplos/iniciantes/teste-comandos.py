@@ -1,12 +1,23 @@
+"""Tour rápido dos comandos básicos (LED, bip, base, graus)."""
 import time
 from jacarev3 import RoboEV3
 
 with RoboEV3('00:16:53:64:F8:B8') as robo:
-    robo.apitar()
+    robo.led('LARANJA')
+    robo.apitar(880, 120)
+    time.sleep(0.2)
+
     robo.led('VERDE')
-    robo.girar_motor('B', velocidade=40, duracao_ms=1000)
-    robo.mover_base(velocidade=30, direcao=0, duracao_ms=500)
-    time.sleep(1)
-    robo.girar_motor_graus('C', 360, 50)
-    print('encoder C =', robo.ler_graus_motor('C'), 'graus')
-    print('luz refletida porta 3 =', robo.ler_sensor(3, 0))
+    # mover_base: um trecho curto e tempo extra para a física assentar
+    robo.mover_base(velocidade=30, direcao=0, duracao_ms=800)
+    time.sleep(1.0)
+
+    # Giro ~90° com graus (vel positiva; sentido pelo sinal da velocidade)
+    robo.girar_motor_graus('B', 180, 35)
+    robo.girar_motor_graus('C', 180, -35)
+    time.sleep(0.5)
+
+    robo.parar_motor('B')
+    robo.parar_motor('C')
+    robo.led('DESLIGADO')
+    print('Comandos ok.')

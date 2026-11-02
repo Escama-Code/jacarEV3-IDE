@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="../src/css/tokens.css">
 <link rel="stylesheet" href="../src/css/base.css">
 <link rel="stylesheet" href="../src/css/efeitos.css">
+<link rel="stylesheet" href="../src/css/shell.css">
 <link rel="stylesheet" href="../src/css/campanha.css">
 <style>
   * { box-sizing: border-box; }
@@ -21,7 +22,22 @@
   .erro-load { color: #f85149; padding: 16px; }
 </style>
 </head>
-<body>
+<body class="app-shell ">
+
+<header class="app-header">
+  <a class="app-logo" href="../index.html" title="Menu">
+    <img src="../src/assets/ui/logo-header.svg" alt="jacarEV3 IDE" height="28">
+  </a>
+  <nav class="app-header-nav">
+    <a href="campanha.html" data-nav="campanha" class="is-active">Campanha</a>
+    <a href="sandbox.html" data-nav="sandbox">Sandbox</a>
+    <a href="editor-mapas-blocos.html" data-nav="blocos">Blocos OBR</a>
+    <a href="editor-mapas.html" data-nav="mapas">Mapas</a>
+    <a href="../index.html">Menu</a>
+  </nav>
+  <span id="status" class="app-status">…</span>
+</header>
+
 <div id="lobbyCampanha" class="lobby-campanha">
   <div class="lobby-card">
     <header class="lobby-header">

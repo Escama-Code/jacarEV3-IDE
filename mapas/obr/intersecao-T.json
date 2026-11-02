@@ -1,0 +1,8 @@
+{
+  "nome": "Interseção em T",
+  "objetivo": "verde-decisao",
+  "w": 150,
+  "h": 120,
+  "inicio": { "x": 40, "y": 100, "th": -1.57 },
+  "notas": "Marca verde à direita na T; siga regra OBR de virar."
+}
