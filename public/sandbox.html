@@ -1017,6 +1017,12 @@ const Playback = (() => {
 
   function aplicarCenario(inicio) {
     cenId = $('cenario').value; cen = CENARIOS[cenId]; tapete = Cenarios.obterTapete(cenId);
+    // A Jornada de Jofre ensina educação ambiental, não leis de trânsito.
+    const ehJofre = cenId === 'pantanalEcologico';
+    $('abaEducacaoArena').textContent = ehJofre ? 'Educação ambiental' : 'Educação no trânsito';
+    $('painelEducacaoArena').querySelector('.informacao-educativa-vazia').textContent = ehJofre
+      ? 'As dicas ambientais aparecem aqui durante a jornada de Jofre.'
+      : 'As dicas de trânsito aparecem aqui durante o percurso.';
     inicioRelogioUrbano = performance.now();
     atualizarSemaforoVisual(0);
     const sel = $('inicio'); sel.innerHTML = '';
@@ -1198,7 +1204,11 @@ const Playback = (() => {
       const fundamento = $('dicaCidadeFundamento');
       fundamento.textContent = escolhido.fundamento || '';
       fundamento.hidden = !escolhido.fundamento;
-      $('dicaCidadeFonte').hidden = !escolhido.fundamento;
+      // Só a Cidade Educativa usa o Código de Trânsito Brasileiro como fonte.
+      // Fundamentos ambientais (inclusive os que citam outras leis) não abrem o CTB.
+      const eLeiTransito = cenId === 'cidadeEducativa'
+        && /^CTB(?:\b|\s|\s*[—-])/.test(escolhido.fundamento || '');
+      $('dicaCidadeFonte').hidden = !eLeiTransito;
       painel.dataset.dica = chave;
     }
     painel.hidden = false;
