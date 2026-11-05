@@ -41,7 +41,7 @@
     <span class="hud-badge">Missão</span>
     <span id="hudModulo" class="hud-meta"></span>
     <strong id="hudMissaoTitulo">carregando…</strong>
-    <span id="hudEstrelas" class="camp-stars">☆☆☆☆☆</span>
+    <span id="hudEstrelas" class="camp-rank" title="Rank C &lt; B &lt; A &lt; S">Rank —</span>
   </div>
   <div class="hud-right">
     <span id="hudTentativas" class="hud-meta">tentativas: 0</span>
@@ -120,7 +120,7 @@
     <span class="hud-badge">Campanha</span>
     <span id="hudModulo" class="hud-meta"></span>
     <strong id="hudMissaoTitulo">—</strong>
-    <span id="hudEstrelas" class="camp-stars">☆☆☆☆☆</span>
+    <span id="hudEstrelas" class="camp-rank" title="Rank C &lt; B &lt; A &lt; S">Rank —</span>
   </div>
   <div class="hud-right">
     <span id="hudTentativas" class="hud-meta">tentativas: 0</span>
@@ -162,7 +162,7 @@ body.modo-campanha main { padding-right: min(320px, 36vw); }
   </div>
   <div id="campPainelDica" class="dica-box" hidden></div>
   <div id="campPainelRef" class="ref-box" hidden></div>
-  <p style="margin:10px 0 0;font-size:11px;color:#6e7681">A cada 3 falhas sai uma dica. Referência só com 3★ ou mais.</p>
+  <p style="margin:10px 0 0;font-size:11px;color:#6e7681">A cada 3 falhas sai uma dica. Rank: C &lt; B &lt; A &lt; S. Referência a partir de B.</p>
 </div>
 
 <header class="mission-topbar">
@@ -1486,6 +1486,15 @@ const GamepadPonte = (() => {
 // =====================================================================
 // App — Inicialização geral
 // =====================================================================
+
+function formatRank(rank) {
+  if (!rank) return 'Rank —';
+  return 'Rank ' + rank;
+}
+function rankNivel(rank) {
+  return ({ C: 1, B: 2, A: 3, S: 4 })[rank] || 0;
+}
+
 const App = { py: null, executarPy: null, editor: null, sim: null, pronto: false, executando: false };
 
 globalThis.ev3Ponte = {
@@ -1694,8 +1703,8 @@ const MissaoPage = {
     if ($('hudMissaoTitulo')) $('hudMissaoTitulo').textContent = missao.titulo;
     const save = this.ensureSave();
     const info = (save && save.missoes[missao.id]) || {};
-    const n = info.estrelas || 0;
-    if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
+    const rk = info.rank || null;
+    if ($('hudEstrelas')) $('hudEstrelas').textContent = formatRank(rk);
     if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (info.tentativas || 0);
     if ($('campDica')) $('campDica').onclick = () => this.mostrarDica(false);
     const _bd = document.getElementById('campBtnDica');
@@ -1734,18 +1743,18 @@ const MissaoPage = {
       }).join('') || '<div class="obj-li pend">Complete o enunciado</div>';
     }
     const save = this.ensureSave();
-    const est = (save.missoes[m.id] && save.missoes[m.id].estrelas) || 0;
+    const rk = save.missoes[m.id] && save.missoes[m.id].rank;
     const btnRef = document.getElementById('campBtnRef');
-    if (btnRef) btnRef.hidden = est < 3;
+    if (btnRef) btnRef.hidden = !(['B','A','S'].includes(rk));
   },
 
   mostrarReferenciaSePermitido() {
     const m = this.missaoAtiva;
     if (!m) return;
     const save = this.ensureSave();
-    const est = (save.missoes[m.id] && save.missoes[m.id].estrelas) || 0;
-    if (est < 3) {
-      Terminal.sys('🔒 Referência liberada a partir de 3 estrelas.');
+    const rk = save.missoes[m.id] && save.missoes[m.id].rank;
+    if (!(['B','A','S'].includes(rk))) {
+      Terminal.sys('🔒 Referência liberada a partir do rank B.');
       return;
     }
     const refs = m.codigosReferencia || [];
@@ -1793,12 +1802,12 @@ const MissaoPage = {
         Terminal.sys('📖 Ainda não passou. Mais ' + (3 - this.falhasSeguidas[mid]) + ' falha(s) → dica.');
       }
     } else this.falhasSeguidas[mid] = 0;
-    const n = this.save.missoes[mid]?.estrelas || 0;
-    if ($('hudEstrelas')) $('hudEstrelas').textContent = '★'.repeat(n) + '☆'.repeat(5 - n);
+    const rk = this.save.missoes[mid]?.rank || null;
+    if ($('hudEstrelas')) $('hudEstrelas').textContent = formatRank(rk);
     if ($('hudTentativas')) $('hudTentativas').textContent = 'tentativas: ' + (this.save.missoes[mid]?.tentativas || 0);
     this.atualizarPainelCampanha();
     const btnRef = document.getElementById('campBtnRef');
-    if (btnRef) btnRef.hidden = (this.save.missoes[mid]?.estrelas || 0) < 3;
+    if (btnRef) btnRef.hidden = !(['B','A','S'].includes(this.save.missoes[mid]?.rank));
 
     return r;
   },
@@ -1813,14 +1822,14 @@ const MissaoPage = {
     }
     const falas = r.ok ? (missao.narrativa?.sucesso || []) : (missao.narrativa?.fracasso || []);
     const fala = falas.map((d) => '<p><strong>' + d.personagem + ':</strong> ' + d.texto + '</p>').join('');
-    const n = Math.min(5, r.estrelas || 0);
-    const stars = '★'.repeat(n) + '☆'.repeat(5 - n);
+    const rank = r.rank || null;
+    const stars = formatRank(rank);
     const simPct = Math.round((r.similaridade || 0) * 100);
     const objs = Object.entries(r.objetivos || {}).map(([id, ok]) =>
       '<li class="' + (ok ? 'ok' : 'fail') + '">' + (ok ? '✓' : '✗') + ' ' + id + '</li>').join('');
     box.innerHTML =
       '<button type="button" class="camp-resultado-fechar" id="campFechaResultado">×</button>' +
-      '<h3>' + (r.ok ? 'Missão cumprida!' : 'Ainda não…') + ' <span class="camp-stars">' + stars + '</span></h3>' +
+      '<h3>' + (r.ok ? ('Missão cumprida! ' + stars) : 'Ainda não…') + '</h3>' +
       fala + '<ul class="camp-obj-result">' + objs + '</ul>' +
       '<p class="camp-metricas">' + r.metricas.tempoSim.toFixed(1) + ' s · ' +
       r.metricas.dist.toFixed(0) + ' cm · proximidade: <strong>' + simPct + '%</strong></p>' +

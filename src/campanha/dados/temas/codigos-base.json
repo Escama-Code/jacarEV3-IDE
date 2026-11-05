@@ -9,7 +9,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: acenda o LED verde.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: chame robo.led(...) com a cor certa\n    time.sleep(0.5)\n"
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missao: acenda o LED verde.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: uma linha para o LED na cor VERDE\n    time.sleep(0.5)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    time.sleep(0.5)\n",
@@ -32,6 +32,14 @@
           "obrigatorio": true,
           "metodos": [
             "led"
+          ]
+        },
+        {
+          "id": "chamou-led",
+          "tipo": "codigo_contem",
+          "obrigatorio": true,
+          "tokens": [
+            "led("
           ]
         }
       ],
@@ -100,7 +108,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: ande para a frente e pare os motores B e C.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: mover_continuo nos motores B e C\n    time.sleep(1.2)\n    # TODO: parar_motor em B e em C\n"
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missao: ande para frente e pare.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: mover_continuo B e C, sleep, depois parar\n    time.sleep(0.2)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    robo.mover_continuo('B', 35)\n    robo.mover_continuo('C', 35)\n    time.sleep(1.2)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n",
@@ -118,18 +126,30 @@
       },
       "objetivos": [
         {
+          "id": "moveu",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "mover_continuo",
+            "mover_base"
+          ],
+          "qualquer": true
+        },
+        {
           "id": "andou",
           "tipo": "dist_min",
           "obrigatorio": true,
-          "cm": 15
+          "cm": 12
         },
         {
           "id": "parou",
           "tipo": "api_usada",
           "obrigatorio": true,
           "metodos": [
-            "parar_motor"
-          ]
+            "parar_motor",
+            "parar_base"
+          ],
+          "qualquer": true
         }
       ],
       "recompensas": {
@@ -191,7 +211,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Leia a porta 2 (centro) em MODO_COR_REFLETIDA e ande um pouco.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: luz = robo.ler_sensor(2, p.MODO_COR_REFLETIDA)\n    # TODO: print(luz); andar e parar\n    pass\n"
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missao: leia o sensor de cor (porta 2) e ande um pouco.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: ler sensor porta 2 modo refletida e print\n    # TODO: mover um pouco e parar\n    time.sleep(0.2)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n    print(luz)\n    robo.mover_continuo('B', 25)\n    robo.mover_continuo('C', 25)\n    time.sleep(0.8)\n    robo.parar_motor('B')\n    robo.parar_motor('C')\n",
@@ -219,7 +239,7 @@
           "id": "andou",
           "tipo": "dist_min",
           "obrigatorio": true,
-          "cm": 8
+          "cm": 6
         }
       ],
       "recompensas": {
@@ -257,7 +277,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\n\n# Missão: siga a linha até a região leste da pista.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        # TODO: ler o sensor de refletida\n        # TODO: se linha preta (luz baixa), curvar para um lado\n        # TODO: senão, curvar para o outro\n        pass\n"
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missao: siga a linha ate a regiao marcada.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: loop lendo sensor e corrigindo motores\n    time.sleep(0.2)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 12)\n            robo.mover_continuo('C', 32)\n        else:\n            robo.mover_continuo('B', 32)\n            robo.mover_continuo('C', 12)\n",
@@ -281,6 +301,15 @@
           "metodos": [
             "ler_sensor"
           ]
+        },
+        {
+          "id": "moveu",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "mover_continuo"
+          ],
+          "qualquer": true
         },
         {
           "id": "zona",

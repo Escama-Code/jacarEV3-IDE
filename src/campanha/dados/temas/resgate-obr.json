@@ -19,24 +19,72 @@
         "Motor A = garra. Use girar_motor_graus('A', graus, velocidade).",
         "graus > 0; velocidade negativa abre/fecha no sentido oposto."
       ],
-      "limites": { "tempoSimMaxS": 15, "tentativasPorDica": 3 },
+      "limites": {
+        "tempoSimMaxS": 15,
+        "tentativasPorDica": 3
+      },
       "objetivos": [
-        { "id": "usou-garra", "tipo": "api_usada", "obrigatorio": true, "metodos": ["girar_motor_graus"] },
-        { "id": "mencionou-a", "tipo": "codigo_contem", "obrigatorio": true, "tokens": ["'A'", "girar_motor_graus"] }
+        {
+          "id": "usou-garra",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "girar_motor_graus"
+          ]
+        },
+        {
+          "id": "mencionou-a",
+          "tipo": "codigo_contem",
+          "obrigatorio": true,
+          "tokens": [
+            "'A'",
+            "girar_motor_graus"
+          ]
+        }
       ],
       "materialAula": {
         "ficha": "docs/aulas/rs01-garra.md",
         "libAula": "aula/basico/readme.md",
-        "bncc": ["EF15LP01", "pensamento computacional"]
+        "bncc": [
+          "EF15LP01",
+          "pensamento computacional"
+        ]
       },
       "dialogos": {
-        "intro": [{ "personagem": "instrutor", "texto": "No resgate OBR a garra é tudo. Vamos só abrir e fechar." }],
-        "sucesso": [{ "personagem": "arbitro", "texto": "Garra ok! Próximo: achar a vítima." }],
-        "fracasso": [{ "personagem": "assistente", "texto": "Lembre: motor A e graus positivos." }],
-        "dica": [{ "personagem": "assistente", "texto": "robo.girar_motor_graus('A', 90, 35) e depois velocidade -35." }]
+        "intro": [
+          {
+            "personagem": "instrutor",
+            "texto": "No resgate OBR a garra é tudo. Vamos só abrir e fechar."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "arbitro",
+            "texto": "Garra ok! Próximo: achar a vítima."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "assistente",
+            "texto": "Lembre: motor A e graus positivos."
+          }
+        ],
+        "dica": [
+          {
+            "personagem": "assistente",
+            "texto": "robo.girar_motor_graus('A', 90, 35) e depois velocidade -35."
+          }
+        ]
       },
-      "recompensas": { "xp": 50, "desbloqueia": ["rs02-aproximar"] },
-      "skills": ["garra"]
+      "recompensas": {
+        "xp": 50,
+        "desbloqueia": [
+          "rs02-aproximar"
+        ]
+      },
+      "skills": [
+        "garra"
+      ]
     },
     {
       "id": "rs02-aproximar",
@@ -55,24 +103,76 @@
         "Porta 4 = ultrassom. MODO_ULTRASSONICO_CM devolve cm.",
         "Pare os dois motores quando d < 20."
       ],
-      "limites": { "tempoSimMaxS": 40, "tentativasPorDica": 3 },
+      "limites": {
+        "tempoSimMaxS": 40,
+        "tentativasPorDica": 3
+      },
       "objetivos": [
-        { "id": "leu-us", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] },
-        { "id": "usou-motores", "tipo": "api_usada", "obrigatorio": true, "metodos": ["mover_continuo"], "qualquer": true },
-        { "id": "chegou-perto", "tipo": "us_max", "obrigatorio": true, "cm": 22 }
+        {
+          "id": "leu-us",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "ler_sensor"
+          ]
+        },
+        {
+          "id": "usou-motores",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "mover_continuo"
+          ],
+          "qualquer": true
+        },
+        {
+          "id": "chegou-perto",
+          "tipo": "us_max",
+          "obrigatorio": true,
+          "cm": 22
+        }
       ],
       "materialAula": {
         "ficha": "docs/aulas/rs02-ultrassom.md",
-        "bncc": ["EF06CI01"]
+        "bncc": [
+          "EF06CI01"
+        ]
       },
       "dialogos": {
-        "intro": [{ "personagem": "instrutor", "texto": "A vítima não pode ser atropelada. Use o olho ultrassônico." }],
-        "sucesso": [{ "personagem": "arbitro", "texto": "Parou a tempo. Agora o resgate." }],
-        "fracasso": [{ "personagem": "assistente", "texto": "Ou não leu o sensor 4, ou não chegou perto o suficiente." }],
-        "dica": [{ "personagem": "assistente", "texto": "while True + se d < 20: parar." }]
+        "intro": [
+          {
+            "personagem": "instrutor",
+            "texto": "A vítima não pode ser atropelada. Use o olho ultrassônico."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "arbitro",
+            "texto": "Parou a tempo. Agora o resgate."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "assistente",
+            "texto": "Ou não leu o sensor 4, ou não chegou perto o suficiente."
+          }
+        ],
+        "dica": [
+          {
+            "personagem": "assistente",
+            "texto": "while True + se d < 20: parar."
+          }
+        ]
       },
-      "recompensas": { "xp": 60, "desbloqueia": ["rs03-resgate"] },
-      "skills": ["ultrassom"]
+      "recompensas": {
+        "xp": 60,
+        "desbloqueia": [
+          "rs03-resgate"
+        ]
+      },
+      "skills": [
+        "ultrassom"
+      ]
     },
     {
       "id": "rs03-resgate",
@@ -82,7 +182,13 @@
         "cenario": "desvio",
         "inicio": "centro",
         "robo3d": "ev3",
-        "vitimas": [{ "x": 50, "y": 40, "nome": "vitima" }],
+        "vitimas": [
+          {
+            "x": 50,
+            "y": 40,
+            "nome": "vitima"
+          }
+        ],
         "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missão: aproxime, feche a garra (A) para 'pegar' a vítima.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: avançar, monitorar US, fechar garra\n    time.sleep(0.5)\n"
       },
       "codigosReferencia": [
@@ -92,24 +198,72 @@
         "Aproxime até ~18 cm, pare, feche a garra no motor A.",
         "No simulador, vítima próxima + garra fechada = resgatada."
       ],
-      "limites": { "tempoSimMaxS": 60, "tentativasPorDica": 3 },
+      "limites": {
+        "tempoSimMaxS": 60,
+        "tentativasPorDica": 3
+      },
       "objetivos": [
-        { "id": "garra", "tipo": "api_usada", "obrigatorio": true, "metodos": ["girar_motor_graus"] },
-        { "id": "us", "tipo": "api_usada", "obrigatorio": true, "metodos": ["ler_sensor"] },
-        { "id": "pegou", "tipo": "vitima_pegada", "obrigatorio": true }
+        {
+          "id": "garra",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "girar_motor_graus"
+          ]
+        },
+        {
+          "id": "us",
+          "tipo": "api_usada",
+          "obrigatorio": true,
+          "metodos": [
+            "ler_sensor"
+          ]
+        },
+        {
+          "id": "pegou",
+          "tipo": "vitima_pegada",
+          "obrigatorio": true
+        }
       ],
       "materialAula": {
         "ficha": "docs/aulas/rs03-resgate.md",
-        "bncc": ["EF69CO01"]
+        "bncc": [
+          "EF69CO01"
+        ]
       },
       "dialogos": {
-        "intro": [{ "personagem": "instrutor", "texto": "Missão completa de resgate: aproximar e segurar." }],
-        "sucesso": [{ "personagem": "arbitro", "texto": "Vítima a bordo! Isso é OBR de verdade." }],
-        "fracasso": [{ "personagem": "assistente", "texto": "Sem vítima presa na garra ainda. Chegue perto e feche o motor A." }],
-        "dica": [{ "personagem": "assistente", "texto": "US < 18 → parar → girar_motor_graus A." }]
+        "intro": [
+          {
+            "personagem": "instrutor",
+            "texto": "Missão completa de resgate: aproximar e segurar."
+          }
+        ],
+        "sucesso": [
+          {
+            "personagem": "arbitro",
+            "texto": "Vítima a bordo! Isso é OBR de verdade."
+          }
+        ],
+        "fracasso": [
+          {
+            "personagem": "assistente",
+            "texto": "Sem vítima presa na garra ainda. Chegue perto e feche o motor A."
+          }
+        ],
+        "dica": [
+          {
+            "personagem": "assistente",
+            "texto": "US < 18 → parar → girar_motor_graus A."
+          }
+        ]
       },
-      "recompensas": { "xp": 100, "desbloqueia": [] },
-      "skills": ["resgate"]
+      "recompensas": {
+        "xp": 100,
+        "desbloqueia": []
+      },
+      "skills": [
+        "resgate"
+      ]
     }
   ]
 }

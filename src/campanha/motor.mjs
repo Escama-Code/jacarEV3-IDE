@@ -27,10 +27,45 @@ const API_PADROES = [
   ['sleep', /\btime\.sleep\s*\(/],
 ];
 
+
+/** Remove comentários e docstrings antes de analisar o código. */
+export function codigoSemComentarios(src) {
+  let s = String(src || '');
+  s = s.replace(/"""[\s\S]*?"""/g, ' ');
+  s = s.replace(/'''[\s\S]*?'''/g, ' ');
+  s = s.replace(/#.*$/gm, ' ');
+  return s;
+}
+
+/** Código efetivo para diff com o template. */
+export function normalizarParaDiff(src) {
+  return codigoSemComentarios(src)
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n+/g, '\n')
+    .trim()
+    .toLowerCase();
+}
+
+/** True se o aluno alterou de forma relevante o template inicial. */
+export function codigoAlterado(codigoAluno, codigoInicial, minChars = 8) {
+  const a = normalizarParaDiff(codigoAluno);
+  const b = normalizarParaDiff(codigoInicial || '');
+  if (!b) return a.length >= minChars;
+  if (a === b) return false;
+  const longer = Math.max(a.length, b.length) || 1;
+  let same = 0;
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) if (a[i] === b[i]) same++;
+  const diff = longer - same + Math.abs(a.length - b.length);
+  return diff >= minChars || a.length > b.length + 4;
+}
+
 export function detectarApis(codigo) {
-  const src = codigo || '';
+  const src = codigoSemComentarios(codigo || '');
   const apis = [];
   for (const [nome, re] of API_PADROES) {
+    re.lastIndex = 0;
     if (re.test(src)) apis.push(nome);
   }
   return apis;
@@ -38,10 +73,11 @@ export function detectarApis(codigo) {
 
 /** Ordem aproximada das primeiras ocorrências de cada método no código. */
 export function ordemApisNoCodigo(codigo) {
-  const src = codigo || '';
+  const src = codigoSemComentarios(codigo || '');
   const hits = [];
   for (const [nome, re] of API_PADROES) {
-    const m = re.exec(src);
+    const r = new RegExp(re.source, re.flags);
+    const m = r.exec(src);
     if (m) hits.push({ nome, idx: m.index });
   }
   hits.sort((a, b) => a.idx - b.idx);
@@ -50,6 +86,8 @@ export function ordemApisNoCodigo(codigo) {
 
 function mensagemPadrao(obj, metricas) {
   switch (obj.tipo) {
+    case 'codigo_alterado':
+      return 'Altere o código inicial: complete o TODO — não basta rodar o template.';
     case 'api_usada':
       return `Faltou usar: ${(obj.metodos || []).join(', ')}.`;
     case 'dist_min':
@@ -86,8 +124,12 @@ function mensagemPadrao(obj, metricas) {
 export function gerarFeedback(missao, objetivos, metricas) {
   const out = [];
   const mapa = missao.feedback || {};
-  for (const obj of missao.objetivos || []) {
-    if (objetivos[obj.id]) continue;
+  const lista = [...(missao.objetivos || [])];
+  if ('editou-codigo' in objetivos && !lista.some((o) => o.id === 'editou-codigo')) {
+    lista.unshift({ id: 'editou-codigo', tipo: 'codigo_alterado' });
+  }
+  for (const obj of lista) {
+    if (!(obj.id in objetivos) || objetivos[obj.id]) continue;
     const custom = mapa[obj.id];
     out.push({
       id: obj.id,
@@ -107,6 +149,14 @@ function normalizarAngulo(a) {
 
 function checarObjetivo(obj, sim, m, codigo) {
   switch (obj.tipo) {
+    case 'codigo_alterado': {
+      const base = obj.codigoInicial || m.codigoInicialMissao || '';
+      return codigoAlterado(codigo, base, obj.minChars ?? 8);
+    }
+    case 'codigo_contem': {
+      const src = codigoSemComentarios(codigo || '').toLowerCase();
+      return (obj.tokens || []).every((tok) => src.includes(String(tok).toLowerCase()));
+    }
     case 'regiao': {
       const r = obj.regiao || {};
       return (
@@ -193,12 +243,28 @@ export function avaliar(sim, codigo, missao) {
     saiuPista: sim?.saiuPista || 0,
   };
 
-  const objetivos = {};
-  for (const obj of missao.objetivos || []) {
-    objetivos[obj.id] = checarObjetivo(obj, sim, metricas, codigo || '');
+  const codigoInicial = (missao.setup && missao.setup.codigoInicial) || '';
+  metricas.codigoInicialMissao = codigoInicial;
+
+  const listaObjs = [...(missao.objetivos || [])];
+  if (!listaObjs.some((o) => o.tipo === 'codigo_alterado')) {
+    listaObjs.unshift({
+      id: 'editou-codigo',
+      tipo: 'codigo_alterado',
+      obrigatorio: true,
+      codigoInicial,
+      minChars: 8,
+    });
   }
 
-  const obrig = (missao.objetivos || []).filter((o) => o.obrigatorio !== false);
+  const objetivos = {};
+  for (const obj of listaObjs) {
+    const o = { ...obj };
+    if (o.tipo === 'codigo_alterado' && !o.codigoInicial) o.codigoInicial = codigoInicial;
+    objetivos[o.id] = checarObjetivo(o, sim, metricas, codigo || '');
+  }
+
+  const obrig = listaObjs.filter((o) => o.obrigatorio !== false);
   const ok = obrig.length === 0 ? false : obrig.every((o) => objetivos[o.id]);
 
   const score = pontuarResposta(codigo || '', missao, {
@@ -216,6 +282,8 @@ export function avaliar(sim, codigo, missao) {
   return {
     ok,
     estrelas: score.estrelas,
+    rank: score.rank,
+    rankLabel: score.rankLabel,
     objetivos,
     metricas,
     codigo: codigo || '',
@@ -239,6 +307,12 @@ export function aplicarResultado(save, missao, resultado) {
         ? 'concluida'
         : 'disponivel',
     estrelas: Math.max(prev.estrelas || 0, resultado.estrelas || 0),
+    rank: (function () {
+      const ordem = { C: 1, B: 2, A: 3, S: 4 };
+      const a = ordem[prev.rank] || 0;
+      const b = ordem[resultado.rank] || 0;
+      return b >= a ? (resultado.rank || prev.rank || null) : (prev.rank || resultado.rank || null);
+    })(),
     melhorSimilaridade: Math.max(
       prev.melhorSimilaridade || 0,
       resultado.similaridade || 0

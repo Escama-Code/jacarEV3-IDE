@@ -26,8 +26,13 @@ export {
   pontuarResposta,
   similaridadeCodigo,
   melhorSimilaridade,
+  rankDePrecisao,
+  rankParaNivel,
+  rankMelhor,
+  RANK_ORDEM,
   estrelasDePrecisao,
   normalizarCodigo,
+  tokensCodigo,
 } from './pontuacao.mjs';
 export { carregarCatalogo } from './loader.mjs';
 export { Dialogo, falar as dialogoFalar, initDialogo } from './dialogo/dialogo.mjs';

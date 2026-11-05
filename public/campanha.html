@@ -133,8 +133,11 @@ function renderModulos() {
     const liberado = Campanha.temaLiberado(s, tema, temas, Campanha.MISSOES);
     const completo = Campanha.temaCompleto(s, tema.id, Campanha.MISSOES);
     const missoes = Campanha.MISSOES.filter((m) => m.temaId === tema.id);
-    let sumStars = 0, maxStars = missoes.length * 5;
-    for (const m of missoes) sumStars += (s.missoes[m.id]?.estrelas || 0);
+    let sumStars = 0, maxStars = missoes.length * 4;
+    for (const m of missoes) {
+      const rk = s.missoes[m.id]?.rank;
+      sumStars += rk ? ({ C: 1, B: 2, A: 3, S: 4 }[rk] || 0) : (s.missoes[m.id]?.estrelas || 0);
+    }
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'campaign-module campaign-module--' + (completo ? 'complete' : liberado ? 'active' : 'locked');
@@ -174,7 +177,7 @@ function renderModulos() {
       fill.style.width = maxStars ? Math.min(100, sumStars / maxStars * 100) + '%' : '0%';
       track.appendChild(fill);
       const progressText = document.createElement('span');
-      progressText.textContent = sumStars + '/' + maxStars + ' ★';
+      progressText.textContent = 'Progresso ' + sumStars + '/' + maxStars + ' (pts rank)';
       progress.append(track, progressText);
       main.appendChild(progress);
     } else {
@@ -224,7 +227,7 @@ function renderLista() {
     li.innerHTML =
       '<span class="camp-missao-ordem">' + m.ordem + '</span>' +
       '<span class="camp-missao-titulo">' + m.titulo + '</span>' +
-      '<span class="camp-missao-st">' + (st === 'bloqueada' ? '🔒' : '★'.repeat(n) + '☆'.repeat(5 - n)) + '</span>';
+      '<span class="camp-missao-st">' + (st === 'bloqueada' ? '🔒' : (info.rank ? ('Rank ' + info.rank) : '—')) + '</span>';
     if (st !== 'bloqueada') li.onclick = () => selecionar(m.id);
     ul.appendChild(li);
   }

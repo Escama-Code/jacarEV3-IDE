@@ -9,7 +9,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: acenda o LED verde e apite uma vez (pronto para a pista).\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: led VERDE + apitar\n    time.sleep(0.4)\n"
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missao: LED verde e um apito pronto para a pista.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: led VERDE e apitar uma vez\n    time.sleep(0.4)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    robo.apitar(880, 200)\n    time.sleep(0.4)\n",
@@ -88,7 +88,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missão: use a base motriz para avançar e parar.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    # TODO: mover_base ou mover_continuo + parar\n"
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missao: ande reto cerca de 20 cm e pare.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: base ou motores depois parar\n    time.sleep(0.2)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    robo.mover_base(35)\n    time.sleep(1.5)\n    robo.parar_base()\n",
@@ -107,7 +107,7 @@
           "id": "andou",
           "tipo": "dist_min",
           "obrigatorio": true,
-          "cm": 20
+          "cm": 18
         },
         {
           "id": "parou",
@@ -168,7 +168,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3\n\n# Missão: resetar o giro e girar ~90° (girar_exato ou lógica equivalente).\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    # TODO: resetar_giro + girar_exato(90)\n"
+        "codigoInicial": "from jacarev3 import RoboEV3\nimport time\n\n# Missao: reset do giroscopio e giro exato de 90 graus.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    # TODO: resetar giro e depois girar exato\n    time.sleep(0.2)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.resetar_giro(1)\n    robo.girar_exato(90, velocidade=25, porta_giro=1)\n",
@@ -259,7 +259,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\n\n# Missão: siga a linha até a região leste.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        # TODO: ler refletida e curvar\n        pass\n"
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missao: siga a linha ate a marca regiao.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: seguidor ate a regiao\n    time.sleep(0.2)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3, protocolo as p\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    while True:\n        luz = robo.ler_sensor(3, p.MODO_COR_REFLETIDA)\n        if luz < 30:\n            robo.mover_continuo('B', 12)\n            robo.mover_continuo('C', 32)\n        else:\n            robo.mover_continuo('B', 32)\n            robo.mover_continuo('C', 12)\n"
@@ -342,7 +342,7 @@
         "cenario": "treino",
         "inicio": "padrao",
         "robo3d": "jacare",
-        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missão: leia ultrassom, desvie se perto, e avance.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    # TODO: ler sensor ultrassônico (porta 4) e reagir\n"
+        "codigoInicial": "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\n# Missao: use ultrassom desvie e conclua o trecho.\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.led('VERDE')\n    # TODO: ler ultrassom desviar andar e parar\n    time.sleep(0.2)\n"
       },
       "codigosReferencia": [
         "from jacarev3 import RoboEV3, protocolo as p\nimport time\n\nwith RoboEV3('00:16:53:64:F8:B8') as robo:\n    robo.definir_base('B', 'C')\n    robo.led('VERDE')\n    for _ in range(30):\n        d = robo.ler_sensor(4, p.MODO_ULTRASSONICO_CM)\n        if d < 20:\n            robo.mover_continuo('B', 30)\n            robo.mover_continuo('C', -10)\n            time.sleep(0.4)\n        else:\n            robo.mover_continuo('B', 30)\n            robo.mover_continuo('C', 30)\n        time.sleep(0.1)\n    robo.parar_base()\n",
@@ -369,7 +369,7 @@
           "id": "andou",
           "tipo": "dist_min",
           "obrigatorio": true,
-          "cm": 12
+          "cm": 10
         },
         {
           "id": "parou",

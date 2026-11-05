@@ -439,3 +439,16 @@ body.lobby-aberto header {
 .camp-dialogo, .monitor-robo { background: rgba(13,21,29,.72); border-color: var(--borda); }
 .hud-campanha { background: rgba(17,24,33,.90); border-color: var(--borda); }
 .hud-badge { background: rgba(183,223,79,.16); color: var(--brand); border: 1px solid rgba(183,223,79,.28); }
+
+
+/* Rank C · B · A · S */
+.camp-rank, .camp-missao-st {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--acc, #ccff3d);
+}
+.rank-C { color: #9ca3af; }
+.rank-B { color: #60a5fa; }
+.rank-A { color: #ccff3d; }
+.rank-S { color: #fbbf24; text-shadow: 0 0 12px rgba(251,191,36,.35); }
